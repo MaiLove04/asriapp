@@ -3,7 +3,8 @@ import 'package:intl/intl.dart';
 
 import '../models/setor_sampah_model.dart';
 
-class DetailRiwayatPage extends StatelessWidget {
+class DetailRiwayatPage
+    extends StatelessWidget {
 
   final SetorSampahModel data;
 
@@ -20,10 +21,13 @@ class DetailRiwayatPage extends StatelessWidget {
       BuildContext context) {
 
     final parsedDate =
+
     DateTime.tryParse(
         data.createdAt);
 
+
     final tanggal =
+
     parsedDate != null
 
         ? DateFormat(
@@ -35,310 +39,392 @@ class DetailRiwayatPage extends StatelessWidget {
         : "-";
 
 
+
     return Scaffold(
 
       backgroundColor:
       Colors.grey[200],
 
-      appBar: AppBar(
 
-        backgroundColor:
-        Colors.green[800],
+      body: SafeArea(
 
-        title:
-        const Text(
-          "Detail Riwayat",
-        ),
+        top: false,
 
-        leading:
-        const BackButton(),
-      ),
+        child: Column(
 
-      body: Center(
+          children: [
 
-        child:
-        SingleChildScrollView(
 
-          child: Column(
+            Container(
 
-            children: [
+              height: 140,
 
-              const SizedBox(
-                height: 20,
+              decoration:
+              const BoxDecoration(
+
+                color: Color(
+                    0xff2f5d2f),
+
+                borderRadius:
+                BorderRadius
+                    .only(
+
+                  bottomLeft:
+                  Radius.circular(
+                      40),
+
+                  bottomRight:
+                  Radius.circular(
+                      40),
+                ),
               ),
 
+              child: Row(
 
-              Container(
+                children: [
 
-                width: 320,
+                  IconButton(
 
-                padding:
-                const EdgeInsets
-                    .all(
-                    16),
+                    onPressed: () {
 
-                decoration:
-                BoxDecoration(
+                      Navigator.pop(
+                        context,
+                      );
+                    },
 
-                  color:
-                  Colors
-                      .grey[100],
+                    icon:
+                    const Icon(
 
-                  borderRadius:
-                  BorderRadius
-                      .circular(
-                      20),
+                      Icons
+                          .arrow_back,
 
-                  border:
-                  Border.all(
-
-                    color:
-                    Colors.green
-                        .shade800,
-
-                    width: 2,
-                  ),
-                ),
-
-                child: Column(
-
-                  children: [
-
-                    CircleAvatar(
-
-                      radius:
-                      30,
-
-                      backgroundColor:
+                      color:
                       Colors
                           .white,
+                    ),
+                  ),
+
+
+                  const Expanded(
+
+                    child:
+                    Center(
 
                       child:
-                      Icon(
+                      Text(
 
-                        Icons.eco,
-
-                        color:
-                        Colors.green[
-                        800],
-
-                        size: 30,
-                      ),
-                    ),
-
-                    const SizedBox(
-                      height: 10,
-                    ),
-
-
-                    Text(
-
-                      "ASRI",
-
-                      style:
-                      TextStyle(
-
-                        fontWeight:
-                        FontWeight
-                            .bold,
-
-                        fontSize:
-                        18,
-
-                        color:
-                        Colors.green[
-                        800],
-                      ),
-                    ),
-
-                    const SizedBox(
-                      height: 5,
-                    ),
-
-                    const Text(
-                      "Struk Setor Sampah",
-                    ),
-
-                    const Divider(),
-
-
-
-                    Container(
-
-                      padding:
-                      const EdgeInsets
-                          .symmetric(
-
-                        horizontal:
-                        12,
-
-                        vertical:
-                        6,
-                      ),
-
-                      decoration:
-                      BoxDecoration(
-
-                        color:
-                        Colors.green[
-                        800],
-
-                        borderRadius:
-                        BorderRadius
-                            .circular(
-                            20),
-                      ),
-
-                      child: Text(
-
-                        data
-                            .jenisSampah,
+                        "Detail Riwayat",
 
                         style:
-                        const TextStyle(
+                        TextStyle(
+
                           color:
-                          Colors.white,
+                          Colors
+                              .white,
+
+                          fontSize:
+                          20,
+
+                          fontWeight:
+                          FontWeight
+                              .bold,
                         ),
                       ),
                     ),
-
-                    const SizedBox(
-                      height: 10,
-                    ),
+                  ),
 
 
-                    Text(
-                      "$tanggal | Setor",
-                    ),
-
-                    const Divider(),
+                  const SizedBox(
+                    width: 48,
+                  ),
+                ],
+              ),
+            ),
 
 
 
-                    Row(
+            Expanded(
 
-                      mainAxisAlignment:
-                      MainAxisAlignment
-                          .spaceBetween,
+              child: Center(
 
-                      children: [
+                child:
+                SingleChildScrollView(
 
-                        Column(
+                  child: Column(
 
-                          children: [
+                    children: [
 
-                            const Text(
-                              "Berat",
-                            ),
-
-                            Text(
-                              data
-                                  .beratKg,
-                            ),
-                          ],
-                        ),
+                      const SizedBox(
+                        height: 20,
+                      ),
 
 
-                        Column(
+                      Container(
 
-                          children: [
+                        width: 320,
 
-                            const Text(
-                              "Harga",
-                            ),
+                        padding:
+                        const EdgeInsets
+                            .all(
+                            16),
 
-                            Text(
-                              data
-                                  .totalHarga,
-                            ),
-                          ],
-                        ),
+                        decoration:
+                        BoxDecoration(
 
+                          color:
+                          Colors
+                              .grey[
+                          100],
 
-                        Column(
+                          borderRadius:
+                          BorderRadius
+                              .circular(
+                              20),
 
-                          children: [
-
-                            const Text(
-                              "Status",
-                            ),
-
-                            Text(
-                              data
-                                  .status,
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-
-                    const Divider(),
-
-
-
-                    Row(
-
-                      mainAxisAlignment:
-                      MainAxisAlignment
-                          .spaceBetween,
-
-                      children: [
-
-                        const Text(
-
-                          "Total",
-
-                          style:
-                          TextStyle(
-                            fontWeight:
-                            FontWeight
-                                .bold,
-                          ),
-                        ),
-
-                        Text(
-
-                          data
-                              .totalHarga,
-
-                          style:
-                          TextStyle(
-
-                            fontWeight:
-                            FontWeight
-                                .bold,
+                          border:
+                          Border.all(
 
                             color:
-                            Colors.green[
-                            800],
+                            Colors
+                                .green
+                                .shade800,
+
+                            width: 2,
                           ),
                         ),
-                      ],
-                    ),
 
-                    const SizedBox(
-                      height: 10,
-                    ),
+                        child:
+                        Column(
 
-                    Text(
-                      data.status,
-                    ),
+                          children: [
 
-                    const Divider(),
+                            CircleAvatar(
 
-                    const Text(
+                              radius:
+                              30,
 
-                      "Terima kasih sudah berkontribusi untuk menjaga bumi.",
+                              backgroundColor:
+                              Colors
+                                  .white,
 
-                      textAlign:
-                      TextAlign
-                          .center,
-                    ),
-                  ],
+                              child:
+                              Icon(
+
+                                Icons.eco,
+
+                                color:
+                                Colors.green[
+                                800],
+
+                                size:
+                                30,
+                              ),
+                            ),
+
+                            const SizedBox(
+                              height:
+                              10,
+                            ),
+
+
+                            Text(
+
+                              "ASRI",
+
+                              style:
+                              TextStyle(
+
+                                fontWeight:
+                                FontWeight
+                                    .bold,
+
+                                fontSize:
+                                18,
+
+                                color:
+                                Colors.green[
+                                800],
+                              ),
+                            ),
+
+                            const SizedBox(
+                              height:
+                              5,
+                            ),
+
+                            const Text(
+                              "Struk Setor Sampah",
+                            ),
+
+                            const Divider(),
+
+
+                            Container(
+
+                              padding:
+                              const EdgeInsets
+                                  .symmetric(
+
+                                horizontal:
+                                12,
+
+                                vertical:
+                                6,
+                              ),
+
+                              decoration:
+                              BoxDecoration(
+
+                                color:
+                                Colors.green[
+                                800],
+
+                                borderRadius:
+                                BorderRadius
+                                    .circular(
+                                    20),
+                              ),
+
+                              child:
+                              Text(
+
+                                data
+                                    .jenisSampah,
+
+                                style:
+                                const TextStyle(
+
+                                  color:
+                                  Colors
+                                      .white,
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(
+                              height:
+                              10,
+                            ),
+
+
+                            Text(
+                              "$tanggal | Setor",
+                            ),
+
+                            const Divider(),
+
+
+                            ...data.details
+                                .map(
+
+                                  (item) {
+
+                                return Padding(
+
+                                  padding:
+                                  const EdgeInsets
+                                      .only(
+                                    bottom:
+                                    8,
+                                  ),
+
+                                  child:
+                                  Row(
+
+                                    mainAxisAlignment:
+                                    MainAxisAlignment
+                                        .spaceBetween,
+
+                                    children: [
+
+                                      Text(
+                                        item.nama,
+                                      ),
+
+                                      Text(
+                                        item.berat,
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
+
+
+                            const Divider(),
+
+
+                            Row(
+
+                              mainAxisAlignment:
+                              MainAxisAlignment
+                                  .spaceBetween,
+
+                              children: [
+
+                                const Text(
+                                  "Status",
+                                ),
+
+                                Text(
+                                  data
+                                      .status,
+                                ),
+                              ],
+                            ),
+
+                            const Divider(),
+
+
+                            Row(
+
+                              mainAxisAlignment:
+                              MainAxisAlignment
+                                  .spaceBetween,
+
+                              children: [
+
+                                const Text(
+
+                                  "Total",
+
+                                  style:
+                                  TextStyle(
+
+                                    fontWeight:
+                                    FontWeight
+                                        .bold,
+                                  ),
+                                ),
+
+                                Text(
+
+                                  data
+                                      .totalHarga,
+
+                                  style:
+                                  TextStyle(
+
+                                    color:
+                                    Colors.green[
+                                    800],
+
+                                    fontWeight:
+                                    FontWeight
+                                        .bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

@@ -113,17 +113,35 @@ class _RiwayatPageState extends State<RiwayatPage> {
 
         elevation: 0,
 
-        leading:
-        const Icon(
-          Icons.arrow_back,
+
+        leading: IconButton(
+
+          onPressed: () {
+
+            Navigator.pop(
+              context,
+            );
+          },
+
+          icon: const Icon(
+
+            Icons.arrow_back,
+
+            color:
+            Colors.white,
+          ),
         ),
 
-        title:
-        const Text(
+
+        title: const Text(
 
           "Riwayat Transaksi",
 
           style: TextStyle(
+
+            color:
+            Colors.white,
+
             fontWeight:
             FontWeight.bold,
           ),

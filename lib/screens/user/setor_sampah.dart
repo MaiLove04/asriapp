@@ -16,14 +16,34 @@ class SetorSampahScreen extends StatefulWidget {
 class _SetorSampahScreenState
     extends State<SetorSampahScreen> {
 
-  JenisSampah? selectedJenis;
 
-  List<JenisSampah> daftarJenis = [];
+  // MULTI SELECT
+  List<JenisSampah>
+  selectedJenis = [];
+
+
+  List<JenisSampah>
+  daftarJenis = [];
+
 
   bool isLoading = true;
 
+
   final catatanController =
   TextEditingController();
+
+
+  List<int>
+  get selectedJenisIds {
+
+    return selectedJenis
+
+        .map(
+          (e) => e.id,
+    )
+
+        .toList();
+  }
 
 
   @override
@@ -453,20 +473,16 @@ class _SetorSampahScreenState
                     ),
                   ),
 
-                  onPressed:
-                      () async {
+                  onPressed: () async {
 
-                    if(selectedJenis
-                        == null){
+                    if (selectedJenis.isEmpty) {
 
-                      ScaffoldMessenger
-                          .of(
+                      ScaffoldMessenger.of(
                         context,
                       ).showSnackBar(
 
                         const SnackBar(
-                          content:
-                          Text(
+                          content: Text(
                             "Pilih jenis sampah dulu",
                           ),
                         ),
@@ -477,14 +493,14 @@ class _SetorSampahScreenState
 
 
                     final berhasil =
+
                     await SetorSampahService
                         .store(
 
                       userId: 1,
 
-                      jenisId:
-                      selectedJenis!
-                          .id,
+                      jenisIds:
+                      selectedJenisIds,
 
                       catatan:
                       catatanController
@@ -492,72 +508,11 @@ class _SetorSampahScreenState
                     );
 
 
-                    if(!mounted)
+                    if (!mounted)
                       return;
 
 
-                    if(berhasil){
-
-                      await showDialog(
-
-                        context:
-                        context,
-
-                        barrierDismissible:
-                        false,
-
-                        builder:
-                            (_) {
-
-                          return AlertDialog(
-
-                            shape:
-                            RoundedRectangleBorder(
-                              borderRadius:
-                              BorderRadius
-                                  .circular(
-                                20,
-                              ),
-                            ),
-
-                            title:
-                            const Text(
-                              "Berhasil",
-                            ),
-
-                            content:
-                            const Text(
-
-                              "Pengajuan penjemputan berhasil dikirim.",
-
-                            ),
-
-                            actions: [
-
-                              TextButton(
-
-                                onPressed:
-                                    () {
-
-                                  Navigator.pop(
-                                    context,
-                                  );
-                                },
-
-                                child:
-                                const Text(
-                                  "OK",
-                                ),
-                              )
-                            ],
-                          );
-                        },
-                      );
-
-
-                      if(!mounted)
-                        return;
-
+                    if (berhasil) {
 
                       Navigator.pushReplacement(
 
@@ -571,16 +526,14 @@ class _SetorSampahScreenState
                         ),
                       );
 
-                    }else{
+                    } else {
 
-                      ScaffoldMessenger
-                          .of(
+                      ScaffoldMessenger.of(
                         context,
                       ).showSnackBar(
 
                         const SnackBar(
-                          content:
-                          Text(
+                          content: Text(
                             "Gagal mengirim",
                           ),
                         ),
@@ -610,11 +563,14 @@ class _SetorSampahScreenState
 
   Widget _itemSampah(
       JenisSampah item,
-      ){
+      ) {
 
     final isSelected =
-        selectedJenis?.id ==
-            item.id;
+
+    selectedJenis.any(
+
+          (e) => e.id == item.id,
+    );
 
 
     return GestureDetector(
@@ -623,27 +579,42 @@ class _SetorSampahScreenState
 
         setState(() {
 
-          selectedJenis =
-              item;
+          if (isSelected) {
 
+            selectedJenis
+                .removeWhere(
+
+                  (e) => e.id == item.id,
+            );
+
+          } else {
+
+            selectedJenis.add(
+              item,
+            );
+          }
         });
       },
 
       child: Column(
+
         mainAxisSize:
         MainAxisSize.min,
 
         children: [
 
           Container(
+
             padding:
             const EdgeInsets
                 .all(10),
 
             decoration:
             BoxDecoration(
+
               color:
-              Colors.green[100],
+              Colors.green[
+              100],
 
               shape:
               BoxShape.circle,
@@ -652,8 +623,11 @@ class _SetorSampahScreenState
               Border.all(
 
                 color:
+
                 isSelected
+
                     ? Colors.green
+
                     : Colors
                     .transparent,
 
@@ -669,6 +643,7 @@ class _SetorSampahScreenState
               ),
 
               width: 40,
+
               height: 40,
             ),
           ),
@@ -678,6 +653,7 @@ class _SetorSampahScreenState
           ),
 
           Text(
+
             item.nama,
 
             style:
@@ -690,3 +666,4 @@ class _SetorSampahScreenState
     );
   }
 }
+
