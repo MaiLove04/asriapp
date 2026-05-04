@@ -1,97 +1,272 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+
+import '../models/setor_sampah_model.dart';
 
 class DetailRiwayatPage extends StatelessWidget {
-  const DetailRiwayatPage({super.key});
+
+  final SetorSampahModel data;
+
+  const DetailRiwayatPage({
+
+    super.key,
+
+    required this.data,
+  });
+
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(
+      BuildContext context) {
+
+    final parsedDate =
+    DateTime.tryParse(
+        data.createdAt);
+
+    final tanggal =
+    parsedDate != null
+
+        ? DateFormat(
+      "dd MMM yyyy",
+    ).format(
+      parsedDate,
+    )
+
+        : "-";
+
+
     return Scaffold(
-      backgroundColor: Colors.grey[200],
+
+      backgroundColor:
+      Colors.grey[200],
+
       appBar: AppBar(
-        backgroundColor: Colors.green[800],
-        title: const Text("Detail Riwayat"),
-        leading: const BackButton(),
+
+        backgroundColor:
+        Colors.green[800],
+
+        title:
+        const Text(
+          "Detail Riwayat",
+        ),
+
+        leading:
+        const BackButton(),
       ),
+
       body: Center(
-        child: SingleChildScrollView(
+
+        child:
+        SingleChildScrollView(
+
           child: Column(
+
             children: [
-              const SizedBox(height: 20),
 
-              // CARD STRUK
+              const SizedBox(
+                height: 20,
+              ),
+
+
               Container(
+
                 width: 320,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.green.shade800, width: 2),
+
+                padding:
+                const EdgeInsets
+                    .all(
+                    16),
+
+                decoration:
+                BoxDecoration(
+
+                  color:
+                  Colors
+                      .grey[100],
+
+                  borderRadius:
+                  BorderRadius
+                      .circular(
+                      20),
+
+                  border:
+                  Border.all(
+
+                    color:
+                    Colors.green
+                        .shade800,
+
+                    width: 2,
+                  ),
                 ),
+
                 child: Column(
+
                   children: [
-                    // LOGO
+
                     CircleAvatar(
-                      radius: 30,
-                      backgroundColor: Colors.white,
-                      child: Icon(Icons.eco, color: Colors.green[800], size: 30),
+
+                      radius:
+                      30,
+
+                      backgroundColor:
+                      Colors
+                          .white,
+
+                      child:
+                      Icon(
+
+                        Icons.eco,
+
+                        color:
+                        Colors.green[
+                        800],
+
+                        size: 30,
+                      ),
                     ),
 
-                    const SizedBox(height: 10),
+                    const SizedBox(
+                      height: 10,
+                    ),
 
-                    // TITLE
+
                     Text(
-                      "Basayan Bestari",
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                        color: Colors.green[800],
+
+                      "ASRI",
+
+                      style:
+                      TextStyle(
+
+                        fontWeight:
+                        FontWeight
+                            .bold,
+
+                        fontSize:
+                        18,
+
+                        color:
+                        Colors.green[
+                        800],
                       ),
                     ),
 
-                    const SizedBox(height: 5),
+                    const SizedBox(
+                      height: 5,
+                    ),
 
-                    const Text("Struk Setor Sampah"),
+                    const Text(
+                      "Struk Setor Sampah",
+                    ),
+
                     const Divider(),
 
-                    // JENIS
+
+
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.green[800],
-                        borderRadius: BorderRadius.circular(20),
+
+                      padding:
+                      const EdgeInsets
+                          .symmetric(
+
+                        horizontal:
+                        12,
+
+                        vertical:
+                        6,
                       ),
-                      child: const Text(
-                        "Plastik",
-                        style: TextStyle(color: Colors.white),
+
+                      decoration:
+                      BoxDecoration(
+
+                        color:
+                        Colors.green[
+                        800],
+
+                        borderRadius:
+                        BorderRadius
+                            .circular(
+                            20),
+                      ),
+
+                      child: Text(
+
+                        data
+                            .jenisSampah,
+
+                        style:
+                        const TextStyle(
+                          color:
+                          Colors.white,
+                        ),
                       ),
                     ),
 
-                    const SizedBox(height: 10),
+                    const SizedBox(
+                      height: 10,
+                    ),
 
-                    const Text("12 November 2025 | Setor"),
+
+                    Text(
+                      "$tanggal | Setor",
+                    ),
+
                     const Divider(),
 
-                    // DETAIL
+
+
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: const [
+
+                      mainAxisAlignment:
+                      MainAxisAlignment
+                          .spaceBetween,
+
+                      children: [
+
                         Column(
+
                           children: [
-                            Text("Berat"),
-                            Text("3.0 Kg"),
+
+                            const Text(
+                              "Berat",
+                            ),
+
+                            Text(
+                              data
+                                  .beratKg,
+                            ),
                           ],
                         ),
+
+
                         Column(
+
                           children: [
-                            Text("Harga/Kg"),
-                            Text("Rp 2.000"),
+
+                            const Text(
+                              "Harga",
+                            ),
+
+                            Text(
+                              data
+                                  .totalHarga,
+                            ),
                           ],
                         ),
+
+
                         Column(
+
                           children: [
-                            Text("Total"),
-                            Text("Rp 6.000"),
+
+                            const Text(
+                              "Status",
+                            ),
+
+                            Text(
+                              data
+                                  .status,
+                            ),
                           ],
                         ),
                       ],
@@ -99,71 +274,69 @@ class DetailRiwayatPage extends StatelessWidget {
 
                     const Divider(),
 
-                    // TOTAL
+
+
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+
+                      mainAxisAlignment:
+                      MainAxisAlignment
+                          .spaceBetween,
+
                       children: [
+
                         const Text(
+
                           "Total",
-                          style: TextStyle(fontWeight: FontWeight.bold),
+
+                          style:
+                          TextStyle(
+                            fontWeight:
+                            FontWeight
+                                .bold,
+                          ),
                         ),
+
                         Text(
-                          "Rp 6.000",
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.green[800],
+
+                          data
+                              .totalHarga,
+
+                          style:
+                          TextStyle(
+
+                            fontWeight:
+                            FontWeight
+                                .bold,
+
+                            color:
+                            Colors.green[
+                            800],
                           ),
                         ),
                       ],
                     ),
 
-                    const SizedBox(height: 5),
+                    const SizedBox(
+                      height: 10,
+                    ),
 
-                    const Text("Status"),
-                    const Text(
-                      "Menunggu Penjemputan",
-                      style: TextStyle(color: Colors.green),
+                    Text(
+                      data.status,
                     ),
 
                     const Divider(),
 
                     const Text(
+
                       "Terima kasih sudah berkontribusi untuk menjaga bumi.",
-                      textAlign: TextAlign.center,
+
+                      textAlign:
+                      TextAlign
+                          .center,
                     ),
                   ],
                 ),
               ),
-
-              const SizedBox(height: 20),
-
-              // BUTTONS
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green[800],
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                    ),
-                    onPressed: () {},
-                    child: const Text("Bagikan"),
-                  ),
-                  const SizedBox(width: 20),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green[800],
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                    ),
-                    onPressed: () {},
-                    child: const Text("Unduh"),
-                  ),
-                ],
-              )
             ],
           ),
         ),

@@ -7,7 +7,7 @@ class JenisSampahService {
 
   // GANTI sesuai IP laptop
   static const baseUrl =
-      "http://192.168.100.48:8000/api";
+      "http://10.230.122.144:8000/api";
 
 
   static Future<List<JenisSampah>> getData() async {
