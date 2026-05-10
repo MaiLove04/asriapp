@@ -1,251 +1,138 @@
 import 'package:flutter/material.dart';
-import '../models/dashboard_kurir_model.dart';
-import '../services/kurir_service.dart';
 
-class DashboardKurir extends StatefulWidget {
+class DashboardKurir extends StatelessWidget {
   const DashboardKurir({super.key});
 
-  @override
-  State<DashboardKurir> createState() => _DashboardKurir();
-}
-
-class _DashboardKurir extends State<DashboardKurir> {
-  static const Color primary = Color(0xff2C5A27);
-  static const Color secondary = Color(0xff3F6F35);
-  static const Color softGreen = Color(0xffD7E9C4);
-  static const Color bgColor = Color(0xffF4F4EF);
-  static const Color textDark = Color(0xff2F3A2D);
-  static const Color subtitleGrey = Color(0xff6B7280);
-
-  int selectedNav = 0;
-
-  DashboardKurirModel? dashboard;
-
-  bool isLoading = true;
-  String? error;
+  static const primary = Color(0xFF2F6B2F);
+  static const secondary = Color(0xFF58C063);
+  static const softGreen = Color(0xFFEAF8EC);
+  static const background = Color(0xFFF7F8FA);
+  static const darkText = Color(0xFF1B1B1B);
+  static const greyText = Color(0xFF7A7A7A);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: bgColor,
-      body: SafeArea(
-        child: Stack(
+      backgroundColor: background,
+
+      body: SingleChildScrollView(
+        child: Column(
           children: [
-            SingleChildScrollView(
-              child: Column(
-                children: [
-                  _header(),
-                  Transform.translate(
-                    offset: const Offset(0, -24),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 18),
-                      child: Column(
-                        children: [
-                          _greetingCard(),
-                          const SizedBox(height: 22),
-                          _sectionTitle("Ringkasan Hari Ini"),
-                          const SizedBox(height: 12),
-                          _summaryCard(),
-                          const SizedBox(height: 22),
-                          _sectionTitle("Menu Utama"),
-                          const SizedBox(height: 14),
-                          _menuSection(),
-                          const SizedBox(height: 24),
-                          _sectionTitle("Catatan Sampah Anda"),
-                          const SizedBox(height: 12),
-                          _noteCard(),
-                          const SizedBox(height: 24),
-                          _sectionTitle("Riwayat Setoran"),
-                          const SizedBox(height: 12),
-                          _historyItem(
-                            title: "Organik",
-                            date: "10 Des 2025",
-                          ),
-                          const SizedBox(height: 10),
-                          _historyItem(
-                            title: "Anorganik",
-                            date: "10 Des 2025",
-                          ),
-                          const SizedBox(height: 100),
-                        ],
-                      ),
+
+            const _HeaderSection(),
+
+            //card awal
+            Transform.translate(
+              offset: const Offset(
+                0,
+                -30,
+              ),
+
+              child: const Padding(
+                padding:
+                EdgeInsets.symmetric(
+                  horizontal: 20,
+                ),
+
+                child:
+                _ActiveMissionCard(),
+              ),
+            ),
+
+            //ringkasan
+            Transform.translate(
+              offset: const Offset(
+                0,
+                -18,
+              ),
+
+              child: Padding(
+                padding:
+                const EdgeInsets
+                    .symmetric(
+                  horizontal: 20,
+                ),
+
+                child: Column(
+                  children: [
+
+                    _sectionTitle(
+                      "Ringkasan Hari Ini",
                     ),
-                  ),
-                ],
+
+                    const SizedBox(
+                      height: 16,
+                    ),
+
+                    const _TodaySummarySection(),
+
+                    const SizedBox(
+                      height: 28,
+                    ),
+
+                    _sectionTitle(
+                      "Akses Cepat",
+                    ),
+
+                    const SizedBox(
+                      height: 16,
+                    ),
+
+                    const _QuickActionsRow(),
+
+                    const SizedBox(
+                      height: 28,
+                    ),
+
+                    _sectionTitle(
+                      "Performa Bulan Ini",
+                    ),
+
+                    const SizedBox(
+                      height: 16,
+                    ),
+
+                    const _InsightCard(),
+
+                    const SizedBox(
+                      height: 28,
+                    ),
+
+                    _sectionTitle(
+                      "Aktivitas Terbaru",
+                    ),
+
+                    const SizedBox(
+                      height: 16,
+                    ),
+
+                    ...dummyHistory.map(
+                          (e) =>
+                          _ActivityCard(
+                            data: e,
+                          ),
+                    ),
+
+                    const SizedBox(
+                      height: 120,
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
         ),
       ),
-      bottomNavigationBar: _bottomNav(),
+
       floatingActionButtonLocation:
-      FloatingActionButtonLocation.centerDocked,
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: softGreen,
-        elevation: 3,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
-        ),
-        onPressed: () {},
-        child: const Icon(
-          Icons.qr_code_scanner,
-          color: primary,
-          size: 28,
-        ),
-      ),
-    );
-  }
+      FloatingActionButtonLocation
+          .centerDocked,
 
-  Widget _header() {
-    return Container(
-      height: 120,
-      padding: const EdgeInsets.symmetric(horizontal: 18),
-      decoration: const BoxDecoration(
-        color: primary,
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(28),
-          bottomRight: Radius.circular(28),
-        ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 46,
-            height: 46,
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.account_balance,
-              color: primary,
-            ),
-          ),
-          const Spacer(),
-          const Text(
-            "Besayan Besari",
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const Spacer(),
-          const Icon(
-            Icons.power_settings_new,
-            color: Colors.white,
-            size: 28,
-          ),
-        ],
-      ),
-    );
-  }
+      floatingActionButton:
+      const _ScanFab(),
 
-  Widget _greetingCard() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(
-          color: primary.withOpacity(.15),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(.06),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  color: softGreen,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: primary, width: 2),
-                ),
-                child: const Icon(
-                  Icons.person,
-                  color: primary,
-                  size: 34,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    Text(
-                      "Halo, Pak Dito !",
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: primary,
-                      ),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      "Semoga hari anda menyenangkan!",
-                      style: TextStyle(
-                        color: textDark,
-                        fontSize: 14,
-                      ),
-                    ),
-                    Text(
-                      "Ada 3 jemputan hari ini.",
-                      style: TextStyle(
-                        color: textDark,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 22,
-              vertical: 12,
-            ),
-            decoration: BoxDecoration(
-              color: primary,
-              borderRadius: BorderRadius.circular(100),
-              boxShadow: [
-                BoxShadow(
-                  color: primary.withOpacity(.3),
-                  blurRadius: 8,
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: const [
-                Icon(
-                  Icons.local_shipping,
-                  color: Colors.white,
-                ),
-                SizedBox(width: 10),
-                Text(
-                  "MULAI JEMPUT",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+      bottomNavigationBar:
+      const _PremiumBottomNav(),
     );
   }
 
@@ -255,305 +142,161 @@ class _DashboardKurir extends State<DashboardKurir> {
       child: Text(
         title,
         style: const TextStyle(
-          fontSize: 20,
+          fontSize: 19,
           fontWeight: FontWeight.bold,
-          color: textDark,
+          color: darkText,
         ),
       ),
     );
   }
+}
 
-  Widget _summaryCard() {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: primary),
-        gradient: const LinearGradient(
-          colors: [
-            Colors.white,
-            softGreen,
-          ],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(.06),
-            blurRadius: 10,
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Row(
-            children: const [
-              Icon(
-                Icons.local_shipping,
-                color: primary,
-                size: 32,
-              ),
-              SizedBox(width: 10),
-              Text(
-                "3 Lokasi",
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          const Spacer(),
-          Container(
-            width: 1,
-            height: 40,
-            color: primary,
-          ),
-          const Spacer(),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
-              Text(
-                "Total Sampah:",
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              SizedBox(height: 4),
-              Row(
-                children: [
-                  Icon(
-                    Icons.scale,
-                    color: primary,
-                  ),
-                  SizedBox(width: 6),
-                  Text(
-                    "3 Kg",
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+class _TodaySummarySection
+    extends StatelessWidget {
 
-  Widget _menuSection() {
-    final menus = [
-      ["Daftar\nPenjemputan", Icons.list],
-      ["Navigasi\nLokasi", Icons.location_on],
-      ["Data\nSampah", Icons.delete_outline],
-      ["Riwayat\nPenjemputan", Icons.description_outlined],
-    ];
+  const _TodaySummarySection();
 
+  @override
+  Widget build(BuildContext context) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: menus.map((menu) {
-        return Column(
-          children: [
-            Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(18),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(.08),
-                    blurRadius: 8,
-                  ),
-                ],
-              ),
-              child: Icon(
-                menu[1] as IconData,
-                color: primary,
-                size: 32,
-              ),
-            ),
-            const SizedBox(height: 8),
-            SizedBox(
-              width: 72,
-              child: Text(
-                menu[0] as String,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 11,
-                  height: 1.2,
-                ),
-              ),
-            ),
-          ],
-        );
-      }).toList(),
+      children: [
+
+        Expanded(
+          child: _SummaryCard(
+            icon:
+            Icons.local_shipping,
+            title:
+            "Tugas Hari Ini",
+            value:
+            "3 Lokasi",
+            subtitle:
+            "2 selesai",
+          ),
+        ),
+
+        const SizedBox(width: 14),
+
+        Expanded(
+          child: _SummaryCard(
+            icon:
+            Icons.recycling,
+            title:
+            "Hasil Hari Ini",
+            value:
+            "12 Kg",
+            subtitle:
+            "Rp45K",
+          ),
+        ),
+      ],
     );
   }
+}
 
-  Widget _noteCard() {
+class _SummaryCard
+    extends StatelessWidget {
+
+  final IconData icon;
+  final String title;
+  final String value;
+  final String subtitle;
+
+  const _SummaryCard({
+    required this.icon,
+    required this.title,
+    required this.value,
+    required this.subtitle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+
+      height: 130,
+
+      padding:
+      const EdgeInsets.all(18),
+
       decoration: BoxDecoration(
+
         color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
+
+        borderRadius:
+        BorderRadius.circular(
+          24,
+        ),
+
+        border: Border.all(
+          color:
+          Colors.grey
+              .withOpacity(
+            .08,
+          ),
+        ),
+
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(.05),
-            blurRadius: 8,
+            color:
+            Colors.black
+                .withOpacity(
+              .03,
+            ),
+            blurRadius: 18,
+            offset:
+            const Offset(0, 6),
           ),
         ],
       ),
+
       child: Column(
+        crossAxisAlignment:
+        CrossAxisAlignment.start,
+
         children: [
-          Row(
-            children: const [
-              Expanded(
-                child: Text(
-                  "Anda mengumpulkan 10 Kg sampah bulan ini, 3 kg lebih banyak dari bulan lalu.",
-                  style: TextStyle(
-                    fontSize: 15,
-                    color: textDark,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-              Icon(
-                Icons.trending_up,
-                size: 46,
-                color: primary,
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          const Divider(),
-        ],
-      ),
-    );
-  }
 
-  Widget _historyItem({
-    required String title,
-    required String date,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: primary.withOpacity(.3),
-        ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: softGreen,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: const Icon(
-              Icons.delete_outline,
-              color: primary,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: textDark,
-                  ),
-                ),
-                Text(
-                  date,
-                  style: const TextStyle(
-                    color: subtitleGrey,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                "Rp 2000",
-                style: TextStyle(
-                  color: primary,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Text(
-                "2Kg",
-                style: TextStyle(
-                  color: subtitleGrey,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _bottomNav() {
-    return BottomAppBar(
-      shape: const CircularNotchedRectangle(),
-      notchMargin: 8,
-      color: Colors.white,
-      elevation: 12,
-      child: SizedBox(
-        height: 70,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _navItem(Icons.home, "Beranda", 0),
-            _navItem(Icons.history, "Riwayat", 1),
-            const SizedBox(width: 30),
-            _navItem(Icons.notifications, "Notifikasi", 2),
-            _navItem(Icons.person, "Profil", 3),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _navItem(
-      IconData icon,
-      String label,
-      int index,
-      ) {
-    final selected = selectedNav == index;
-
-    return InkWell(
-      onTap: () {
-        setState(() {
-          selectedNav = index;
-        });
-      },
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
           Icon(
             icon,
-            color: selected ? primary : Colors.grey,
+            size: 18,
+            color:
+            DashboardKurir
+                .primary,
           ),
-          const SizedBox(height: 4),
+
+          const Spacer(),
+
           Text(
-            label,
-            style: TextStyle(
+            title,
+            style:
+            const TextStyle(
               fontSize: 11,
-              color: selected ? primary : Colors.grey,
+              color:
+              DashboardKurir
+                  .greyText,
+            ),
+          ),
+
+          const SizedBox(height: 4),
+
+          Text(
+            value,
+            style:
+            const TextStyle(
+              fontSize: 20,
               fontWeight:
-              selected ? FontWeight.bold : FontWeight.normal,
+              FontWeight.bold,
+            ),
+          ),
+
+          const SizedBox(height: 4),
+
+          Text(
+            subtitle,
+            style:
+            const TextStyle(
+              fontSize: 12,
+              color: Colors.green,
+              fontWeight:
+              FontWeight.w600,
             ),
           ),
         ],
@@ -561,3 +304,860 @@ class _DashboardKurir extends State<DashboardKurir> {
     );
   }
 }
+
+class _QuickActionsRow
+    extends StatelessWidget {
+
+  const _QuickActionsRow();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment:
+      MainAxisAlignment.spaceBetween,
+      children: const [
+
+        _MiniActionCard(
+          icon:
+          Icons.list_alt_outlined,
+          title: "Jemput",
+        ),
+
+        _MiniActionCard(
+          icon:
+          Icons.map_outlined,
+          title: "Map",
+        ),
+
+        _MiniActionCard(
+          icon:
+          Icons.delete_outline,
+          title: "Data",
+        ),
+
+        _MiniActionCard(
+          icon: Icons.history,
+          title: "Riwayat",
+        ),
+      ],
+    );
+  }
+}
+
+class _MiniActionCard
+    extends StatelessWidget {
+
+  final IconData icon;
+  final String title;
+
+  const _MiniActionCard({
+    required this.icon,
+    required this.title,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 78,
+      height: 90,
+
+      decoration: BoxDecoration(
+        color: Colors.white,
+
+        borderRadius:
+        BorderRadius.circular(22),
+
+        boxShadow: [
+          BoxShadow(
+            color:
+            Colors.black.withOpacity(
+              .04,
+            ),
+            blurRadius: 18,
+            offset:
+            const Offset(0, 6),
+          ),
+        ],
+      ),
+
+      child: Column(
+        mainAxisAlignment:
+        MainAxisAlignment.center,
+        children: [
+
+          Container(
+            padding:
+            const EdgeInsets.all(9),
+
+            decoration: BoxDecoration(
+              color:
+              DashboardKurir
+                  .softGreen,
+
+              borderRadius:
+              BorderRadius.circular(
+                14,
+              ),
+            ),
+
+            child: Icon(
+              icon,
+              size: 20,
+              color:
+              DashboardKurir
+                  .primary,
+            ),
+          ),
+
+          const SizedBox(height: 8),
+
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight:
+              FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PremiumBottomNav
+    extends StatelessWidget {
+  const _PremiumBottomNav();
+
+  @override
+  Widget build(BuildContext context) {
+    return BottomAppBar(
+      height: 72,
+
+      shape:
+      const CircularNotchedRectangle(),
+
+      notchMargin: 8,
+
+      elevation: 12,
+
+      color: Colors.white,
+
+      child: Row(
+        mainAxisAlignment:
+        MainAxisAlignment.spaceAround,
+        children: [
+
+          _navItem(
+            icon: Icons.home,
+            label: "Beranda",
+            active: true,
+          ),
+
+          _navItem(
+            icon: Icons.history,
+            label: "Riwayat",
+          ),
+
+          const SizedBox(width: 40),
+
+          _navItem(
+            icon:
+            Icons.notifications_none,
+            label: "Notif",
+          ),
+
+          _navItem(
+            icon: Icons.person_outline,
+            label: "Profil",
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _navItem({
+    required IconData icon,
+    required String label,
+    bool active = false,
+  }) {
+    return Column(
+      mainAxisAlignment:
+      MainAxisAlignment.center,
+      children: [
+
+        Icon(
+          icon,
+          size: 22,
+          color: active
+              ? DashboardKurir.primary
+              : Colors.grey,
+        ),
+
+        const SizedBox(height: 4),
+
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight:
+            FontWeight.w600,
+            color: active
+                ? DashboardKurir.primary
+                : Colors.grey,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ScanFab extends StatelessWidget {
+  const _ScanFab();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 68,
+      width: 68,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(.12),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: FloatingActionButton(
+        elevation: 0,
+        backgroundColor:
+        DashboardKurir.primary,
+        onPressed: () {},
+
+        child: const Icon(
+          Icons.qr_code_scanner,
+          size: 30,
+          color: Colors.white,
+        ),
+      ),
+    );
+  }
+}
+
+class _HeaderSection extends StatelessWidget {
+  const _HeaderSection();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 165, // sebelumnya 200
+
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            DashboardKurir.primary,
+            DashboardKurir.secondary,
+          ],
+        ),
+
+        borderRadius: BorderRadius.vertical(
+          bottom: Radius.circular(36),
+        ),
+      ),
+
+      child: SafeArea(
+        bottom: false,
+
+        //logo
+        child: Padding(
+          padding: const EdgeInsets.only(
+            left: 20,
+            right: 20,
+            top: 30,
+          ),
+
+          child: Align(
+            alignment: Alignment.topCenter,
+
+            child: Row(
+              children: [
+
+                _logo(),
+
+                const SizedBox(
+                  width: 12,
+                ),
+
+                const Expanded(
+                  child: Text(
+                    "ASRI",
+
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+
+                const Icon(
+                  Icons.notifications_none,
+                  color: Colors.white,
+                ),
+
+                const SizedBox(
+                  width: 14,
+                ),
+
+                const Icon(
+                  Icons.logout,
+                  color: Colors.white,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _logo() {
+    return Container(
+      width: 48,
+      height: 48,
+
+      decoration: BoxDecoration(
+        color: Colors.white,
+        shape: BoxShape.circle,
+
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(.08),
+            blurRadius: 12,
+          ),
+        ],
+      ),
+
+      child: ClipOval(
+        child: Image.asset(
+          "assets/images/logo_asri.png",
+          fit: BoxFit.cover,
+        ),
+      ),
+    );
+  }
+}
+
+class _ActiveMissionCard
+    extends StatelessWidget {
+
+  const _ActiveMissionCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+
+      padding:
+      const EdgeInsets.all(22),
+
+      decoration:
+      cardDecoration(),
+
+      child: Column(
+        children: [
+
+          Row(
+            children: [
+
+              const CircleAvatar(
+                radius: 26,
+
+                backgroundImage:
+                AssetImage(
+                  "assets/images/kurir.jpg",
+                ),
+              ),
+
+              const SizedBox(
+                  width: 14),
+
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment:
+                  CrossAxisAlignment
+                      .start,
+
+                  children: [
+
+                    Text(
+                      "Halo, Budi Saputra 👋",
+                      style:
+                      TextStyle(
+                        fontSize:
+                        16,
+                        fontWeight:
+                        FontWeight
+                            .bold,
+                      ),
+                    ),
+
+                    SizedBox(
+                        height: 4),
+
+                    Text(
+                      "Kurir Aktif • Online",
+                      style:
+                      TextStyle(
+                        color:
+                        DashboardKurir
+                            .greyText,
+                        fontSize:
+                        12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              _activeBadge(),
+            ],
+          ),
+
+          const SizedBox(
+              height: 20),
+
+          const Align(
+            alignment:
+            Alignment.centerLeft,
+            child: Text(
+              "Jemputan Hari Ini",
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight:
+                FontWeight.bold,
+              ),
+            ),
+          ),
+
+          const SizedBox(
+              height: 4),
+
+          const Align(
+            alignment:
+            Alignment.centerLeft,
+            child: Text(
+              "3 tugas aktif",
+            ),
+          ),
+
+          const SizedBox(
+              height: 18),
+
+          ClipRRect(
+            borderRadius:
+            BorderRadius.circular(
+              12,
+            ),
+
+            child:
+            const LinearProgressIndicator(
+              value: .65,
+              minHeight: 8,
+            ),
+          ),
+
+          const SizedBox(
+              height: 12),
+
+          Row(
+            children: [
+
+              const Text(
+                "65% selesai",
+                style: TextStyle(
+                  fontWeight:
+                  FontWeight.bold,
+                ),
+              ),
+
+              const Spacer(),
+
+              _startButton(),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  static Widget _activeBadge() {
+    return Container(
+      padding:
+      const EdgeInsets.symmetric(
+        horizontal: 12,
+        vertical: 6,
+      ),
+
+      decoration: BoxDecoration(
+        color:
+        DashboardKurir
+            .softGreen,
+
+        borderRadius:
+        BorderRadius.circular(
+          20,
+        ),
+      ),
+
+      child: const Text(
+        "AKTIF",
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight:
+          FontWeight.bold,
+          color:
+          DashboardKurir
+              .primary,
+        ),
+      ),
+    );
+  }
+
+  static Widget _startButton() {
+    return ElevatedButton.icon(
+      onPressed: () {},
+
+      style:
+      ElevatedButton.styleFrom(
+        backgroundColor:
+        DashboardKurir.primary,
+
+        foregroundColor:
+        Colors.white,
+
+        shape:
+        RoundedRectangleBorder(
+          borderRadius:
+          BorderRadius.circular(
+            18,
+          ),
+        ),
+      ),
+
+      icon: const Icon(
+        Icons.local_shipping,
+        color: Colors.white,
+      ),
+
+      label: const Text(
+        "MULAI",
+        style: TextStyle(
+          color: Colors.white,
+          fontWeight:
+          FontWeight.bold,
+        ),
+      ),
+    );
+  }
+}
+
+class _InsightCard extends StatelessWidget {
+  const _InsightCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: cardDecoration(),
+      child: Row(
+        children: [
+
+          const Expanded(
+            child: Text(
+              "Anda mengumpulkan 10 Kg "
+                  "sampah bulan ini.\n"
+                  "Naik 3 Kg dari bulan lalu.",
+              style: TextStyle(
+                height: 1.6,
+              ),
+            ),
+          ),
+
+          Icon(
+            Icons.trending_up,
+            size: 44,
+            color:
+            DashboardKurir.primary,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ActivityCard
+    extends StatelessWidget {
+
+  final HistoryModel data;
+
+  const _ActivityCard({
+    required this.data,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+
+      margin:
+      const EdgeInsets.only(
+        bottom: 14,
+      ),
+
+      padding:
+      const EdgeInsets.all(
+        16,
+      ),
+
+      decoration: BoxDecoration(
+
+        color: Colors.white,
+
+        borderRadius:
+        BorderRadius.circular(
+          22,
+        ),
+
+        border: Border.all(
+          color:
+          Colors.grey
+              .withOpacity(.08),
+        ),
+
+        boxShadow: [
+          BoxShadow(
+            color:
+            Colors.black
+                .withOpacity(
+              .025,
+            ),
+            blurRadius: 18,
+            offset:
+            const Offset(0, 6),
+          ),
+        ],
+      ),
+
+      child: Row(
+        children: [
+
+          Container(
+            width: 48,
+            height: 48,
+
+            decoration:
+            BoxDecoration(
+              color:
+              DashboardKurir
+                  .softGreen,
+
+              borderRadius:
+              BorderRadius
+                  .circular(
+                16,
+              ),
+            ),
+
+            child: const Icon(
+              Icons.recycling,
+              color:
+              DashboardKurir
+                  .primary,
+            ),
+          ),
+
+          const SizedBox(
+              width: 14),
+
+          Expanded(
+            child: Column(
+              crossAxisAlignment:
+              CrossAxisAlignment
+                  .start,
+
+              children: [
+
+                Row(
+                  children: [
+
+                    Expanded(
+                      child: Text(
+                        data.name,
+                        style:
+                        const TextStyle(
+                          fontSize:
+                          14,
+                          fontWeight:
+                          FontWeight
+                              .bold,
+                        ),
+                      ),
+                    ),
+
+                    _statusChip(),
+                  ],
+                ),
+
+                const SizedBox(
+                    height: 4),
+
+                Text(
+                  data.date,
+                  style:
+                  const TextStyle(
+                    fontSize:
+                    12,
+                    color:
+                    DashboardKurir
+                        .greyText,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(
+              width: 10),
+
+          Column(
+            crossAxisAlignment:
+            CrossAxisAlignment
+                .end,
+
+            children: [
+
+              Text(
+                data.price,
+                style:
+                const TextStyle(
+                  fontSize: 14,
+                  fontWeight:
+                  FontWeight
+                      .bold,
+                  color:
+                  Colors.green,
+                ),
+              ),
+
+              const SizedBox(
+                  height: 4),
+
+              Text(
+                data.weight,
+                style:
+                const TextStyle(
+                  fontSize: 12,
+                  color:
+                  DashboardKurir
+                      .greyText,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _statusChip() {
+    return Container(
+      padding:
+      const EdgeInsets.symmetric(
+        horizontal: 10,
+        vertical: 4,
+      ),
+
+      decoration: BoxDecoration(
+        color:
+        DashboardKurir
+            .softGreen,
+
+        borderRadius:
+        BorderRadius.circular(
+          20,
+        ),
+      ),
+
+      child: const Text(
+        "Selesai",
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight:
+          FontWeight.bold,
+          color:
+          DashboardKurir
+              .primary,
+        ),
+      ),
+    );
+  }
+}
+
+BoxDecoration cardDecoration() {
+  return BoxDecoration(
+    color: Colors.white,
+    borderRadius:
+    BorderRadius.circular(24),
+    boxShadow: [
+      BoxShadow(
+        color:
+        Colors.black.withOpacity(
+          .04,
+        ),
+        blurRadius: 24,
+        offset: const Offset(0, 8),
+      ),
+    ],
+  );
+}
+
+class HistoryModel {
+  final String name;
+  final String date;
+  final String price;
+  final String weight;
+
+  HistoryModel({
+    required this.name,
+    required this.date,
+    required this.price,
+    required this.weight,
+  });
+}
+
+final dummyHistory = [
+
+  HistoryModel(
+    name: "Organik",
+    date: "10 Des 2025",
+    price: "+Rp2.000",
+    weight: "2 Kg",
+  ),
+
+  HistoryModel(
+    name: "Botol Plastik",
+    date: "08 Des 2025",
+    price: "+Rp4.000",
+    weight: "3 Kg",
+  ),
+
+  HistoryModel(
+    name: "Kertas",
+    date: "05 Des 2025",
+    price: "+Rp3.000",
+    weight: "5 Kg",
+  ),
+];
