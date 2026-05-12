@@ -23,7 +23,8 @@ class MyApp extends StatelessWidget {
       initialRoute: '/login', // halaman pertama
       routes: {
         '/login': (context) => const LoginScreen(),
-        '/dashboard': (context) => const DashboardScreen(name: "User"),        '/setorsampah': (context) => const SetorSampahScreen(),
+        '/dashboard': (context) => const DashboardScreen(name: "User"),
+        '/setorsampah': (context) => const SetorSampahScreen(),
         '/riwayat': (context) => const RiwayatPage(),
         '/tariktunai': (context) => const TarikTunaiPage(),
         '/profil': (context) => const profile_page(),

@@ -351,30 +351,46 @@ class DetailRiwayatPage
                             ),
 
 
-                            const Divider(),
+                    const Divider(),
 
+                    Row(
+                      mainAxisAlignment:
+                      MainAxisAlignment.spaceBetween,
+                      children: [
 
-                            Row(
+                        const Text(
+                          "Status",
+                        ),
 
-                              mainAxisAlignment:
-                              MainAxisAlignment
-                                  .spaceBetween,
+                        Text(
+                          data.status,
+                        ),
+                      ],
+                    ),
 
-                              children: [
+                    const Divider(),
 
-                                const Text(
-                                  "Status",
-                                ),
+                    Row(
+                      crossAxisAlignment:
+                      CrossAxisAlignment.start,
+                      mainAxisAlignment:
+                      MainAxisAlignment.spaceBetween,
+                      children: [
 
-                                Text(
-                                  data
-                                      .status,
-                                ),
-                              ],
-                            ),
+                        const Text(
+                          "Catatan",
+                        ),
 
-                            const Divider(),
+                        Expanded(
+                          child: Text(
+                            data.catatan,
+                            textAlign: TextAlign.end,
+                          ),
+                        ),
+                      ],
+                    ),
 
+                    const Divider(),
 
                             Row(
 

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:asriapp/screens/services/auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
@@ -25,70 +26,139 @@ class _LoginScreenState extends State<LoginScreen> {
 
   // 🔥 FUNCTION LOGIN
   Future<void> login() async {
+
     setState(() {
       isLoading = true;
     });
 
     try {
-      final response = await http.post(
-        Uri.parse('http://10.230.122.144:8000/api/login'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: jsonEncode({
-          'email': emailController.text,
-          'password': passwordController.text,
-        }),
+
+      final result =
+      await AuthService
+          .login(
+
+        email:
+        emailController.text,
+
+        password:
+        passwordController.text,
+
       );
 
-      print("STATUS: ${response.statusCode}");
-      print("BODY: ${response.body}");
-      print("LOGIN REQUEST SELESAI");
+      final status =
+      result['status'];
 
+      final data =
+      result['data'];
 
-      final data = jsonDecode(response.body);
+      String? token;
 
-      if (response.statusCode == 200) {
+      if (
+      status == 200
+      ) {
 
-        print("PINDAH DASHBOARD");
+        token =
+        data['token'];
 
-        String role = data['user']['role'];
-        String name = data['user']['name'];
+        String role =
+        data['user']['role'];
 
-        if (!context.mounted) return;
+        String name =
+        data['user']['name'];
 
-        if (role == 'kurir') {
-          Navigator.pushReplacement(
+        String? foto =
+        data['user']['foto'];
+
+        print(
+          'TOKEN: $token',
+        );
+
+        if (
+        !context.mounted
+        ) return;
+
+        if (
+        role == 'kurir'
+        ) {
+
+          Navigator
+              .pushReplacement(
+
             context,
-            MaterialPageRoute(builder: (_) => DashboardKurir()),
-          );
-        } else {
-          Navigator.pushReplacement(
-            context,
+
             MaterialPageRoute(
-              builder: (_) => DashboardScreen(name: name),
+
+              builder: (_) =>
+
+                  DashboardKurir(),
+
+            ),
+          );
+
+        } else {
+
+          Navigator
+              .pushReplacement(
+
+            context,
+
+            MaterialPageRoute(
+
+              builder: (_) =>
+
+                  DashboardScreen(
+
+                    name: name,
+
+                    foto: foto,
+
+                  ),
+
             ),
           );
         }
-      } else {
-        String message = data['message'] ?? "Login gagal";
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(message)),
+      } else {
+
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(
+
+          SnackBar(
+
+            content:
+            Text(
+
+              data['message'] ??
+
+                  "Login gagal",
+
+            ),
+          ),
         );
       }
+
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Koneksi gagal / server tidak jalan")),
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(
+
+        SnackBar(
+          content:
+          Text('$e'),
+        ),
       );
     }
+
+    if (
+    !mounted
+    ) return;
 
     setState(() {
       isLoading = false;
     });
   }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(

@@ -10,9 +10,16 @@ import 'package:intl/intl.dart';
 class DashboardScreen extends StatelessWidget {
   final String name;
 
+  final String? foto;
+
   const DashboardScreen({
+
     super.key,
+
     required this.name,
+
+    this.foto,
+
   });
 
   Future<bool> _showExitDialog(BuildContext context) async {
@@ -105,10 +112,41 @@ class DashboardScreen extends StatelessWidget {
                         ),
                         child: Row(
                           children: [
-                            const CircleAvatar(
+                            CircleAvatar(
+
                               radius: 30,
-                              backgroundColor: Colors.white,
-                              child: Icon(Icons.person, size: 35),
+
+                              backgroundColor:
+                              Colors.white,
+
+                              backgroundImage:
+
+                              foto != null
+
+                                  ?
+
+                              NetworkImage(
+                                foto!,
+                              )
+
+                                  :
+
+                              null,
+
+                              child:
+
+                              foto == null
+
+                                  ?
+
+                              const Icon(
+                                Icons.person,
+                                size: 35,
+                              )
+
+                                  :
+
+                              null,
                             ),
                             const SizedBox(width: 15),
                             Column(

@@ -1,14 +1,11 @@
 import 'dart:convert';
+
 import 'package:http/http.dart' as http;
+import 'package:asriapp/config.dart';
 
 import '../models/setor_sampah_model.dart';
 
 class SetorSampahService {
-
-  static const baseUrl =
-      "http://10.230.122.144:8000/api";
-
-
 
   // ================= CREATE =================
   static Future<bool> store({
@@ -25,9 +22,7 @@ class SetorSampahService {
 
     try {
 
-
       final items =
-
       jenisIds.map(
 
             (id) => {
@@ -37,18 +32,23 @@ class SetorSampahService {
 
           "berat":
           0,
+
         },
+
       ).toList();
 
+      final url = Uri.parse(
+        '${AppConfig.baseUrl}/setor-sampah',
+      );
 
+      print(
+        'POST REQUEST : $url',
+      );
 
       final response =
-
       await http.post(
 
-        Uri.parse(
-          "$baseUrl/setor-sampah",
-        ),
+        url,
 
         headers: {
 
@@ -57,6 +57,7 @@ class SetorSampahService {
 
           "Accept":
           "application/json",
+
         },
 
         body: jsonEncode({
@@ -64,42 +65,37 @@ class SetorSampahService {
           "user_id":
           userId,
 
-
           "catatan":
           catatan,
 
-
           "items":
           items,
+
         }),
       );
 
-
-
       print(
-        "POST STATUS : ${response.statusCode}",
+        'POST STATUS : ${response.statusCode}',
       );
 
       print(
-        "POST BODY : ${response.body}",
+        'POST BODY : ${response.body}',
       );
 
+      return
+        response.statusCode == 200 ||
 
+            response.statusCode == 201;
 
-      return response.statusCode == 200 ||
-
-          response.statusCode == 201;
-
-    } catch(e){
+    } catch (e) {
 
       print(
-        "POST ERROR : $e",
+        'POST ERROR : $e',
       );
 
       return false;
     }
   }
-
 
 
 
@@ -110,62 +106,61 @@ class SetorSampahService {
 
     try {
 
-      final response =
+      final url = Uri.parse(
+        '${AppConfig.baseUrl}/setor-sampah',
+      );
 
+      print(
+        'GET REQUEST : $url',
+      );
+
+      final response =
       await http.get(
 
-        Uri.parse(
-          "$baseUrl/setor-sampah",
-        ),
+        url,
 
         headers: {
 
           "Accept":
           "application/json",
+
         },
       );
 
-
-
       print(
-        "GET STATUS : ${response.statusCode}",
+        'GET STATUS : ${response.statusCode}',
       );
 
       print(
-        "GET BODY : ${response.body}",
+        'GET BODY : ${response.body}',
       );
-
-
 
       final body =
-
       jsonDecode(
-          response.body);
-
+        response.body,
+      );
 
       List data =
-
       body['data'];
 
-
-
       return data
-
           .map(
 
             (item) =>
 
             SetorSampahModel
                 .fromJson(
-                item),
+              item,
+            ),
+
       )
 
           .toList();
 
-    } catch(e){
+    } catch (e) {
 
       print(
-        "GET ERROR : $e",
+        'GET ERROR : $e',
       );
 
       return [];

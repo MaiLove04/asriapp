@@ -1,227 +1,118 @@
 class DetailSetor {
-
   final String nama;
-
   final String berat;
 
-
   DetailSetor({
-
     required this.nama,
-
     required this.berat,
   });
 }
 
-
-
-
-
 class SetorSampahModel {
-
   final int id;
-
   final String jenisSampah;
-
   final String status;
-
   final String beratKg;
-
   final String totalHarga;
-
   final String createdAt;
-
-  final List<DetailSetor>
-  details;
-
-
+  final String catatan;
+  final List<DetailSetor> details;
 
   SetorSampahModel({
-
     required this.id,
-
     required this.jenisSampah,
-
     required this.status,
-
     required this.beratKg,
-
     required this.totalHarga,
-
     required this.createdAt,
-
+    required this.catatan,
     required this.details,
   });
 
-
-
   factory SetorSampahModel.fromJson(
-      Map<String, dynamic> json) {
+      Map<String, dynamic> json,
+      ) {
+    String namaJenis = "-";
 
+    List<DetailSetor> detailItems = [];
 
-    String namaJenis =
-        "-";
-
-
-    List<DetailSetor>
-    detailItems = [];
-
-
-
-    // ================= DATA BARU =================
+    // format data baru
     if (
-
     json['details'] != null &&
-
-        json['details']
-            .isNotEmpty
-
-    ) {
+        json['details'].isNotEmpty) {
 
       final rawDetails =
-      json['details']
-      as List;
-
-
+      json['details'] as List;
 
       detailItems =
+          rawDetails.map((e) {
+            return DetailSetor(
+              nama:
+              e['jenis_sampah']['nama'] ?? "-",
 
-          rawDetails.map(
-
-                (e) {
-
-              return DetailSetor(
-
-                nama:
-
-                e[
-                'jenis_sampah'
-                ]['nama'],
-
-
-                berat:
-
-                e[
-                'berat'
-                ] != null
-
-                    ? "${e['berat']} Kg"
-
-                    : "0 Kg",
-              );
-            },
-          ).toList();
-
-
+              berat:
+              e['berat'] != null
+                  ? "${e['berat']} Kg"
+                  : "0 Kg",
+            );
+          }).toList();
 
       final firstName =
-          detailItems
-              .first
-              .nama;
+          detailItems.first.nama;
 
-
-
-      if (
-
-      detailItems
-          .length ==
-          1
-
-      ) {
-
-        namaJenis =
-            firstName;
-
+      if (detailItems.length == 1) {
+        namaJenis = firstName;
       } else {
-
         namaJenis =
-
-        "$firstName "
-
-            "+${detailItems.length - 1} lainnya";
+        "$firstName +${detailItems.length - 1} lainnya";
       }
     }
 
-
-
-    // ================= DATA LAMA =================
+    // format data lama
     else if (
-
-    json['jenis_sampah']
-        != null
-
-    ) {
+    json['jenis_sampah'] != null) {
 
       namaJenis =
-
-      json[
-      'jenis_sampah'
-      ]['nama'];
-
-
+          json['jenis_sampah']['nama'] ?? "-";
 
       detailItems = [
-
         DetailSetor(
-
-          nama:
-          namaJenis,
-
+          nama: namaJenis,
 
           berat:
-
-          json['berat']
-              != null
-
+          json['berat'] != null
               ? "${json['berat']} Kg"
-
               : "0 Kg",
         ),
       ];
     }
 
-
-
     return SetorSampahModel(
+      id: json['id'] ?? 0,
 
-      id:
-      json['id'],
-
-
-      jenisSampah:
-      namaJenis,
-
+      jenisSampah: namaJenis,
 
       status:
-      json['status'],
-
+      json['status'] ?? "-",
 
       beratKg:
-
-      json['berat']
-          != null
-
+      json['berat'] != null
           ? "${json['berat']} Kg"
-
           : "0 Kg",
 
-
       totalHarga:
-
-      json['total']
-          != null
-
+      json['total'] != null
           ? "Rp ${json['total']}"
-
           : "Rp 0",
 
-
       createdAt:
-      json['created_at'],
+      json['created_at'] ?? "-",
 
+      catatan:
+      json['catatan'] ??
+          "Tidak ada catatan",
 
-      details:
-      detailItems,
+      details: detailItems,
     );
   }
 }
