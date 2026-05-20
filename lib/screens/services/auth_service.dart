@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 import 'package:asriapp/config.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthService {
 
@@ -62,15 +63,39 @@ class AuthService {
           '${stopwatch.elapsedMilliseconds} ms',
     );
 
+    final body =
+    jsonDecode(response.body);
+
+    // ================= SIMPAN LOGIN =================
+    if (response.statusCode == 200) {
+
+      SharedPreferences prefs =
+      await SharedPreferences
+          .getInstance();
+
+      prefs.setInt(
+        'user_id',
+        body['user']['id'],
+      );
+
+      prefs.setString(
+        'user_name',
+        body['user']['name'],
+      );
+
+      prefs.setString(
+        'role',
+        body['user']['role'],
+      );
+    }
+
     return {
 
       "status":
       response.statusCode,
 
       "data":
-      jsonDecode(
-        response.body,
-      ),
+      body,
     };
   }
 }
