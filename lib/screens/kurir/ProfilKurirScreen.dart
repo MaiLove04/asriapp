@@ -2,16 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:asriapp/config.dart';
+import 'package:asriapp/config.dart'; // Jalur config milik Mai
 import '../login_screen.dart';
 import 'ScanBarcode.dart';
 
-const primary = Color(0xFF2F6B2F);
-const secondary = Color(0xFF58C063);
-const softGreen = Color(0xFFEAF8EC);
-const background = Color(0xFFF7F8FA);
-const darkText = Color(0xFF1B1B1B);
-const greyText = Color(0xFF7A7A7A);
+// Palet warna kontras tinggi (Senior-Friendly Theme) - Setema dengan Dashboard
+const primaryColor = Color(0xFF1E521E);
+const secondaryColor = Color(0xFF4CAF50);
+const softGreenColor = Color(0xFFE8F5E9);
+const backgroundColor = Color(0xFFF9FBF9);
+const darkTextColor = Color(0xFF0D240D);
+const greyTextColor = Color(0xFF555555);
 
 class ProfilKurirScreen extends StatefulWidget {
   const ProfilKurirScreen({super.key});
@@ -26,10 +27,8 @@ class _ProfilKurirScreenState extends State<ProfilKurirScreen> {
   String noHpKurir = '-';
   String alamatKurir = '-';
   String? fotoPath;
-  int idJadwalAktif = 0; // Tambahkan variabel untuk menampung ID jadwal
+  int idJadwalAktif = 0;
   bool isLoading = true;
-
-  String baseUrlServer = "http://192.168.100.48:8000";
 
   @override
   void initState() {
@@ -49,16 +48,19 @@ class _ProfilKurirScreenState extends State<ProfilKurirScreen> {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
 
-        // Pengaman relasi data dari API Laravel
-        final kurir = data['jadwal']?['kurir'];
+        // Pengaman: Ambil objek kurir dari jadwal jika ada
+        final kurirDariJadwal = data['jadwal']?['kurir'];
 
         setState(() {
           namaKurir = data['nama_kurir'] ?? 'Kurir ASRI';
-          emailKurir = kurir?['email'] ?? '-';
-          noHpKurir = kurir?['no_hp'] ?? '-';
-          alamatKurir = kurir?['alamat'] ?? '-';
-          fotoPath = kurir?['foto'];
-          // Ambil ID jadwal aktif jika ada untuk modal cadangan scanner
+
+          // 🔥 PENGAMAN BERLAPIS:
+          // Cek di root JSON dulu (data['email']), kalau kosong baru cek di dalam jadwal (kurirDariJadwal['email'])
+          emailKurir = data['email'] ?? kurirDariJadwal?['email'] ?? '-';
+          noHpKurir = data['no_hp'] ?? kurirDariJadwal?['no_hp'] ?? '-';
+          alamatKurir = data['alamat'] ?? kurirDariJadwal?['alamat'] ?? '-';
+
+          fotoPath = data['foto'] ?? kurirDariJadwal?['foto'];
           idJadwalAktif = data['jadwal']?['id'] ?? 0;
           isLoading = false;
         });
@@ -68,14 +70,12 @@ class _ProfilKurirScreenState extends State<ProfilKurirScreen> {
         });
       }
     } catch (e) {
-      print(e);
+      print("DEBUG MAI PROFIL ERROR: $e");
       setState(() {
         isLoading = false;
       });
     }
-  }
-
-  Future<void> logout() async {
+  }  Future<void> logout() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.clear();
 
@@ -92,94 +92,110 @@ class _ProfilKurirScreenState extends State<ProfilKurirScreen> {
   Widget build(BuildContext context) {
     if (isLoading) {
       return const Scaffold(
-        backgroundColor: background,
-        body: Center(child: CircularProgressIndicator(color: primary)),
+        backgroundColor: backgroundColor,
+        body: Center(child: CircularProgressIndicator(color: primaryColor, strokeWidth: 4)),
       );
     }
 
+    // Bersihkan endpoint '/api' agar domain mengarah ke server utama untuk load gambar secara aman
+    final String cleanBaseUrl = AppConfig.baseUrl.replaceAll('/api', '');
+
     return Scaffold(
-      backgroundColor: background,
+      backgroundColor: backgroundColor,
       body: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
         child: Column(
           children: [
-            // ================= HEADER PROFILE (GRADIENT) =================
+            // ================= HEADER PROFILE (GRADIENT SENIOR) =================
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.only(top: 60, bottom: 30),
+              padding: const EdgeInsets.only(top: 70, bottom: 40),
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [primary, secondary],
+                  colors: [primaryColor, Color(0xFF2E6B2E)],
                 ),
                 borderRadius: BorderRadius.vertical(bottom: Radius.circular(36)),
               ),
               child: Column(
                 children: [
-                  Stack(
-                    children: [
-                      Container(
-                        width: 110,
-                        height: 110,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 4),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              blurRadius: 12,
-                              offset: const Offset(0, 6),
-                            )
-                          ],
-                        ),
-                        child: ClipOval(
-                          child: fotoPath != null && fotoPath!.isNotEmpty
-                              ? Image.network(
-                            "$baseUrlServer/$fotoPath",
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) =>
-                            const Icon(Icons.person, size: 50, color: Colors.white),
-                          )
-                              : const Icon(Icons.person, size: 50, color: Colors.white),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    namaKurir,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
+                  // LINGKARAN FOTO PROFIL BESAR
+                  Container(
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 4),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.15),
+                          blurRadius: 16,
+                          offset: const Offset(0, 8),
+                        )
+                      ],
+                    ),
+                    child: ClipOval(
+                      child: fotoPath != null && fotoPath!.isNotEmpty
+                          ? Image.network(
+                        "$cleanBaseUrl/$fotoPath",
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) =>
+                        const Icon(Icons.person_rounded, size: 60, color: Colors.white),
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return const Center(child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2));
+                        },
+                      )
+                          : const Icon(Icons.person_rounded, size: 60, color: Colors.white),
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    "Petugas Kurir Lapangan",
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 14,
+                  const SizedBox(height: 18),
+                  Text(
+                    namaKurir,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 24, // Diperbesar agar jelas terbaca lansia
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Text(
+                      "Petugas Kurir Lapangan",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.3,
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: 30),
 
             // ================= INFO CARDS =================
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    "Informasi Pribadi",
+                    "Informasi Pribadi Akun",
                     style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: darkText,
+                      fontSize: 19,
+                      fontWeight: FontWeight.w900,
+                      color: darkTextColor,
+                      letterSpacing: -0.3,
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -191,69 +207,74 @@ class _ProfilKurirScreenState extends State<ProfilKurirScreen> {
                       borderRadius: BorderRadius.circular(24),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(.03),
-                          blurRadius: 18,
+                          color: Colors.black.withOpacity(.04),
+                          blurRadius: 16,
                           offset: const Offset(0, 6),
                         ),
                       ],
                     ),
                     child: Column(
                       children: [
-                        _buildInfoTile(Icons.email_outlined, "Email", emailKurir),
-                        const Divider(height: 24),
-                        _buildInfoTile(Icons.phone_android_outlined, "Nomor HP", noHpKurir),
-                        const Divider(height: 24),
-                        _buildInfoTile(Icons.location_on_outlined, "Alamat Tugas", alamatKurir),
+                        _buildInfoTile(Icons.email_rounded, "EMAIL AKTIF", emailKurir),
+                        const Divider(height: 28, thickness: 1, color: Color(0xFFEEEEEE)),
+                        _buildInfoTile(Icons.phone_android_rounded, "NOMOR HANDPHONE", noHpKurir),
+                        const Divider(height: 28, thickness: 1, color: Color(0xFFEEEEEE)),
+                        _buildInfoTile(Icons.location_on_rounded, "ALAMAT TUGAS", alamatKurir),
                       ],
                     ),
                   ),
 
-                  const SizedBox(height: 30),
+                  const SizedBox(height: 36),
 
-                  // ================= TOMBOL LOGOUT =================
+                  // ================= TOMBOL LOGOUT RAKSASA MERAH CONTRAS =================
                   SizedBox(
                     width: double.infinity,
-                    height: 55,
+                    height: 58,
                     child: ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.red.shade50,
                         elevation: 0,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(18),
+                          borderRadius: BorderRadius.circular(16),
                         ),
-                        side: BorderSide(color: Colors.red.shade100),
+                        side: BorderSide(color: Colors.red.shade200, width: 1.5),
                       ),
                       onPressed: () {
                         showDialog(
                           context: context,
                           builder: (_) => AlertDialog(
-                            title: const Text("Logout"),
-                            content: const Text("Yakin ingin keluar akun?"),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                            title: const Text("Keluar Akun", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: darkTextColor)),
+                            content: const Text("Apakah Anda yakin ingin keluar dari akun aplikasi ASRI?", style: TextStyle(fontSize: 16)),
                             actions: [
                               TextButton(
                                 onPressed: () => Navigator.pop(context),
-                                child: const Text("Batal"),
+                                child: const Text("Batal", style: TextStyle(color: greyTextColor, fontSize: 16, fontWeight: FontWeight.bold)),
                               ),
                               ElevatedButton(
-                                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.red.shade700,
+                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                ),
                                 onPressed: () {
                                   Navigator.pop(context);
                                   logout();
                                 },
-                                child: const Text("Logout", style: TextStyle(color: Colors.white)),
+                                child: const Text("Ya, Keluar", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
                               ),
                             ],
                           ),
                         );
                       },
-                      icon: const Icon(Icons.logout, color: Colors.red),
-                      label: const Text(
-                        "Keluar Akun",
-                        style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 16),
+                      icon: Icon(Icons.power_settings_new_rounded, color: Colors.red.shade700, size: 24), // Tombol power merah tegas
+                      label: Text(
+                        "KELUAR DARI APLIKASI",
+                        style: TextStyle(color: Colors.red.shade800, fontWeight: FontWeight.w900, fontSize: 14, letterSpacing: 0.5),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 120),
+                  const SizedBox(height: 140),
                 ],
               ),
             ),
@@ -261,50 +282,67 @@ class _ProfilKurirScreenState extends State<ProfilKurirScreen> {
         ),
       ),
 
-      // ================= NAVIGATION DOCKED ELEMENTS =================
+      // ================= NAVIGATION DOCKED ELEMENTS (SETEMA) =================
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: primary,
-        onPressed: () {
-          // SINKRON: Lempar variabel idJadwalAktif yang didapat dari API
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => ScanBarcodePage(jadwalId: idJadwalAktif),
+      floatingActionButton: Container(
+        height: 72,
+        width: 72,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: primaryColor.withOpacity(0.4),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
             ),
-          );
-        },
-        child: const Icon(Icons.qr_code_scanner, color: Colors.white, size: 32),
+          ],
+        ),
+        child: FloatingActionButton(
+          elevation: 0,
+          backgroundColor: primaryColor,
+          shape: const CircleBorder(),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => ScanBarcodePage(jadwalId: idJadwalAktif),
+              ),
+            );
+          },
+          child: const Icon(Icons.qr_code_scanner_rounded, color: Colors.white, size: 32),
+        ),
       ),
       bottomNavigationBar: BottomAppBar(
         shape: const CircularNotchedRectangle(),
-        notchMargin: 8,
-        height: 74,
+        notchMargin: 10,
+        elevation: 24,
+        color: Colors.white,
+        shadowColor: primaryColor.withOpacity(0.4),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
             _navItem(
-              icon: Icons.home_outlined,
+              icon: Icons.home_rounded,
               label: "Beranda",
               active: false,
               onTap: () => Navigator.pop(context),
             ),
             _navItem(
-              icon: Icons.history,
+              icon: Icons.assignment_turned_in_rounded,
               label: "Riwayat",
               active: false,
               onTap: () {},
             ),
-            const SizedBox(width: 40),
+            const SizedBox(width: 48),
             _navItem(
-              icon: Icons.notifications_none,
-              label: "Notif",
+              icon: Icons.notifications_rounded,
+              label: "Notifikasi",
               active: false,
               onTap: () {},
             ),
             _navItem(
-              icon: Icons.person,
-              label: "Profil",
+              icon: Icons.account_circle_rounded,
+              label: "Akun Saya",
               active: true,
               onTap: () {},
             ),
@@ -318,18 +356,27 @@ class _ProfilKurirScreenState extends State<ProfilKurirScreen> {
     return Row(
       children: [
         Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(color: softGreen, borderRadius: BorderRadius.circular(12)),
-          child: Icon(icon, color: primary, size: 22),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+              color: primaryColor.withOpacity(0.08),
+              shape: BoxShape.circle
+          ),
+          child: Icon(icon, color: primaryColor, size: 24),
         ),
         const SizedBox(width: 16),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label, style: const TextStyle(color: greyText, fontSize: 12)),
+              Text(
+                  label,
+                  style: const TextStyle(color: greyTextColor, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.5)
+              ),
               const SizedBox(height: 4),
-              Text(value, style: const TextStyle(color: darkText, fontWeight: FontWeight.bold, fontSize: 14)),
+              Text(
+                  value,
+                  style: const TextStyle(color: darkTextColor, fontWeight: FontWeight.w900, fontSize: 16) // Diperbesar
+              ),
             ],
           ),
         ),
@@ -348,14 +395,14 @@ class _ProfilKurirScreenState extends State<ProfilKurirScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, color: active ? primary : Colors.grey),
+          Icon(icon, size: 26, color: active ? primaryColor : Colors.grey.shade600),
           const SizedBox(height: 4),
           Text(
             label,
             style: TextStyle(
               fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: active ? primary : Colors.grey,
+              fontWeight: FontWeight.w900,
+              color: active ? primaryColor : Colors.grey.shade600,
             ),
           ),
         ],

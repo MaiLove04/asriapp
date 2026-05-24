@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
-import '../services/dashboard_kurir_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../services/dashboard_kurir_service.dart';
+import '../../config.dart'; // Tetap terhubung aman dengan AppConfig kamu
 import '../login_screen.dart';
 import '../kurir/JadwalJemputScreen.dart';
 import 'ProfilKurirScreen.dart';
+import 'RiwayatKurirScreen.dart';
 import 'ScanBarcode.dart';
 
-const primary = Color(0xFF2F6B2F);
-const secondary = Color(0xFF58C063);
-const softGreen = Color(0xFFEAF8EC);
-const background = Color(0xFFF7F8FA);
-const darkText = Color(0xFF1B1B1B);
-const greyText = Color(0xFF7A7A7A);
+// Palet warna dengan kontras tinggi (Senior-Friendly Theme)
+const primaryColor = Color(0xFF1E521E);     // Hijau lebih tua agar tulisan lebih kontras dan jelas
+const secondaryColor = Color(0xFF4CAF50);   // Hijau cerah untuk aksen visual
+const softGreenColor = Color(0xFFE8F5E9);   // Background komponen yang menyejukkan mata
+const backgroundColor = Color(0xFFF9FBF9);  // Putih bersih agar kontras teks maksimal
+const darkTextColor = Color(0xFF0D240D);    // Teks super pekat (hampir hitam-hijau) untuk keterbacaan prima
+const greyTextColor = Color(0xFF555555);    // Abu-abu yang lebih gelap agar tidak buram bagi mata tua
 
 class DashboardKurir extends StatefulWidget {
   const DashboardKurir({super.key});
@@ -40,18 +43,23 @@ class _DashboardKurirState extends State<DashboardKurir> {
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       int userId = prefs.getInt('user_id') ?? 0;
+
+      print("DEBUG MAI - User ID yang terbaca: $userId");
+
+      if (userId == 0) {
+        setState(() { isLoading = false; });
+        return;
+      }
+
       final result = await DashboardKurirService.getDashboard(userId);
 
       setState(() {
         dashboardData = result;
         isLoading = false;
       });
-      print(dashboardData);
     } catch (e) {
-      print(e);
-      setState(() {
-        isLoading = false;
-      });
+      print("DEBUG MAI - Error: $e");
+      setState(() { isLoading = false; });
     }
   }
 
@@ -65,14 +73,12 @@ class _DashboardKurirState extends State<DashboardKurir> {
   Widget build(BuildContext context) {
     if (isLoading) {
       return const Scaffold(
-        body: Center(child: CircularProgressIndicator(color: primary)),
+        backgroundColor: backgroundColor,
+        body: Center(child: CircularProgressIndicator(color: primaryColor, strokeWidth: 4)),
       );
     }
 
-    // Ambil ID jadwal aktif dari payload API Laravel kamu
     int idJadwalAktif = dashboardData?['jadwal']?['id'] ?? 0;
-
-    // Ambil list riwayat aktivitas dari database jika ada di JSON, jika tidak ada fallback ke list kosong []
     List<dynamic> aktivitasTerbaru = dashboardData?['aktivitas_terbaru'] ?? [];
 
     return PopScope(
@@ -83,16 +89,22 @@ class _DashboardKurirState extends State<DashboardKurir> {
         final keluar = await showDialog<bool>(
           context: context,
           builder: (_) => AlertDialog(
-            title: const Text("Keluar Aplikasi"),
-            content: const Text("Yakin ingin keluar aplikasi?"),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: const Text("Keluar Aplikasi", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: darkTextColor)),
+            content: const Text("Apakah Anda yakin ingin keluar dari aplikasi ASRI?", style: TextStyle(fontSize: 16)),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
-                child: const Text("Batal"),
+                child: const Text("Batal", style: TextStyle(color: greyTextColor, fontSize: 16, fontWeight: FontWeight.bold)),
               ),
               ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red.shade700,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
                 onPressed: () => Navigator.pop(context, true),
-                child: const Text("Keluar"),
+                child: const Text("Ya, Keluar", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
               ),
             ],
           ),
@@ -103,60 +115,58 @@ class _DashboardKurirState extends State<DashboardKurir> {
         }
       },
       child: Scaffold(
-        backgroundColor: background,
+        backgroundColor: backgroundColor,
         body: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
           child: Column(
             children: [
               _HeaderSection(onLogout: logout),
 
               Transform.translate(
-                offset: const Offset(0, -30),
+                offset: const Offset(0, -25),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: _ActiveMissionCard(dashboardData: dashboardData),
                 ),
               ),
 
-              Transform.translate(
-                offset: const Offset(0, -15),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Column(
-                    children: [
-                      _sectionTitle("Ringkasan Hari Ini"),
-                      const SizedBox(height: 16),
-                      _TodaySummarySection(dashboardData: dashboardData),
-                      const SizedBox(height: 28),
-                      _sectionTitle("Akses Cepat"),
-                      const SizedBox(height: 16),
-                      const _QuickActionsRow(),
-                      const SizedBox(height: 28),
-                      _sectionTitle("Performa Bulan Ini"),
-                      const SizedBox(height: 16),
-                      _InsightCard(dashboardData: dashboardData),
-                      const SizedBox(height: 28),
-                      _sectionTitle("Aktivitas Terbaru"),
-                      const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Column(
+                  children: [
+                    _sectionTitle("Ringkasan Hari Ini"),
+                    const SizedBox(height: 12),
+                    _TodaySummarySection(dashboardData: dashboardData),
+                    const SizedBox(height: 32),
+                    _sectionTitle("Menu Akses Cepat"),
+                    const SizedBox(height: 12),
+                    const _QuickActionsRow(),
+                    const SizedBox(height: 32),
+                    _sectionTitle("Catatan Performa"),
+                    const SizedBox(height: 12),
+                    _InsightCard(dashboardData: dashboardData),
+                    const SizedBox(height: 32),
+                    _sectionTitle("Riwayat Setor Terakhir"),
+                    const SizedBox(height: 12),
 
-                      // DInamis: Jika database memiliki data riwayat, tampilkan. Jika kosong, beri info.
-                      aktivitasTerbaru.isEmpty
-                          ? Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(20),
-                        decoration: cardDecoration(),
-                        child: const Center(
-                          child: Text(
-                            "Belum ada aktivitas transaksi hari ini",
-                            style: TextStyle(color: greyText, fontSize: 13),
-                          ),
+                    aktivitasTerbaru.isEmpty
+                        ? Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 16),
+                      decoration: cardDecoration(),
+                      child: const Center(
+                        child: Text(
+                          "Belum ada catatan setoran untuk hari ini",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: greyTextColor, fontSize: 15, fontWeight: FontWeight.bold),
                         ),
-                      )
-                          : Column(
-                        children: aktivitasTerbaru.map((item) => _ActivityCard(data: item)).toList(),
                       ),
-                      const SizedBox(height: 120),
-                    ],
-                  ),
+                    )
+                        : Column(
+                      children: aktivitasTerbaru.map((item) => _ActivityCard(data: item)).toList(),
+                    ),
+                    const SizedBox(height: 140),
+                  ],
                 ),
               ),
             ],
@@ -175,9 +185,10 @@ class _DashboardKurirState extends State<DashboardKurir> {
       child: Text(
         title,
         style: const TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-          color: darkText,
+          fontSize: 19,
+          fontWeight: FontWeight.w900,
+          color: darkTextColor,
+          letterSpacing: -0.3,
         ),
       ),
     );
@@ -190,7 +201,6 @@ class _TodaySummarySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Menghubungkan variabel total hasil timbangan & pendapatan dari database jika tersedia di API
     String totalBeratHariIni = dashboardData?['total_berat_hari_ini']?.toString() ?? '0';
     String totalPendapatanHariIni = dashboardData?['total_pendapatan_hari_ini']?.toString() ?? '0';
 
@@ -199,18 +209,20 @@ class _TodaySummarySection extends StatelessWidget {
         Expanded(
           child: _SummaryCard(
             icon: Icons.local_shipping,
-            title: "Tugas Hari Ini",
-            value: "${dashboardData?['total_pesanan'] ?? 0} Lokasi",
-            subtitle: "Kelola Jemputan",
+            title: "TUGAS HARI INI",
+            value: "${dashboardData?['total_pesanan'] ?? 0} Tempat",
+            subtitle: "Harus Dikunjungi",
+            accentColor: primaryColor,
           ),
         ),
-        const SizedBox(width: 14),
+        const SizedBox(width: 12),
         Expanded(
           child: _SummaryCard(
-            icon: Icons.recycling,
-            title: "Hasil Hari Ini",
+            icon: Icons.scale_rounded,
+            title: "TOTAL SAMPAH",
             value: "$totalBeratHariIni Kg",
             subtitle: "Rp $totalPendapatanHariIni",
+            accentColor: Colors.orange.shade800,
           ),
         ),
       ],
@@ -223,41 +235,47 @@ class _SummaryCard extends StatelessWidget {
   final String title;
   final String value;
   final String subtitle;
+  final Color accentColor;
 
   const _SummaryCard({
     required this.icon,
     required this.title,
     required this.value,
     required this.subtitle,
+    required this.accentColor,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 130,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.grey.withOpacity(.08)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(.03),
-            blurRadius: 18,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
+      height: 145,
+      padding: const EdgeInsets.all(16),
+      decoration: cardDecoration(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 18, color: primary),
+          Row(
+            children: [
+              Icon(icon, size: 24, color: accentColor),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                    title,
+                    style: const TextStyle(fontSize: 11, color: greyTextColor, fontWeight: FontWeight.w900, letterSpacing: 0.5)
+                ),
+              ),
+            ],
+          ),
           const Spacer(),
-          Text(title, style: const TextStyle(fontSize: 11, color: greyText)),
+          Text(
+              value,
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: darkTextColor, letterSpacing: -0.5)
+          ),
           const SizedBox(height: 4),
-          Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 4),
-          Text(subtitle, style: const TextStyle(fontSize: 12, color: Colors.green, fontWeight: FontWeight.w600)),
+          Text(
+              subtitle,
+              style: TextStyle(fontSize: 13, color: accentColor, fontWeight: FontWeight.w800)
+          ),
         ],
       ),
     );
@@ -273,8 +291,8 @@ class _QuickActionsRow extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         _MiniActionCard(
-          icon: Icons.list_alt_outlined,
-          title: "Daftar Jemput",
+          icon: Icons.assignment_rounded,
+          title: "Buka Tugas",
           onTap: () async {
             final result = await Navigator.push(
               context,
@@ -286,9 +304,20 @@ class _QuickActionsRow extends StatelessWidget {
             }
           },
         ),
-        const _MiniActionCard(icon: Icons.map_outlined, title: "Map"),
-        const _MiniActionCard(icon: Icons.delete_outline, title: "Data"),
-        const _MiniActionCard(icon: Icons.history, title: "Riwayat"),
+        const _MiniActionCard(icon: Icons.map_rounded, title: "Peta Lokasi"),
+        const _MiniActionCard(icon: Icons.bar_chart_rounded, title: "Lihat Data"),
+
+        // 🔥 SEKARANG SAMA: Ikon disamakan dengan Navbar bawah & Fitur langsung Aktif
+        _MiniActionCard(
+          icon: Icons.assignment_turned_in_rounded, // Samakan dengan navbar bawah
+          title: "Riwayat",
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const RiwayatKurirScreen()),
+            );
+          },
+        ),
       ],
     );
   }
@@ -306,32 +335,26 @@ class _MiniActionCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 78,
-        height: 90,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(22),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(.04),
-              blurRadius: 18,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
+        width: 82,
+        height: 98,
+        decoration: cardDecoration(),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(9),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: softGreen,
-                borderRadius: BorderRadius.circular(14),
+                color: primaryColor.withOpacity(0.08),
+                shape: BoxShape.circle,
               ),
-              child: Icon(icon, size: 20, color: primary),
+              child: Icon(icon, size: 24, color: primaryColor),
             ),
             const SizedBox(height: 8),
-            Text(title, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
+            Text(
+                title,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: darkTextColor)
+            ),
           ],
         ),
       ),
@@ -346,34 +369,31 @@ class _PremiumBottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BottomAppBar(
-      height: 72,
+      height: 78,
       shape: const CircularNotchedRectangle(),
-      notchMargin: 8,
-      elevation: 12,
+      notchMargin: 10,
+      elevation: 24,
       color: Colors.white,
+      shadowColor: primaryColor.withOpacity(0.4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
+          _navItem(icon: Icons.home_rounded, label: "Beranda", active: true, onTap: () {}),
           _navItem(
-            icon: Icons.home,
-            label: "Beranda",
-            active: true,
-            onTap: () {},
-          ),
+              icon: Icons.assignment_turned_in_rounded,
+              label: "Riwayat",
+              onTap: () {
+                // 🔥 Buka halaman riwayat saat menu navigasi diklik
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const RiwayatKurirScreen()),
+                );
+              }
+          ),          const SizedBox(width: 48),
+          _navItem(icon: Icons.notifications_rounded, label: "Notifikasi", onTap: () {}),
           _navItem(
-            icon: Icons.history,
-            label: "Riwayat",
-            onTap: () {},
-          ),
-          const SizedBox(width: 40),
-          _navItem(
-            icon: Icons.notifications_none,
-            label: "Notif",
-            onTap: () {},
-          ),
-          _navItem(
-            icon: Icons.person_outline,
-            label: "Profil",
+            icon: Icons.account_circle_rounded,
+            label: "Akun Saya",
             onTap: () async {
               await Navigator.push(
                 context,
@@ -398,14 +418,14 @@ class _PremiumBottomNav extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, size: 22, color: active ? primary : Colors.grey),
+          Icon(icon, size: 26, color: active ? primaryColor : Colors.grey.shade600),
           const SizedBox(height: 4),
           Text(
             label,
             style: TextStyle(
               fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: active ? primary : Colors.grey,
+              fontWeight: FontWeight.w900,
+              color: active ? primaryColor : Colors.grey.shade600,
             ),
           ),
         ],
@@ -420,23 +440,27 @@ class _ScanFab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 🔥 PENGAMAN SCANNER: Jika tidak ada jadwal harian (id == 0), scanner dinonaktifkan
+    bool tidakAdaJadwal = (jadwalId == 0);
+
     return Container(
-      height: 68,
-      width: 68,
+      height: 72,
+      width: 72,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(.12),
-            blurRadius: 20,
+            color: tidakAdaJadwal ? Colors.transparent : primaryColor.withOpacity(0.4),
+            blurRadius: 16,
             offset: const Offset(0, 8),
           ),
         ],
       ),
       child: FloatingActionButton(
         elevation: 0,
-        backgroundColor: primary,
-        onPressed: () async {
+        backgroundColor: tidakAdaJadwal ? Colors.grey.shade400 : primaryColor,
+        shape: const CircleBorder(),
+        onPressed: tidakAdaJadwal ? null : () async {
           final result = await Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => ScanBarcodePage(jadwalId: jadwalId)),
@@ -447,7 +471,7 @@ class _ScanFab extends StatelessWidget {
             state?.getDashboard();
           }
         },
-        child: const Icon(Icons.qr_code_scanner, size: 30, color: Colors.white),
+        child: const Icon(Icons.qr_code_scanner_rounded, size: 32, color: Colors.white),
       ),
     );
   }
@@ -460,79 +484,71 @@ class _HeaderSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 165,
+      height: 170,
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [primary, secondary],
+          colors: [primaryColor, Color(0xFF2E6B2E)],
         ),
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(36)),
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(32)),
       ),
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.only(left: 20, right: 20, top: 20),
+          padding: const EdgeInsets.only(left: 20, right: 16, top: 12),
           child: Align(
             alignment: Alignment.topCenter,
             child: Row(
               children: [
-                _logo(),
+                Hero(
+                  tag: 'logo_asri',
+                  child: Container(
+                    width: 46,
+                    height: 46,
+                    decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                    child: ClipOval(child: Image.asset("assets/images/logo_asri.png", fit: BoxFit.contain)),
+                  ),
+                ),
                 const SizedBox(width: 12),
                 const Expanded(
                   child: Text(
                     "ASRI",
-                    style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                    style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w900, letterSpacing: 0.5),
                   ),
                 ),
-                const Padding(
-                  padding: EdgeInsets.only(right: 14),
-                  child: Icon(Icons.notifications_none, color: Colors.white, size: 24),
+                IconButton(
+                  icon: const Icon(Icons.notifications_rounded, color: Colors.white, size: 26),
+                  onPressed: () {},
                 ),
-                GestureDetector(
-                  onTap: () {
+                IconButton(
+                  icon: const Icon(Icons.power_settings_new_rounded, color: Colors.white, size: 26),
+                  onPressed: () {
                     showDialog(
                       context: context,
                       builder: (_) => AlertDialog(
-                        title: const Text("Logout"),
-                        content: const Text("Yakin ingin logout?"),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        title: const Text("Keluar Akun", style: TextStyle(fontWeight: FontWeight.bold)),
+                        content: const Text("Apakah Anda ingin keluar dari akun Anda saat ini?"),
                         actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: const Text("Batal"),
-                          ),
+                          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Batal", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16))),
                           ElevatedButton(
+                            style: ElevatedButton.styleFrom(backgroundColor: Colors.red.shade700, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
                             onPressed: () {
                               Navigator.pop(context);
                               onLogout();
                             },
-                            child: const Text("Logout"),
+                            child: const Text("Keluar", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
                           ),
                         ],
                       ),
                     );
                   },
-                  child: const Icon(Icons.logout, color: Colors.white, size: 24),
                 ),
               ],
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _logo() {
-    return Container(
-      width: 48,
-      height: 48,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        shape: BoxShape.circle,
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(.08), blurRadius: 12)],
-      ),
-      child: ClipOval(
-        child: Image.asset("assets/images/logo_asri.png", fit: BoxFit.cover),
       ),
     );
   }
@@ -544,17 +560,16 @@ class _ActiveMissionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final String? fotoPath = dashboardData?['jadwal']?['kurir']?['foto'];
-    const String baseUrlServer = "http://192.168.100.48:8000";
+    final String? fotoPath = dashboardData?['foto'];
+    final String cleanBaseUrl = AppConfig.baseUrl.replaceAll('/api', '');
 
     int totalTugas = dashboardData?['total_pesanan'] ?? 0;
-    // Ambil data pesanan selesai dari API untuk hitung progress bar linier secara akurat
     int tugasSelesai = dashboardData?['total_pesanan_selesai'] ?? 0;
-    double progressValue = totalTugas > 0 ? (tugasSelesai / totalTugas) : 0.0;
+    double progressValue = totalTugas > 0 ? (tugasSelesai  / totalTugas) : 0.0;
     int progressPercent = (progressValue * 100).toInt();
 
     return Container(
-      padding: const EdgeInsets.all(22),
+      padding: const EdgeInsets.all(20),
       decoration: cardDecoration(),
       child: Column(
         children: [
@@ -562,32 +577,28 @@ class _ActiveMissionCard extends StatelessWidget {
             children: [
               fotoPath != null && fotoPath.isNotEmpty
                   ? Container(
-                width: 52,
-                height: 52,
-                decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.grey),
+                width: 58,
+                height: 58,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: primaryColor.withOpacity(0.2), width: 2.5),
+                ),
                 child: ClipOval(
                   child: Image.network(
-                    "$baseUrlServer/$fotoPath",
+                    "$cleanBaseUrl/$fotoPath",
                     fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return const Icon(Icons.person, size: 28, color: Colors.white);
-                    },
+                    errorBuilder: (context, error, stackTrace) => const Icon(Icons.person, size: 32, color: greyTextColor),
                     loadingBuilder: (context, child, loadingProgress) {
                       if (loadingProgress == null) return child;
-                      return const Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(14.0),
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      );
+                      return const Center(child: Padding(padding: EdgeInsets.all(14.0), child: CircularProgressIndicator(strokeWidth: 2)));
                     },
                   ),
                 ),
               )
-                  : const CircleAvatar(
-                radius: 26,
-                backgroundColor: Colors.grey,
-                child: Icon(Icons.person, size: 28, color: Colors.white),
+                  : CircleAvatar(
+                radius: 29,
+                backgroundColor: primaryColor.withOpacity(0.08),
+                child: const Icon(Icons.person_rounded, size: 32, color: primaryColor),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -595,49 +606,45 @@ class _ActiveMissionCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "Halo, ${dashboardData?['nama_kurir'] ?? 'Kurir'} 👋",
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      "Selamat Bekerja,",
+                      style: TextStyle(color: greyTextColor, fontSize: 13, fontWeight: FontWeight.w600),
                     ),
-                    const SizedBox(height: 4),
-                    Text("Kurir Aktif • Online", style: TextStyle(color: greyText, fontSize: 12)),
+                    Text(
+                      "${dashboardData?['nama_kurir'] ?? 'Kurir'}",
+                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: darkTextColor, letterSpacing: -0.3),
+                    ),
                   ],
                 ),
               ),
-              _activeBadge(),
+              _activeBadge(context), // Mengirim context untuk mengecek data state
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
           const Align(
             alignment: Alignment.centerLeft,
-            child: Text(
-              "Jemputan Hari Ini",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
+            child: Text("Jadwal Jalan Hari Ini", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: darkTextColor)),
           ),
           const SizedBox(height: 4),
           Align(
-            alignment: Alignment.centerLeft,
-            child: Text("$totalTugas tugas aktif"),
+              alignment: Alignment.centerLeft,
+              child: Text("Ada $totalTugas lokasi yang harus dikunjungi", style: const TextStyle(fontSize: 15, color: greyTextColor, fontWeight: FontWeight.w600))
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 16),
           ClipRRect(
             borderRadius: BorderRadius.circular(12),
             child: LinearProgressIndicator(
               value: progressValue,
-              minHeight: 8,
-              backgroundColor: Colors.grey.shade100,
-              color: primary,
+              minHeight: 12,
+              backgroundColor: backgroundColor,
+              color: primaryColor,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           Row(
             children: [
-              Text(
-                "$progressPercent% selesai",
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
+              Text("$progressPercent% Selesai", style: const TextStyle(fontWeight: FontWeight.w900, color: darkTextColor, fontSize: 15)),
               const Spacer(),
-              _startButton(context),
+              _startButton(context), // Tombol Mulai Dinamis Terintegrasi
             ],
           ),
         ],
@@ -645,39 +652,65 @@ class _ActiveMissionCard extends StatelessWidget {
     );
   }
 
-  static Widget _activeBadge() {
+  // 🔥 UPDATE BADGE STATUS: Menyesuaikan status teks di pojok kanan kartu
+  static Widget _activeBadge(BuildContext context) {
+    final state = context.findAncestorStateOfType<_DashboardKurirState>();
+    int idJadwal = state?.dashboardData?['jadwal']?['id'] ?? 0;
+    bool tidakAdaTugas = (idJadwal == 0);
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(color: softGreen, borderRadius: BorderRadius.circular(20)),
-      child: const Text(
-        "AKTIF",
-        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: primary),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+      decoration: BoxDecoration(
+          color: tidakAdaTugas ? Colors.grey.shade200 : softGreenColor,
+          borderRadius: BorderRadius.circular(20)
+      ),
+      child: Text(
+          tidakAdaTugas ? "LIBUR" : "SIAP",
+          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: tidakAdaTugas ? Colors.grey.shade600 : primaryColor)
       ),
     );
   }
 
+  // 🔥 UPDATE TOMBOL DINAMIS: Otomatis terkunci (disabled) jika jadwal harian kosong (null)
   static Widget _startButton(BuildContext context) {
+    final state = context.findAncestorStateOfType<_DashboardKurirState>();
+    int idJadwal = state?.dashboardData?['jadwal']?['id'] ?? 0;
+    bool tidakAdaTugas = (idJadwal == 0);
+
     return ElevatedButton.icon(
-      onPressed: () async {
+      onPressed: tidakAdaTugas
+          ? null // Nilai null otomatis me-nonaktifkan tombol (disabled state bawaan Flutter)
+          : () async {
         final result = await Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const JadwalJemputScreen()),
         );
 
         if (result == true) {
-          final state = context.findAncestorStateOfType<_DashboardKurirState>();
           state?.getDashboard();
         }
       },
       style: ElevatedButton.styleFrom(
-        backgroundColor: primary,
-        foregroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        backgroundColor: tidakAdaTugas ? Colors.grey.shade300 : primaryColor,
+        foregroundColor: tidakAdaTugas ? Colors.grey.shade500 : Colors.white,
+        elevation: tidakAdaTugas ? 0 : 4,
+        shadowColor: primaryColor.withOpacity(0.4),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       ),
-      icon: const Icon(Icons.local_shipping, color: Colors.white),
-      label: const Text(
-        "MULAI",
-        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+      icon: Icon(
+          tidakAdaTugas ? Icons.block_rounded : Icons.play_circle_filled_rounded,
+          color: tidakAdaTugas ? Colors.grey.shade500 : Colors.white,
+          size: 20
+      ),
+      label: Text(
+        tidakAdaTugas ? "TIADA TUGAS" : "MULAI JEMPUT",
+        style: TextStyle(
+            color: tidakAdaTugas ? Colors.grey.shade600 : Colors.white,
+            fontWeight: FontWeight.w900,
+            fontSize: 14,
+            letterSpacing: 0.5
+        ),
       ),
     );
   }
@@ -689,22 +722,20 @@ class _InsightCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Membaca data performa bulanan secara dinamis dari database jika dikirim oleh API
     String beratBulanIni = dashboardData?['berat_bulan_ini']?.toString() ?? '0';
-    String keteranganTren = dashboardData?['keterangan_tren'] ?? 'Tetap semangat mengumpulkan sampah lingkungan.';
+    String keteranganTren = dashboardData?['keterangan_tren'] ?? 'Tetap semangat menjaga kebersihan lingkungan bersama ASRI.';
 
     return Container(
-      padding: const EdgeInsets.all(22),
+      padding: const EdgeInsets.all(20),
       decoration: cardDecoration(),
       child: Row(
         children: [
           Expanded(
             child: Text(
-              "Anda mengumpulkan $beratBulanIni Kg sampah bulan ini.\n$keteranganTren",
-              style: const TextStyle(height: 1.6),
+              "Bulan ini Bapak/Ibu sudah berhasil mengumpulkan total $beratBulanIni Kg sampah lingkungan.\n\n$keteranganTren",
+              style: const TextStyle(height: 1.5, color: darkTextColor, fontSize: 14, fontWeight: FontWeight.w600),
             ),
           ),
-          const Icon(Icons.trending_up, size: 44, color: primary),
         ],
       ),
     );
@@ -712,86 +743,49 @@ class _InsightCard extends StatelessWidget {
 }
 
 class _ActivityCard extends StatelessWidget {
-  // Menggunakan tipe data Map<String, dynamic> dinamis bawaan database, bukan dummy model lagi
   final Map<String, dynamic> data;
   const _ActivityCard({required this.data});
 
   @override
   Widget build(BuildContext context) {
-    // Pemetaan key disesuaikan dengan skema tabel database setor_sampah / jenis_sampah kamu
     String namaJenis = data['jenis_sampah']?['nama'] ?? 'Sampah';
     String tanggal = data['created_at_formatted'] ?? data['created_at'] ?? '-';
     String totalHarga = "Rp " + (data['total']?.toString() ?? '0');
     String beratSampah = (data['berat']?.toString() ?? '0') + " Kg";
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: Colors.grey.withOpacity(.08)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(.025),
-            blurRadius: 18,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(18),
+      decoration: cardDecoration(),
       child: Row(
         children: [
           Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(color: softGreen, borderRadius: BorderRadius.circular(16)),
-            child: const Icon(Icons.recycling, color: primary),
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(color: softGreenColor, shape: BoxShape.circle),
+            child: const Icon(Icons.check_circle_rounded, color: primaryColor, size: 26),
           ),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        namaJenis,
-                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                    _statusChip(),
-                  ],
-                ),
+                Text(namaJenis, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: darkTextColor)),
                 const SizedBox(height: 4),
-                Text(tanggal, style: const TextStyle(fontSize: 12, color: greyText)),
+                Text(tanggal, style: const TextStyle(fontSize: 12, color: greyTextColor, fontWeight: FontWeight.w600)),
               ],
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 12),
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text(
-                totalHarga,
-                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.green),
-              ),
+              Text(totalHarga, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: primaryColor)),
               const SizedBox(height: 4),
-              Text(beratSampah, style: const TextStyle(fontSize: 12, color: greyText)),
+              Text(beratSampah, style: const TextStyle(fontSize: 13, color: darkTextColor, fontWeight: FontWeight.w800)),
             ],
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _statusChip() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(color: softGreen, borderRadius: BorderRadius.circular(20)),
-      child: const Text(
-        "Selesai",
-        style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: primary),
       ),
     );
   }
@@ -800,12 +794,12 @@ class _ActivityCard extends StatelessWidget {
 BoxDecoration cardDecoration() {
   return BoxDecoration(
     color: Colors.white,
-    borderRadius: BorderRadius.circular(24),
+    borderRadius: BorderRadius.circular(20),
     boxShadow: [
       BoxShadow(
-        color: Colors.black.withOpacity(.04),
-        blurRadius: 24,
-        offset: const Offset(0, 8),
+        color: Colors.black.withOpacity(0.04),
+        blurRadius: 16,
+        offset: const Offset(0, 6),
       ),
     ],
   );
