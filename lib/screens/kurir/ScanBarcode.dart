@@ -1,9 +1,13 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
-import '../kurir/SetorSampahPage.dart';
-import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:asriapp/config.dart';
+import '../kurir/SetorSampahPage.dart';
+
+// 🎨 PALET WARNA UTAMA (Tema Konsisten Senior-Friendly Mai)
+const primaryColor = Color(0xFF1E521E);
+const backgroundColor = Color(0xFFF9FBF9);
 
 class ScanBarcodePage extends StatefulWidget {
   final int jadwalId;
@@ -24,27 +28,8 @@ class _ScanBarcodePageState extends State<ScanBarcodePage> {
     torchEnabled: false,
   );
 
+  // Status kunci agar tidak terjadi double-trigger navigasi saat scan
   bool isScanCompleted = false;
-
-  String namaNasabah = '-';
-  String nomorHp = '-';
-  String alamat = '-';
-  int? nasabahId; // Menyimpan temporary ID untuk tombol manual di bawah
-  String scannedBarcode = '';
-
-  // ==========================================
-  // PERBAIKAN: Tambahkan setState agar UI refresh saat scan ulang
-  // ==========================================
-  void closeScanner() {
-    setState(() {
-      isScanCompleted = false;
-      namaNasabah = '-';
-      nomorHp = '-';
-      alamat = '-';
-      nasabahId = null;
-      scannedBarcode = '';
-    });
-  }
 
   @override
   void dispose() {
@@ -55,43 +40,53 @@ class _ScanBarcodePageState extends State<ScanBarcodePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xffF4F6F9),
+      backgroundColor: backgroundColor,
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: Colors.green,
-        centerTitle: true,
+        backgroundColor: Colors.transparent,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
         title: const Text(
-          'Scan Barcode Nasabah',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
+          'Pindai Barcode Nasabah',
+          style: TextStyle(fontWeight: FontWeight.w900, color: Colors.white, fontSize: 20, letterSpacing: -0.5),
+        ),
+        centerTitle: true,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [primaryColor, Color(0xFF2E6B2E)],
+            ),
           ),
         ),
       ),
       body: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
         child: Padding(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
           child: Column(
             children: [
-              // ======================
-              // HEADER CARD
-              // ======================
+              // ========================================================
+              // HEADER CARD BANNER (Informasi Petunjuk Kurir)
+              // ========================================================
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(22),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                    colors: [
-                      Color(0xff198754),
-                      Color(0xff157347),
-                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [primaryColor, Color(0xFF2E6B2E)],
                   ),
                   borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.08),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
+                      color: primaryColor.withOpacity(0.15),
+                      blurRadius: 12,
+                      offset: const Offset(0, 6),
                     ),
                   ],
                 ),
@@ -102,91 +97,91 @@ class _ScanBarcodePageState extends State<ScanBarcodePage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Scanner Kurir',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                            ),
+                            'Scanner Aktif',
+                            style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w900, letterSpacing: -0.3),
                           ),
-                          const SizedBox(height: 8),
+                          SizedBox(height: 8),
                           Text(
-                            'Arahkan kamera ke barcode nasabah untuk melakukan setor sampah.',
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 14,
-                            ),
+                            'Arahkan kamera ke barcode nasabah. Sistem akan otomatis mengalihkan Anda ke formulir input berat sampah.',
+                            style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w600, height: 1.4),
                           ),
                         ],
                       ),
                     ),
+                    const SizedBox(width: 12),
                     Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
+                        color: Colors.white.withOpacity(0.15),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: const Icon(
                         Icons.qr_code_scanner_rounded,
-                        size: 45,
+                        size: 42,
                         color: Colors.white,
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 30),
 
-              // ======================
-              // SCANNER FIELD
-              // ======================
+              // ========================================================
+              // LIVE CAMERA SCANNER BLOCK (Murni Kotak Kamera)
+              // ========================================================
               Container(
-                height: 350,
+                height: 380, // Ukuran kotak kamera dibuat sedikit lebih besar dan lega
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(28),
+                  border: Border.all(color: Colors.grey.shade200, width: 2),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.06),
-                      blurRadius: 12,
-                      offset: const Offset(0, 5),
+                      color: Colors.black.withOpacity(0.04),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
                     ),
                   ],
                 ),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(28),
+                  borderRadius: BorderRadius.circular(26),
                   child: MobileScanner(
                     controller: controller,
                     onDetect: (capture) async {
+                      // Kunci agar tidak memproses scan berkali-kali dalam satu detik
                       if (isScanCompleted) return;
 
                       final List<Barcode> barcodes = capture.barcodes;
-                      for (final barcode in barcodes) {
-                        final String? kode = barcode.rawValue;
+                      if (barcodes.isEmpty) return;
 
-                        if (kode != null) {
-                          setState(() {
-                            isScanCompleted = true;
-                            scannedBarcode = kode;
-                          });
+                      final String? kode = barcodes.first.rawValue;
 
-                          try {
-                            final response = await http.get(
-                              Uri.parse('${AppConfig.baseUrl}/nasabah/qrcode/$kode'),
-                            );
+                      if (kode != null) {
+                        setState(() {
+                          isScanCompleted = true; // Kunci scanner aktif
+                        });
 
-                            if (response.statusCode == 200) {
-                              final data = jsonDecode(response.body);
+                        // Toast notifikasi loading kilat sebelum lompat halaman
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('🔍 Memproses Barcode Nasabah...'),
+                              duration: Duration(milliseconds: 700),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        }
 
-                              // Update UI peninjauan data di kartu bawah terlebih dahulu
-                              setState(() {
-                                nasabahId = data['id'];
-                                namaNasabah = data['name'] ?? '-';
-                                nomorHp = data['no_hp'] ?? '-'; // Sesuaikan key kolom HP dari backend API kamu
-                                alamat = data['alamat'] ?? '-';
-                              });
+                        try {
+                          final response = await http.get(
+                            Uri.parse('${AppConfig.baseUrl}/nasabah/qrcode/$kode'),
+                          );
 
-                              // Langsung arahkan otomatis ke Halaman Setor
+                          if (response.statusCode == 200) {
+                            final data = jsonDecode(response.body);
+
+                            if (mounted) {
+                              // Langsung lempar otomatis ke halaman formulir timbangan
                               final result = await Navigator.push(
                                 context,
                                 MaterialPageRoute(
@@ -195,195 +190,55 @@ class _ScanBarcodePageState extends State<ScanBarcodePage> {
                                     namaNasabah: data['name'],
                                     alamat: data['alamat'],
                                     barcode: kode,
-                                    // SINKRON: Teruskan variabel jadwalId milik widget utama ke SetorSampahPage
                                     jadwalId: widget.jadwalId,
                                   ),
                                 ),
                               );
 
-                              // Jika setelah setor berhasil ditekan tombol simpan, lempar sinyal sukses ke halaman sebelumnya (Dashboard/Jadwal)
+                              // Jika transaksi di form sukses disimpan, teruskan sinyal pulang ke dashboard
                               if (result == true && mounted) {
                                 Navigator.pop(context, true);
+                              } else {
+                                // 🛠️ Buka kembali lensa kamera jika kurir batal/pencet back dari halaman form
+                                setState(() {
+                                  isScanCompleted = false;
+                                });
                               }
-                            } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Nasabah tidak ditemukan')),
-                              );
-                              setState(() {
-                                isScanCompleted = false;
-                              });
                             }
-                          } catch (e) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Error: $e')),
-                            );
-                            setState(() {
-                              isScanCompleted = false;
-                            });
+                          } else {
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: const Text('❌ Kode barcode nasabah tidak terdaftar!'),
+                                  backgroundColor: Colors.red.shade800,
+                                  behavior: SnackBarBehavior.floating,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                ),
+                              );
+                            }
+                            setState(() { isScanCompleted = false; }); // Buka kembali scanner
                           }
+                        } catch (e) {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('⚠️ Gangguan Koneksi Backend: $e'),
+                                backgroundColor: Colors.red.shade800,
+                                behavior: SnackBarBehavior.floating,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                            );
+                          }
+                          setState(() { isScanCompleted = false; }); // Buka kembali scanner
                         }
                       }
                     },
                   ),
                 ),
               ),
-              const SizedBox(height: 24),
-
-              // ======================
-              // HASIL PENINJAUAN DATA SCAN
-              // ======================
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(22),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: Colors.green.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(18),
-                          ),
-                          child: const Icon(
-                            Icons.person,
-                            color: Colors.green,
-                            size: 30,
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start, // Ditambah AxisAlignment
-                            children: [
-                              Text(
-                                namaNasabah,
-                                style: const TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              const Text('Data Nasabah', style: TextStyle(color: Colors.grey)),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    infoTile(
-                      icon: Icons.phone,
-                      title: 'Nomor HP',
-                      value: nomorHp,
-                    ),
-                    const SizedBox(height: 14),
-                    infoTile(
-                      icon: Icons.location_on,
-                      title: 'Alamat',
-                      value: alamat,
-                    ),
-                    const SizedBox(height: 28),
-
-                    // BUTTON LANJUT MANUAL (Jika User tidak sengaja keluar kembali ke halaman ini)
-                    SizedBox(
-                      width: double.infinity,
-                      height: 55,
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(18),
-                          ),
-                          elevation: 0,
-                        ),
-                        onPressed: nasabahId == null
-                            ? null
-                            : () async {
-                          final result = await Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => SetorSampahPage(
-                                nasabahId: nasabahId!,
-                                namaNasabah: namaNasabah,
-                                alamat: alamat,
-                                barcode: scannedBarcode,
-                                jadwalId: widget.jadwalId,
-                              ),
-                            ),
-                          );
-                          if (result == true && mounted) {
-                            Navigator.pop(context, true);
-                          }
-                        },
-                        icon: const Icon(Icons.arrow_forward, color: Colors.white),
-                        label: const Text(
-                          'Lanjut Setor Sampah',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextButton(
-                      onPressed: closeScanner,
-                      child: const Text(
-                        'Scan Ulang',
-                        style: TextStyle(
-                          color: Colors.green,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget infoTile({
-    required IconData icon,
-    required String title,
-    required String value,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xffF8F9FA),
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: Colors.green),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: const TextStyle(color: Colors.grey, fontSize: 13)),
-                const SizedBox(height: 4),
-                Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }
