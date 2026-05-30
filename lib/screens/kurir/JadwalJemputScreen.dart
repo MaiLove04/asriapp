@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../config.dart';
 import '../services/jadwal_service.dart';
 import 'ScanBarcode.dart';
+import 'SetorSampahPage.dart';
 
 // Palet warna kontras tinggi (Senior-Friendly Theme)
 const primaryColor = Color(0xFF1E521E);     // Hijau tua pekat
@@ -242,34 +243,59 @@ class _JadwalJemputScreenState extends State<JadwalJemputScreen> {
                 : RefreshIndicator(
               color: primaryColor,
               onRefresh: getJadwal,
-              child: ListView.builder(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
-                itemCount: filteredList.length,
-                itemBuilder: (context, index) {
-                  final item = filteredList[index];
+              child: RefreshIndicator(
+                color: primaryColor,
+                onRefresh: getJadwal,
+                child: ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
+                  itemCount: filteredList.length,
+                  itemBuilder: (context, index) {
+                    final item = filteredList[index];
 
-                  // FIX JAM DARI TIMESTAMP DATABASE
-                  String jamFormatted = "--:--";
-                  if (item['created_at'] != null && item['created_at'].toString().length >= 16) {
-                    try {
-                      jamFormatted = item['created_at'].toString().substring(11, 16);
-                    } catch (e) {
-                      jamFormatted = "--:--";
+                    // FIX JAM DARI TIMESTAMP DATABASE
+                    String jamFormatted = "--:--";
+                    if (item['created_at'] != null && item['created_at'].toString().length >= 16) {
+                      try {
+                        jamFormatted = item['created_at'].toString().substring(11, 16);
+                      } catch (e) {
+                        jamFormatted = "--:--";
+                      }
                     }
-                  }
 
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 14),
-                    child: JadwalCard(
-                      id: item['id'] ?? 0,
-                      nama: item['nasabah']?['name'] ?? 'Tanpa Nama',
-                      alamat: item['alamat'] ?? 'Alamat tidak tersedia',
-                      jam: jamFormatted,
-                      status: item['status'] ?? 'terjadwal',
-                      onMulaiJemput: () => mulaiJemputKurir(item['id']),
-                    ),
-                  );
-                },
+                    String displayStatus = (item['status'] ?? 'terjadwal').toString().toLowerCase();
+                    bool isTerjadwal = (displayStatus == 'terjadwal' || displayStatus == 'pending');
+                    bool isProses = (displayStatus == 'proses' || displayStatus == 'on_progress');
+
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 14),
+                      child: JadwalCard(
+                        id: item['id'] ?? 0,
+                        nama: item['nasabah']?['name'] ?? 'Tanpa Nama',
+                        alamat: item['alamat'] ?? 'Alamat tidak tersedia',
+                        jam: jamFormatted,
+                        status: displayStatus,
+                        // Modifikasi fungsi tombol dinamis
+                        onMulaiJemput: () async {
+                          if (isTerjadwal) {
+                            // Jika masih terjadwal, jalankan fungsi update jadi proses
+                            mulaiJemputKurir(item['id']);
+                          } else if (isProses) {
+                            // 🔥 JALUR EMAS: Jika sudah dalam proses, klik tombol ini untuk langsung masuk timbang dengan ID JADWAL AKURAT!
+                            final refresh = await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => ScanBarcodePage(jadwalId: item['id']),
+                              ),
+                            );
+                            if (refresh == true) {
+                              getJadwal(); // Auto-refresh halaman agar status langsung berubah jadi SELESAI di tempat
+                            }
+                          }
+                        },
+                      ),
+                    );
+                  },
+                ),
               ),
             ),
           ),
@@ -498,27 +524,27 @@ class JadwalCard extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: isTerjadwal ? onMulaiJemput : null,
+                  onPressed: onMulaiJemput, // Selalu aktif jika status terjadwal atau proses
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryColor,
+                    backgroundColor: status.toLowerCase() == 'proses' ? Colors.orange.shade800 : primaryColor,
                     disabledBackgroundColor: Colors.grey.shade200,
                     minimumSize: const Size(0, 50),
-                    elevation: isTerjadwal ? 2 : 0,
+                    elevation: (status.toLowerCase() == 'selesai') ? 0 : 2,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   ),
                   icon: Icon(
-                      displayStatus == 'selesai' || displayStatus == 'completed'
+                      status.toLowerCase() == 'selesai'
                           ? Icons.check_circle_rounded
-                          : Icons.local_shipping_rounded,
-                      color: isTerjadwal ? Colors.white : Colors.grey.shade500,
+                          : (status.toLowerCase() == 'proses' ? Icons.scale_rounded : Icons.local_shipping_rounded),
+                      color: status.toLowerCase() == 'selesai' ? Colors.grey.shade500 : Colors.white,
                       size: 18
                   ),
                   label: Text(
-                    isTerjadwal
+                    status.toLowerCase() == 'terjadwal' || status.toLowerCase() == 'pending'
                         ? "MULAI JEMPUT"
-                        : (displayStatus == 'proses' || displayStatus == 'on_progress' ? "DALAM PROSES" : "SUDAH SELESAI"),
+                        : (status.toLowerCase() == 'proses' ? "TIMBANG SAMPAH" : "SUDAH SELESAI"),
                     style: TextStyle(
-                        color: isTerjadwal ? Colors.white : Colors.grey.shade600,
+                        color: status.toLowerCase() == 'selesai' ? Colors.grey.shade600 : Colors.white,
                         fontWeight: FontWeight.w900,
                         fontSize: 12,
                         letterSpacing: 0.3
