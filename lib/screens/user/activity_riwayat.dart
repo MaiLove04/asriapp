@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/setor_sampah_service.dart';
+import 'detail_riwayat.dart';
 
 const primaryColor = Color(0xFF1E521E);
 const secondaryColor = Color(0xFF4CAF50);
@@ -19,8 +20,11 @@ class RiwayatPage extends StatefulWidget {
 
 class _RiwayatPageState extends State<RiwayatPage> {
   bool isSetor = true;
-  DateTime selectedDate = DateTime.now();
+
+  // 🔥 KUNCI FILTER TANGGAL SPESIFIK
+  DateTime? selectedDate;
   String selectedJenis = "Semua";
+
   List<dynamic> riwayatRaw = [];
   bool isLoading = true;
 
@@ -37,7 +41,6 @@ class _RiwayatPageState extends State<RiwayatPage> {
       setState(() { isLoading = true; });
       SharedPreferences prefs = await SharedPreferences.getInstance();
 
-      // 🔥 JALUR AMAN: Cek semua tipe data (int maupun string) agar tidak salah baca
       int userId = 0;
       if (prefs.containsKey('user_id')) {
         final rawId = prefs.get('user_id');
@@ -50,7 +53,6 @@ class _RiwayatPageState extends State<RiwayatPage> {
 
       print("DEBUG MAI RIWAYAT - Mengambil data untuk User ID Valid: $userId");
 
-      // Pastikan data dikirim jika userId tidak bernilai 0
       if (userId != 0) {
         final result = await SetorSampahService.getRiwayat(userId: userId);
         setState(() {
@@ -58,7 +60,6 @@ class _RiwayatPageState extends State<RiwayatPage> {
           isLoading = false;
         });
       } else {
-        print("DEBUG MAI - Gagal memuat! user_id di memori HP terbaca 0 atau null.");
         setState(() { isLoading = false; });
       }
     } catch (e) {
@@ -66,6 +67,32 @@ class _RiwayatPageState extends State<RiwayatPage> {
       setState(() { isLoading = false; });
     }
   }
+
+  // Pop-up Kalender Pemilih Tanggal
+  Future<void> pickDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: selectedDate ?? DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2030),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+                primary: primaryColor,
+                onPrimary: Colors.white,
+                onSurface: darkTextColor
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null) {
+      setState(() { selectedDate = picked; });
+    }
+  }
+
   String formatDuitRupiah(dynamic nominalRaw) {
     try {
       int angka = int.parse(nominalRaw.toString().replaceAll(RegExp(r'[^0-9]'), ''));
@@ -79,12 +106,45 @@ class _RiwayatPageState extends State<RiwayatPage> {
 
   @override
   Widget build(BuildContext context) {
-    String formattedDate = DateFormat("MMM yyyy").format(selectedDate);
+    // 🔥 FORMAT TEKS TOMBOL: Menampilkan format Hari, Tanggal Bulan Tahun Penuh (Contoh: 02 Jun 2026)
+    String textTombolTanggal = selectedDate != null
+        ? DateFormat("dd MMM yyyy").format(selectedDate!)
+        : "Pilih Tanggal";
 
+    // 🔥 LOGIKA FILTER SPESIFIK HARI H REAL-TIME
     List<dynamic> riwayatDiFilter = riwayatRaw.where((item) {
+      // 1. FILTER BERDASARKAN TAB (SETOR VS TARIK)
       String jenisTx = (item['jenis_transaksi'] ?? 'masuk').toString().toLowerCase();
       bool adalahTarikTunai = jenisTx.contains('keluar') || jenisTx.contains('tarik');
-      return isSetor ? !adalahTarikTunai : adalahTarikTunai;
+
+      bool cocokTab = isSetor ? !adalahTarikTunai : adalahTarikTunai;
+      if (!cocokTab) return false;
+
+      // 2. 🔥 FILTER SPESIFIK SAMPAI KE HARI/TANGGAL YANG SAMA
+      if (selectedDate != null) {
+        String rawDateStr = item['created_at'] ?? ''; // Format bawaan MySQL: YYYY-MM-DD HH:MM:SS
+        if (rawDateStr.isNotEmpty) {
+          DateTime itemDate = DateTime.parse(rawDateStr);
+
+          // Memastikan Hari, Bulan, dan Tahun COCOK PERSIS 100%
+          if (itemDate.year != selectedDate!.year ||
+              itemDate.month != selectedDate!.month ||
+              itemDate.day != selectedDate!.day) {
+            return false;
+          }
+        }
+      }
+
+      // 3. FILTER DROPDOWN KATEGORI
+      if (isSetor && selectedJenis != "Semua") {
+        String judulDinamis = (item['judul_dinamis'] ?? '').toString().toLowerCase();
+        String kueriFilter = selectedJenis.toLowerCase();
+        if (!judulDinamis.contains(kueriFilter)) {
+          return false;
+        }
+      }
+
+      return true;
     }).toList();
 
     return Scaffold(
@@ -98,6 +158,19 @@ class _RiwayatPageState extends State<RiwayatPage> {
           onPressed: () => Navigator.pop(context),
           icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 22),
         ),
+        actions: [
+          if (selectedDate != null || selectedJenis != "Semua")
+            IconButton(
+              icon: const Icon(Icons.refresh_rounded, color: Colors.white),
+              tooltip: "Reset Filter",
+              onPressed: () {
+                setState(() {
+                  selectedDate = null;
+                  selectedJenis = "Semua";
+                });
+              },
+            )
+        ],
       ),
       body: Column(
         children: [
@@ -116,7 +189,9 @@ class _RiwayatPageState extends State<RiwayatPage> {
                         text: "Setor Sampah",
                         icon: Icons.recycling_rounded,
                         isActive: isSetor,
-                        onTap: () => setState(() => isSetor = true),
+                        onTap: () => setState(() {
+                          isSetor = true;
+                        }),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -125,7 +200,10 @@ class _RiwayatPageState extends State<RiwayatPage> {
                         text: "Tarik Tunai",
                         icon: Icons.monetization_on_rounded,
                         isActive: !isSetor,
-                        onTap: () => setState(() => isSetor = false),
+                        onTap: () => setState(() {
+                          isSetor = false;
+                          selectedJenis = "Semua";
+                        }),
                       ),
                     ),
                   ],
@@ -133,7 +211,7 @@ class _RiwayatPageState extends State<RiwayatPage> {
                 const SizedBox(height: 16),
                 Row(
                   children: [
-                    Expanded(child: _filterTanggal(formattedDate)),
+                    Expanded(child: _filterTanggal(textTombolTanggal)),
                     const SizedBox(width: 12),
                     Expanded(child: isSetor ? _filterJenis() : _filterDisabledPlaceholder()),
                   ],
@@ -153,11 +231,17 @@ class _RiwayatPageState extends State<RiwayatPage> {
                 physics: const AlwaysScrollableScrollPhysics(),
                 children: [
                   SizedBox(height: MediaQuery.of(context).size.height * 0.2),
-                  const Center(
-                    child: Text(
-                      "Belum ada catatan aktivitas transaksi.",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontWeight: FontWeight.bold, color: greyTextColor),
+                  Center(
+                    child: Column(
+                      children: [
+//  KODE YANG BENAR & DIJAMIN AMAN:
+                        Icon(Icons.event_busy_rounded, size: 54, color: greyTextColor.withOpacity(0.5)),                        const SizedBox(height: 12),
+                        const Text(
+                          "Tidak ada transaksi di tanggal ini.",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontWeight: FontWeight.bold, color: greyTextColor, height: 1.4),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -181,7 +265,14 @@ class _RiwayatPageState extends State<RiwayatPage> {
                     price: formatDuitRupiah(hargaDuit),
                     date: tanggalFormatted,
                     isPenarikan: !isSetor,
-                    onTap: () {},
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => DetailRiwayatPage(data: item),
+                        ),
+                      );
+                    },
                   );
                 },
               ),
@@ -214,16 +305,25 @@ class _RiwayatPageState extends State<RiwayatPage> {
   }
 
   Widget _filterTanggal(String text) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
-      decoration: BoxDecoration(color: Colors.white.withOpacity(0.15), borderRadius: BorderRadius.circular(16)),
-      child: Row(
-        children: [
-          const Icon(Icons.calendar_month_rounded, color: Colors.white, size: 18),
-          const SizedBox(width: 6),
-          Expanded(child: Text(text, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold))),
-          const Icon(Icons.arrow_drop_down, color: Colors.white),
-        ],
+    return GestureDetector(
+      onTap: pickDate,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
+        decoration: BoxDecoration(color: Colors.white.withOpacity(0.15), borderRadius: BorderRadius.circular(16)),
+        child: Row(
+          children: [
+            const Icon(Icons.edit_calendar_rounded, color: Colors.white, size: 18),
+            const SizedBox(width: 6),
+            Expanded(
+                child: Text(
+                  text,
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                  overflow: TextOverflow.ellipsis,
+                )
+            ),
+            const Icon(Icons.arrow_drop_down, color: Colors.white),
+          ],
+        ),
       ),
     );
   }
@@ -237,9 +337,13 @@ class _RiwayatPageState extends State<RiwayatPage> {
           value: selectedJenis,
           dropdownColor: primaryColor,
           icon: const Icon(Icons.arrow_drop_down, color: Colors.white),
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
           items: jenisSampah.map((item) => DropdownMenuItem(value: item, child: Text(item))).toList(),
-          onChanged: (value) => setState(() => selectedJenis = value!),
+          onChanged: (value) {
+            setState(() {
+              selectedJenis = value!;
+            });
+          },
         ),
       ),
     );
@@ -252,7 +356,7 @@ class _RiwayatPageState extends State<RiwayatPage> {
       child: const Text(
         "Semua Mutasi",
         textAlign: TextAlign.center,
-        style: TextStyle(color: Colors.white60, fontWeight: FontWeight.bold, fontSize: 14),
+        style: TextStyle(color: Colors.white60, fontWeight: FontWeight.bold, fontSize: 13),
       ),
     );
   }
