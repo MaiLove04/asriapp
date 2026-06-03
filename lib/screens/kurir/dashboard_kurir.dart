@@ -464,7 +464,8 @@ class _ScanFab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    bool tidakAdaJadwal = (jadwalId == 0);
+    // Tombol scan sekarang selalu aktif (Biru/Hijau jika ada jadwal, Orange jika request umum)
+    bool adaJadwal = (jadwalId != 0);
 
     return Container(
       height: 72,
@@ -473,7 +474,7 @@ class _ScanFab extends StatelessWidget {
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
-            color: tidakAdaJadwal ? Colors.transparent : primaryColor.withOpacity(0.4),
+            color: (adaJadwal ? primaryColor : Colors.orange).withOpacity(0.4),
             blurRadius: 16,
             offset: const Offset(0, 8),
           ),
@@ -481,9 +482,10 @@ class _ScanFab extends StatelessWidget {
       ),
       child: FloatingActionButton(
         elevation: 0,
-        backgroundColor: tidakAdaJadwal ? Colors.grey.shade400 : primaryColor,
+        backgroundColor: adaJadwal ? primaryColor : Colors.orange,
         shape: const CircleBorder(),
-        onPressed: tidakAdaJadwal ? null : () async {
+        onPressed: () async {
+          // Jika ada jadwal aktif, kirim ID-nya. Jika tidak (klik tombol scan langsung), kirim 0.
           final result = await Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => ScanBarcodePage(jadwalId: jadwalId)),

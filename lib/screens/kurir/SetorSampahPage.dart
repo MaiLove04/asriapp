@@ -60,7 +60,7 @@ class _SetorSampahPageState extends State<SetorSampahPage> {
   int _grandTotalSemua = 0;
   int _selectedIndexKeranjang = 0;
 
-  bool get isRealRequestNasabah => widget.jadwalId != 0 && _isRequestDataFromNasabah;
+  bool get isRealRequestNasabah => widget.jadwalId == 0 && _isRequestDataFromNasabah;
 
   @override
   void initState() {
@@ -70,7 +70,8 @@ class _SetorSampahPageState extends State<SetorSampahPage> {
 
   Future<void> _loadInitialData() async {
     await _getJenisSampah();
-    if (widget.jadwalId != 0) {
+    // Autoload hanya dilakukan jika masuk melalui jalur Scan (jadwalId == 0)
+    if (widget.jadwalId == 0) {
       await _cekDanAutoloadRequestNasabah();
     }
   }
@@ -362,33 +363,38 @@ class _SetorSampahPageState extends State<SetorSampahPage> {
               border: Border.all(color: Colors.orange.shade200),
             ),
             child: const Text(
-              "Pilih item di tabel bawah terlebih dahulu, lalu masukkan beratnya.",
+              "Mode Request Nasabah: Jenis sampah sudah terisi otomatis. Silakan pilih item di tabel bawah untuk mengisi beratnya.",
               style: TextStyle(fontSize: 12, color: Colors.orange),
             ),
           )
-        else if (_jenisSampahList.isEmpty && !isRealRequestNasabah)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 8.0),
-            child: LinearProgressIndicator(color: AppColors.primary, backgroundColor: AppColors.softGreen),
-          )
         else
-          DropdownButtonFormField<JenisSampah>(
-            value: _selectedJenisSampah,
-            isExpanded: true,
-            decoration: InputDecoration(
-              labelText: "Pilih Jenis Sampah",
-              hintText: _jenisSampahList.isEmpty ? "Data sampah tidak ditemukan" : "Pilih kategori",
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-            items: _jenisSampahList.map((item) {
-              return DropdownMenuItem<JenisSampah>(
-                value: item,
-                child: Text(item.nama),
-              );
-            }).toList(),
-            onChanged: (value) => setState(() => _selectedJenisSampah = value),
+          Column(
+            children: [
+              if (_jenisSampahList.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8.0),
+                  child: LinearProgressIndicator(color: AppColors.primary, backgroundColor: AppColors.softGreen),
+                )
+              else
+                DropdownButtonFormField<JenisSampah>(
+                  value: _selectedJenisSampah,
+                  isExpanded: true,
+                  decoration: InputDecoration(
+                    labelText: "Pilih Jenis Sampah",
+                    hintText: _jenisSampahList.isEmpty ? "Data sampah tidak ditemukan" : "Pilih kategori",
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  items: _jenisSampahList.map((item) {
+                    return DropdownMenuItem<JenisSampah>(
+                      value: item,
+                      child: Text(item.nama),
+                    );
+                  }).toList(),
+                  onChanged: (value) => setState(() => _selectedJenisSampah = value),
+                ),
+              const SizedBox(height: 12),
+            ],
           ),
-        const SizedBox(height: 12),
         Row(
           children: [
             Expanded(
