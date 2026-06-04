@@ -323,8 +323,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             _menuItem(Icons.delete_sweep_rounded, "Setor\nSampah", () {
                               Navigator.push(context, MaterialPageRoute(builder: (context) => const SetorSampahScreen()));
                             }),
-                            _menuItem(Icons.monetization_on_rounded, "Tarik\nTunai", () {
-                              Navigator.push(context, MaterialPageRoute(builder: (context) => const TarikTunaiPage()));
+                            _menuItem(Icons.monetization_on_rounded, "Tarik\nTunai", () async {
+                              final result = await Navigator.push(context, MaterialPageRoute(builder: (context) => const TarikTunaiPage()));
+                              if (result == true) {
+                                fetchDashboardData();
+                              }
                             }),
                             _menuItem(Icons.support_agent_rounded, "Bantuan", () {}),
                           ],

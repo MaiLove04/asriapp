@@ -110,9 +110,13 @@ class _SetorSampahPageState extends State<SetorSampahPage> {
 
           _hitungGrandTotal();
         });
+        _tampilkanPesan("✅ Data request berhasil dimuat!", AppColors.primary);
+      } else {
+        _tampilkanPesan("ℹ️ Nasabah tidak punya request aktif. Mode manual aktif.", Colors.blue);
       }
     } catch (e) {
       debugPrint("Gagal memuat request detail: $e");
+      _tampilkanPesan("Gagal memuat data request nasabah", Colors.red);
     } finally {
       if (mounted) setState(() => _isAutoloadLoading = false);
     }

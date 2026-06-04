@@ -81,6 +81,7 @@ class _DashboardKurirState extends State<DashboardKurir> {
     }
 
     int idJadwalAktif = dashboardData?['jadwal']?['id'] ?? 0;
+    int nasabahIdJadwal = dashboardData?['jadwal']?['nasabah_id'] ?? dashboardData?['jadwal']?['user_id'] ?? 0;
     List<dynamic> aktivitasTerbaru = dashboardData?['aktivitas_terbaru'] ?? [];
 
     return PopScope(
@@ -184,7 +185,7 @@ class _DashboardKurirState extends State<DashboardKurir> {
           ),
         ),
         floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-        floatingActionButton: _ScanFab(jadwalId: idJadwalAktif),
+        floatingActionButton: _ScanFab(jadwalId: idJadwalAktif, scheduledNasabahId: nasabahIdJadwal),
         bottomNavigationBar: _PremiumBottomNav(onRefresh: getDashboard),
       ),
     );
@@ -460,7 +461,8 @@ class _PremiumBottomNav extends StatelessWidget {
 
 class _ScanFab extends StatelessWidget {
   final int jadwalId;
-  const _ScanFab({required this.jadwalId});
+  final int scheduledNasabahId;
+  const _ScanFab({required this.jadwalId, required this.scheduledNasabahId});
 
   @override
   Widget build(BuildContext context) {
@@ -485,10 +487,13 @@ class _ScanFab extends StatelessWidget {
         backgroundColor: adaJadwal ? primaryColor : Colors.orange,
         shape: const CircleBorder(),
         onPressed: () async {
-          // Jika ada jadwal aktif, kirim ID-nya. Jika tidak (klik tombol scan langsung), kirim 0.
+          // Kirim info jadwal dan siapa nasabah jadwalnya
           final result = await Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => ScanBarcodePage(jadwalId: jadwalId)),
+            MaterialPageRoute(builder: (context) => ScanBarcodePage(
+              jadwalId: jadwalId,
+              scheduledNasabahId: scheduledNasabahId,
+            )),
           );
 
           if (result == true) {

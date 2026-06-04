@@ -123,4 +123,35 @@ class SetorSampahService {
     var streamedResponse = await request.send();
     return await http.Response.fromStream(streamedResponse);
   }
+
+  // ================= 6. TARIK TUNAI SALDO =================
+  static Future<Map<String, dynamic>> tarikTunai({
+    required int userId,
+    required int nominal,
+  }) async {
+    try {
+      final url = Uri.parse('${AppConfig.baseUrl}/tarik-tunai');
+      final response = await http.post(
+        url,
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+        },
+        body: jsonEncode({
+          "user_id": userId,
+          "nominal": nominal,
+        }),
+      );
+
+      return {
+        "status": response.statusCode,
+        "data": jsonDecode(response.body),
+      };
+    } catch (e) {
+      return {
+        "status": 500,
+        "data": {"message": "Gagal terhubung ke server: $e"},
+      };
+    }
+  }
 }

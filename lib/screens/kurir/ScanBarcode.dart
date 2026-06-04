@@ -11,10 +11,12 @@ const backgroundColor = Color(0xFFF9FBF9);
 
 class ScanBarcodePage extends StatefulWidget {
   final int jadwalId;
+  final int scheduledNasabahId;
 
   const ScanBarcodePage({
     super.key,
     required this.jadwalId,
+    this.scheduledNasabahId = 0,
   });
 
   @override
@@ -179,31 +181,87 @@ class _ScanBarcodePageState extends State<ScanBarcodePage> {
 
                           if (response.statusCode == 200) {
                             final data = jsonDecode(response.body);
+                            final int scannedNasabahId = data['id'];
+
+                            // LOGIKA PINTAR:
+                            // Jika yang discan ADALAH nasabah di jadwal -> Gunakan jadwalId asli.
+                            // Jika yang discan BUKAN nasabah di jadwal -> Gunakan jadwalId = 0 (Request Baru).
+                            int finalJadwalId = (scannedNasabahId == widget.scheduledNasabahId) 
+                                ? widget.jadwalId 
+                                : 0;
 
                             if (mounted) {
-                              // Langsung lempar otomatis ke halaman formulir timbangan
-                              final result = await Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => SetorSampahPage(
-                                    nasabahId: data['id'],
-                                    namaNasabah: data['name'],
-                                    alamat: data['alamat'],
-                                    barcode: kode,
-                                    jadwalId: widget.jadwalId,
+                              // Tampilkan Dialog Konfirmasi sebelum masuk ke halaman setor
+                              showDialog(
+                                context: context,
+                                barrierDismissible: false,
+                                builder: (ctx) => AlertDialog(
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                  title: Row(
+                                    children: [
+                                      const Icon(Icons.person_pin_rounded, color: primaryColor),
+                                      const SizedBox(width: 10),
+                                      const Text("Nasabah Ditemukan", style: TextStyle(fontWeight: FontWeight.bold)),
+                                    ],
                                   ),
+                                  content: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text("Nama: ${data['name']}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                      const SizedBox(height: 5),
+                                      Text("Alamat: ${data['alamat']}", style: const TextStyle(color: Colors.grey)),
+                                      const SizedBox(height: 15),
+                                      const Divider(),
+                                      Text(
+                                        finalJadwalId == 0 
+                                          ? "Mendeteksi Request Baru/Lainnya..." 
+                                          : "Mode Penjemputan Terjadwal.",
+                                        style: TextStyle(
+                                          fontStyle: FontStyle.italic, 
+                                          fontSize: 12, 
+                                          color: finalJadwalId == 0 ? Colors.orange.shade800 : primaryColor
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () {
+                                        Navigator.pop(ctx);
+                                        setState(() => isScanCompleted = false);
+                                      },
+                                      child: const Text("BATAL", style: TextStyle(color: Colors.red)),
+                                    ),
+                                    ElevatedButton(
+                                      style: ElevatedButton.styleFrom(backgroundColor: primaryColor, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+                                      onPressed: () async {
+                                        Navigator.pop(ctx);
+                                        // Baru pindah ke halaman timbangan
+                                        final result = await Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) => SetorSampahPage(
+                                              nasabahId: data['id'],
+                                              namaNasabah: data['name'],
+                                              alamat: data['alamat'],
+                                              barcode: kode,
+                                              jadwalId: finalJadwalId,
+                                            ),
+                                          ),
+                                        );
+
+                                        if (result == true && mounted) {
+                                          Navigator.pop(context, true);
+                                        } else {
+                                          setState(() => isScanCompleted = false);
+                                        }
+                                      },
+                                      child: const Text("PROSES", style: TextStyle(color: Colors.white)),
+                                    ),
+                                  ],
                                 ),
                               );
-
-                              // Jika transaksi di form sukses disimpan, teruskan sinyal pulang ke dashboard
-                              if (result == true && mounted) {
-                                Navigator.pop(context, true);
-                              } else {
-                                // 🛠️ Buka kembali lensa kamera jika kurir batal/pencet back dari halaman form
-                                setState(() {
-                                  isScanCompleted = false;
-                                });
-                              }
                             }
                           } else {
                             if (mounted) {
