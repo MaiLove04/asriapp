@@ -49,10 +49,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (status == 200) {
         String token = data['token'] ?? '';
-        String role = data['user']['role'] ?? '';
-        String name = data['user']['name'] ?? '';
-        String? foto = data['user']['foto'];
-        int idUser = data['user']['id'] ?? 0;
+        String role = data['user']['role']?.toString() ?? '';
+        String name = data['user']['name']?.toString() ?? '';
+        String? foto = data['user']['foto']?.toString();
+        int idUser = int.tryParse(data['user']['id']?.toString() ?? '0') ?? 0;
 
         print('TOKEN: $token');
         print('USER ID LOGIN: $idUser');
@@ -158,12 +158,12 @@ class _LoginScreenState extends State<LoginScreen> {
                       tag: 'logo_asri',
                       child: Image.asset(
                         "assets/images/logo_asri.png",
-                        width: 120,
-                        height: 120,
+                        width: 150,
+                        height: 150,
                         fit: BoxFit.contain,
                       ),
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 1),
 
                     // 🔥 TULISAN BRANDING BESAR "ASRI"
                     Text(

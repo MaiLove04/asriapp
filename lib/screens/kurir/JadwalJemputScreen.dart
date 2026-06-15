@@ -68,7 +68,15 @@ class _JadwalJemputScreenState extends State<JadwalJemputScreen> {
   Future<void> getJadwal() async {
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
-      int userId = prefs.getInt('user_id') ?? 0;
+      int userId = 0;
+      if (prefs.containsKey('user_id')) {
+        final rawId = prefs.get('user_id');
+        if (rawId is int) {
+          userId = rawId;
+        } else if (rawId is String) {
+          userId = int.tryParse(rawId) ?? 0;
+        }
+      }
       final result = await JadwalService.getJadwalKurir(userId);
 
       setState(() {
@@ -319,7 +327,7 @@ class _JadwalJemputScreenState extends State<JadwalJemputScreen> {
           backgroundColor: primaryColor,
           shape: const CircleBorder(),
           onPressed: () async {
-            int idJadwalTerpilih = jadwalList.isNotEmpty ? jadwalList[0]['id'] : 0;
+            int idJadwalTerpilih = int.tryParse(jadwalList.isNotEmpty ? jadwalList[0]['id']?.toString() ?? '0' : '0') ?? 0;
             final result = await Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => ScanBarcodePage(jadwalId: idJadwalTerpilih)),

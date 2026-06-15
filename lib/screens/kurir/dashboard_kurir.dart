@@ -40,11 +40,19 @@ class _DashboardKurirState extends State<DashboardKurir> {
     );
   }
 
-  // 🔥 DIUBAH: Mengembalikan Future agar bisa ditunggu oleh RefreshIndicator
   Future<void> getDashboard() async {
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
-      int userId = prefs.getInt('user_id') ?? 0;
+      
+      int userId = 0;
+      if (prefs.containsKey('user_id')) {
+        final rawId = prefs.get('user_id');
+        if (rawId is int) {
+          userId = rawId;
+        } else if (rawId is String) {
+          userId = int.tryParse(rawId) ?? 0;
+        }
+      }
 
       print("DEBUG MAI - User ID yang terbaca: $userId");
 
@@ -80,8 +88,8 @@ class _DashboardKurirState extends State<DashboardKurir> {
       );
     }
 
-    int idJadwalAktif = dashboardData?['jadwal']?['id'] ?? 0;
-    int nasabahIdJadwal = dashboardData?['jadwal']?['nasabah_id'] ?? dashboardData?['jadwal']?['user_id'] ?? 0;
+    int idJadwalAktif = int.tryParse(dashboardData?['jadwal']?['id']?.toString() ?? '0') ?? 0;
+    int nasabahIdJadwal = int.tryParse((dashboardData?['jadwal']?['nasabah_id'] ?? dashboardData?['jadwal']?['user_id'] ?? '0').toString()) ?? 0;
     List<dynamic> aktivitasTerbaru = dashboardData?['aktivitas_terbaru'] ?? [];
 
     return PopScope(
@@ -593,8 +601,8 @@ class _ActiveMissionCard extends StatelessWidget {
     final String? fotoPath = dashboardData?['foto'];
     final String cleanBaseUrl = AppConfig.baseUrl.replaceAll('/api', '');
 
-    int totalTugas = dashboardData?['total_pesanan'] ?? 0;
-    int tugasSelesai = dashboardData?['total_pesanan_selesai'] ?? 0;
+    int totalTugas = int.tryParse(dashboardData?['total_pesanan']?.toString() ?? '0') ?? 0;
+    int tugasSelesai = int.tryParse(dashboardData?['total_pesanan_selesai']?.toString() ?? '0') ?? 0;
     double progressValue = totalTugas > 0 ? (tugasSelesai  / totalTugas) : 0.0;
     int progressPercent = (progressValue * 100).toInt();
 
@@ -701,7 +709,7 @@ class _ActiveMissionCard extends StatelessWidget {
 
   static Widget _activeBadge(BuildContext context) {
     final state = context.findAncestorStateOfType<_DashboardKurirState>();
-    int idJadwal = state?.dashboardData?['jadwal']?['id'] ?? 0;
+    int idJadwal = int.tryParse(state?.dashboardData?['jadwal']?['id']?.toString() ?? '0') ?? 0;
     bool tidakAdaTugas = (idJadwal == 0);
 
     return Container(
@@ -719,7 +727,7 @@ class _ActiveMissionCard extends StatelessWidget {
 
   static Widget _startButton(BuildContext context) {
     final state = context.findAncestorStateOfType<_DashboardKurirState>();
-    int idJadwal = state?.dashboardData?['jadwal']?['id'] ?? 0;
+    int idJadwal = int.tryParse(state?.dashboardData?['jadwal']?['id']?.toString() ?? '0') ?? 0;
     bool tidakAdaTugas = (idJadwal == 0);
 
     return ElevatedButton.icon(

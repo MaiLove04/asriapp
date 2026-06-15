@@ -47,7 +47,16 @@ class _NavigasiKurirPageState extends State<NavigasiKurirPage> {
   Future<void> _loadDataJadwalDariDatabase() async {
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
-      int userId = prefs.getInt('user_id') ?? 0; // ID Kurir yang login
+      
+      int userId = 0;
+      if (prefs.containsKey('user_id')) {
+        final rawId = prefs.get('user_id');
+        if (rawId is int) {
+          userId = rawId;
+        } else if (rawId is String) {
+          userId = int.tryParse(rawId) ?? 0;
+        }
+      }
 
       if (userId == 0) {
         setState(() { _isLoading = false; });

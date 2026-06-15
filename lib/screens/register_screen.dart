@@ -32,6 +32,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool isObscure = true;
   bool isObscureConfirm = true;
 
+  @override
+  void dispose() {
+    nameController.dispose();
+    emailController.dispose();
+    passwordController.dispose();
+    confirmPasswordController.dispose();
+    phoneController.dispose();
+    addressController.dispose();
+    super.dispose();
+  }
+
   // ================= FOTO =================
   Future<void> pickImage() async {
     final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
@@ -39,6 +50,90 @@ class _RegisterScreenState extends State<RegisterScreen> {
     setState(() {
       selectedImage = File(picked.path);
     });
+  }
+
+  // ================= POP UP NOTIFIKASI TUNGGU ADMIN =================
+  void _showPendingApprovalDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false, // Pengguna wajib klik tombol di dalam pop-up
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          backgroundColor: Colors.white,
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 10),
+              // Icon Animatif atau Estetik
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: primaryColor.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.lock_clock_rounded,
+                  size: 50,
+                  color: primaryColor,
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                "Registrasi Berhasil!",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: darkTextColor,
+                ),
+              ),
+              const SizedBox(height: 10),
+              const Text(
+                "Akun Anda telah terdaftar. Silakan menunggu persetujuan (approval) dari Admin ASRI terlebih dahulu sebelum bisa masuk ke aplikasi.",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Colors.black54,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 24),
+              // Tombol Konfirmasi Selesai
+              Container(
+                width: double.infinity,
+                height: 46,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  gradient: const LinearGradient(
+                    colors: [primaryColor, secondaryColor],
+                  ),
+                ),
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: () {
+                    // Tutup dialog
+                    Navigator.pop(context);
+                    // Pindah ke Halaman Login
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (_) => const LoginScreen()),
+                    );
+                  },
+                  child: const Text(
+                    'Mengerti',
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   // ================= REGISTER =================
@@ -69,13 +164,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       if (status == 200 || status == 201) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Registrasi berhasil')),
-        );
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const LoginScreen()),
-        );
+
+        // Panggil fungsi pop-up kustom di sini
+        _showPendingApprovalDialog();
+
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(data['message'] ?? 'Registrasi gagal')),
@@ -126,25 +218,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
           SafeArea(
             child: SingleChildScrollView(
               physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               child: Column(
                 children: [
-                  // 🔥 HEADER LOGO & BRANDING
-                  Hero(
-                    tag: 'logo_asri',
-                    child: Image.asset(
-                      "assets/images/logo_asri.png",
-                      width: 90,
-                      height: 90,
-                      fit: BoxFit.contain,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 10),
                   const Text(
                     "Buat Akun ASRI",
                     style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w900, // Greget tebal
+                      fontSize: 26,
+                      fontWeight: FontWeight.w900,
                       color: darkTextColor,
                       letterSpacing: 0.5,
                     ),
@@ -154,14 +236,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     "Bergabunglah untuk lingkungan yang lebih bersih",
                     style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
                   ),
-                  const SizedBox(height: 30),
+                  const SizedBox(height: 20),
 
-                  // 🔥 GLASSMORPHISM CARD
+                  // 🔥 CARD FORM
                   Container(
-                    padding: const EdgeInsets.all(24),
+                    padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(30),
+                      borderRadius: BorderRadius.circular(24),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withOpacity(0.04),
@@ -174,46 +256,46 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       key: _formKey,
                       child: Column(
                         children: [
-                          // ================= PICKER FOTO MODEREN =================
+                          // ================= PICKER FOTO =================
                           GestureDetector(
                             onTap: pickImage,
                             child: Stack(
                               children: [
                                 Container(
-                                  padding: const EdgeInsets.all(4),
+                                  padding: const EdgeInsets.all(3),
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
                                     border: Border.all(color: primaryColor.withOpacity(0.2), width: 2),
                                   ),
                                   child: CircleAvatar(
-                                    radius: 45,
+                                    radius: 38,
                                     backgroundColor: backgroundColor,
                                     backgroundImage: selectedImage != null ? FileImage(selectedImage!) : null,
                                     child: selectedImage == null
-                                        ? const Icon(Icons.person_add_alt_1_rounded, size: 35, color: primaryColor)
+                                        ? const Icon(Icons.person_add_alt_1_rounded, size: 28, color: primaryColor)
                                         : null,
                                   ),
                                 ),
                                 Positioned(
-                                  bottom: 2,
-                                  right: 2,
+                                  bottom: 0,
+                                  right: 0,
                                   child: Container(
-                                    padding: const EdgeInsets.all(6),
+                                    padding: const EdgeInsets.all(5),
                                     decoration: const BoxDecoration(color: primaryColor, shape: BoxShape.circle),
-                                    child: const Icon(Icons.camera_alt_rounded, size: 16, color: Colors.white),
+                                    child: const Icon(Icons.camera_alt_rounded, size: 14, color: Colors.white),
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                          const SizedBox(height: 30),
+                          const SizedBox(height: 20),
 
                           _buildInput(
                             controller: nameController,
                             hint: 'Nama Lengkap',
                             icon: Icons.person_outline_rounded,
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 12),
 
                           _buildInput(
                             controller: emailController,
@@ -221,7 +303,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             icon: Icons.mail_outline_rounded,
                             keyboardType: TextInputType.emailAddress,
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 12),
 
                           _buildInput(
                             controller: passwordController,
@@ -231,7 +313,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             obscureVar: isObscure,
                             onToggle: () => setState(() => isObscure = !isObscure),
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 12),
 
                           _buildInput(
                             controller: confirmPasswordController,
@@ -241,7 +323,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             obscureVar: isObscureConfirm,
                             onToggle: () => setState(() => isObscureConfirm = !isObscureConfirm),
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 12),
 
                           _buildInput(
                             controller: phoneController,
@@ -249,51 +331,64 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             icon: Icons.phone_android_rounded,
                             keyboardType: TextInputType.phone,
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 12),
 
                           _buildInput(
                             controller: addressController,
                             hint: 'Alamat Lengkap',
                             icon: Icons.location_on_outlined,
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 12),
 
-                          // ================= BANK DROPDOWN ESTETIK =================
+                          // ================= BANK DROPDOWN =================
                           DropdownButtonFormField<int>(
                             value: selectedBankId,
-                            icon: const Icon(Icons.keyboard_arrow_down_rounded, color: primaryColor),
+                            icon: const Icon(Icons.expand_more_rounded, color: primaryColor, size: 24),
                             dropdownColor: Colors.white,
-                            style: const TextStyle(color: darkTextColor, fontSize: 15),
+                            borderRadius: BorderRadius.circular(14),
+                            style: const TextStyle(color: darkTextColor, fontSize: 14, fontWeight: FontWeight.w500),
                             decoration: InputDecoration(
                               hintText: 'Pilih Bank Sampah',
-                              hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
-                              prefixIcon: const Icon(Icons.account_balance_rounded, color: primaryColor, size: 22),
+                              hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 13, fontWeight: FontWeight.normal),
+                              prefixIcon: const Icon(Icons.account_balance_rounded, color: primaryColor, size: 20),
                               filled: true,
                               fillColor: backgroundColor.withOpacity(0.5),
+                              contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
                               enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(16),
-                                borderSide: BorderSide(color: Colors.grey.withOpacity(0.1)),
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: BorderSide(color: Colors.grey.withOpacity(0.12)),
                               ),
                               focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(16),
+                                borderRadius: BorderRadius.circular(14),
                                 borderSide: const BorderSide(color: primaryColor, width: 1.5),
                               ),
-                              contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
+                              errorBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: const BorderSide(color: Colors.redAccent, width: 1),
+                              ),
+                              focusedErrorBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
+                              ),
                             ),
                             items: const [
                               DropdownMenuItem(value: 1, child: Text('Basayan Bestari')),
                               DropdownMenuItem(value: 2, child: Text('Asri Mandiri')),
                             ],
                             onChanged: (value) => setState(() => selectedBankId = value),
+                            validator: (value) {
+                              if (value == null) return 'Silakan pilih Bank Sampah';
+                              return null;
+                            },
                           ),
-                          const SizedBox(height: 32),
+                          const SizedBox(height: 24),
 
-                          // ================= BUTTON REGISTER GRADIENT =================
+                          // ================= BUTTON REGISTER =================
                           Container(
                             width: double.infinity,
-                            height: 56,
+                            height: 52,
                             decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius: BorderRadius.circular(14),
                               gradient: const LinearGradient(
                                 colors: [primaryColor, secondaryColor],
                                 begin: Alignment.topLeft,
@@ -301,9 +396,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: primaryColor.withOpacity(0.3),
-                                  blurRadius: 15,
-                                  offset: const Offset(0, 8),
+                                  color: primaryColor.withOpacity(0.25),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 6),
                                 ),
                               ],
                             ),
@@ -311,16 +406,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.transparent,
                                 shadowColor: Colors.transparent,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                               ),
                               onPressed: isLoading ? null : () {
                                 if (_formKey.currentState!.validate()) register();
                               },
                               child: isLoading
-                                  ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                                  ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                                   : const Text(
                                 'Daftar Sekarang',
-                                style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold),
+                                style: TextStyle(fontSize: 15, color: Colors.white, fontWeight: FontWeight.bold),
                               ),
                             ),
                           ),
@@ -328,7 +423,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 16),
 
                   // NAVIGASI BALIK KE LOGIN
                   TextButton(
@@ -336,7 +431,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     child: RichText(
                       text: const TextSpan(
                         text: "Sudah punya akun? ",
-                        style: TextStyle(color: Colors.grey, fontSize: 14),
+                        style: TextStyle(color: Colors.grey, fontSize: 13),
                         children: [
                           TextSpan(
                             text: "Login",
@@ -369,34 +464,34 @@ class _RegisterScreenState extends State<RegisterScreen> {
       controller: controller,
       obscureText: isPassword ? (obscureVar ?? true) : false,
       keyboardType: keyboardType,
-      style: const TextStyle(fontSize: 15),
+      style: const TextStyle(fontSize: 14),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
-        prefixIcon: Icon(icon, color: primaryColor, size: 22),
+        hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 13),
+        prefixIcon: Icon(icon, color: primaryColor, size: 20),
         suffixIcon: isPassword
             ? IconButton(
-          icon: Icon(obscureVar! ? Icons.visibility_off_outlined : Icons.visibility_outlined, color: Colors.grey, size: 20),
+          icon: Icon(obscureVar! ? Icons.visibility_off_outlined : Icons.visibility_outlined, color: Colors.grey, size: 18),
           onPressed: onToggle,
         )
             : null,
         filled: true,
         fillColor: backgroundColor.withOpacity(0.5),
-        contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
+        contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide(color: Colors.grey.withOpacity(0.1)),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(color: primaryColor, width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(color: Colors.redAccent, width: 1),
         ),
         focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
         ),
       ),

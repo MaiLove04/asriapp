@@ -1,101 +1,86 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:http/http.dart' as http;
+import 'package:http/io_client.dart';
 import 'package:asriapp/config.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthService {
+  // 🔥 1. Buat satu Client Aman yang bisa dipakai bareng-bareng oleh semua fungsi di class ini
+  static http.Client get _client {
+    final ioClient = HttpClient()
+      ..badCertificateCallback = (X509Certificate cert, String host, int port) {
+        if (host == "pht.my.id") return true;
+        return false;
+      };
+    return IOClient(ioClient);
+  }
 
-  static Future<Map<String, dynamic>>
-  login({
-
+  // ================= FUNGSI LOGIN =================
+  static Future<Map<String, dynamic>> login({
     required String email,
-
     required String password,
-
   }) async {
+    final url = Uri.parse('${AppConfig.baseUrl}/login');
+    final stopwatch = Stopwatch()..start();
 
-    final url = Uri.parse(
-      '${AppConfig.baseUrl}/login',
-    );
-
-    final stopwatch =
-    Stopwatch()..start();
-
-    final response =
-    await http
-
-        .post(
-
+    // 🔥 2. Cukup panggil _client di sini
+    final response = await _client.post(
       url,
-
       headers: {
-
-        'Content-Type':
-        'application/json',
-
-        'Accept':
-        'application/json',
-
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
       },
-
       body: jsonEncode({
-
-        'email':
-        email,
-
-        'password':
-        password,
-
+        'email': email,
+        'password': password,
       }),
-    )
-
-        .timeout(
-      const Duration(
-        seconds: 10,
-      ),
-    );
+    ).timeout(const Duration(seconds: 10));
 
     stopwatch.stop();
+    print('LOGIN TIME: ${stopwatch.elapsedMilliseconds} ms');
 
-    print(
-      'LOGIN TIME: '
-          '${stopwatch.elapsedMilliseconds} ms',
-    );
+    final body = jsonDecode(response.body);
 
-    final body =
-    jsonDecode(response.body);
-
-    // ================= SIMPAN LOGIN =================
     if (response.statusCode == 200) {
-
-      SharedPreferences prefs =
-      await SharedPreferences
-          .getInstance();
-
-      prefs.setInt(
-        'user_id',
-        body['user']['id'],
-      );
-
-      prefs.setString(
-        'user_name',
-        body['user']['name'],
-      );
-
-      prefs.setString(
-        'role',
-        body['user']['role'],
-      );
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      prefs.setInt('user_id', int.tryParse(body['user']['id'].toString()) ?? 0);
+      prefs.setString('user_name', body['user']['name'].toString());
+      prefs.setString('role', body['user']['role'].toString());
     }
 
     return {
+      "status": response.statusCode,
+      "data": body,
+    };
+  }
 
-      "status":
-      response.statusCode,
+  // ================= CONTOH FUNGSI BARU (Misal: Register) =================
+  static Future<Map<String, dynamic>> register({
+    required String name,
+    required String email,
+    required String password,
+  }) async {
+    final url = Uri.parse('${AppConfig.baseUrl}/register');
 
-      "data":
-      body,
+    // 🔥 3. Fungsi baru tinggal pakai _client yang sama, otomatis bebas error SSL!
+    final response = await _client.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: jsonEncode({
+        'name': name,
+        'email': email,
+        'password': password,
+      }),
+    );
+
+    return {
+      "status": response.statusCode,
+      "data": jsonDecode(response.body),
     };
   }
 }
