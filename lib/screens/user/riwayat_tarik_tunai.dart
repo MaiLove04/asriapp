@@ -1,309 +1,151 @@
-// import 'package:flutter/material.dart';
-// import 'package:intl/intl.dart';
-// import 'detail_riwayat.dart';
-//
-//
-// class RiwayatPage extends StatefulWidget {
-//   const RiwayatPage({super.key});
-//
-//   @override
-//   State<RiwayatPage> createState() => _RiwayatPageState();
-// }
-//
-// class _RiwayatPageState extends State<RiwayatPage> {
-//   bool isSetor = true;
-//
-//   DateTime selectedDate = DateTime.now();
-//   String selectedJenis = "Semua";
-//
-//   final List<String> jenisSampah = [
-//     "Semua",
-//     "Plastik",
-//     "Metal",
-//     "Kertas",
-//   ];
-//
-//   // ================= DATE PICKER =================
-//   Future<void> pickDate() async {
-//     final picked = await showDatePicker(
-//       context: context,
-//       initialDate: selectedDate,
-//       firstDate: DateTime(2020),
-//       lastDate: DateTime(2030),
-//     );
-//
-//     if (picked != null) {
-//       setState(() {
-//         selectedDate = picked;
-//       });
-//     }
-//   }
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     String formattedDate = DateFormat("MMM yyyy").format(selectedDate);
-//
-//     return Scaffold(
-//       backgroundColor: Colors.grey[200],
-//
-//       // ================= APP BAR =================
-//       appBar: AppBar(
-//         backgroundColor: Colors.green[900],
-//         elevation: 0,
-//         leading: const Icon(Icons.arrow_back),
-//         title: const Text(
-//           "Riwayat Transaksi",
-//           style: TextStyle(fontWeight: FontWeight.bold),
-//         ),
-//         centerTitle: true,
-//       ),
-//
-//       // ================= BODY =================
-//       body: Column(
-//         children: [
-//           // HEADER
-//           Container(
-//             padding: const EdgeInsets.all(16),
-//             decoration: BoxDecoration(
-//               color: Colors.green[900],
-//               borderRadius: const BorderRadius.only(
-//                 bottomLeft: Radius.circular(25),
-//                 bottomRight: Radius.circular(25),
-//               ),
-//             ),
-//             child: Column(
-//               children: [
-//                 // ================= TAB =================
-//                 Row(
-//                   children: [
-//                     Expanded(
-//                       child: _tabButton(
-//                         text: "Setor Sampah",
-//                         icon: Icons.delete_outline,
-//                         isActive: isSetor,
-//                         onTap: () {
-//                           setState(() {
-//                             isSetor = true;
-//                           });
-//                         },
-//                       ),
-//                     ),
-//                     const SizedBox(width: 10),
-//                     Expanded(
-//                       child: _tabButton(
-//                         text: "Tarik Tunai",
-//                         icon: Icons.account_balance_wallet_outlined,
-//                         isActive: !isSetor,
-//                         onTap: () {
-//                           setState(() {
-//                             isSetor = false;
-//                           });
-//                         },
-//                       ),
-//                     ),
-//                   ],
-//                 ),
-//
-//                 const SizedBox(height: 15),
-//
-//                 // ================= FILTER =================
-//                 Row(
-//                   children: [
-//                     Expanded(
-//                       child: _filterTanggal(formattedDate),
-//                     ),
-//                     const SizedBox(width: 10),
-//                     Expanded(
-//                       child: _filterJenis(),
-//                     ),
-//                   ],
-//                 ),
-//               ],
-//             ),
-//           ),
-//
-//           const SizedBox(height: 10),
-//
-//           // ================= LIST =================
-//           Expanded(
-//             child: ListView(
-//               padding: const EdgeInsets.all(10),
-//               children: [
-//                 TransactionCard(
-//                   title: "Plastik",
-//                   weight: "2 Kg",
-//                   status: "Menunggu Penjemputan",
-//                   price: "Rp 2000",
-//                   date: "10 Des 2025",
-//                   onTap: () {
-//                     Navigator.push(
-//                       context,
-//                       MaterialPageRoute(
-//                         builder: (context) => const DetailRiwayatPage(),
-//                       ),
-//                     );
-//                   },
-//                 ),
-//               ],
-//             ),
-//           ),
-//         ],
-//       ),
-//
-//       // ================= NAVBAR =================
-//       bottomNavigationBar: BottomNavigationBar(
-//         type: BottomNavigationBarType.fixed,
-//         selectedItemColor: Colors.green[900],
-//         unselectedItemColor: Colors.grey,
-//         items: const [
-//           BottomNavigationBarItem(icon: Icon(Icons.home), label: "Beranda"),
-//           BottomNavigationBarItem(icon: Icon(Icons.receipt), label: "Riwayat"),
-//           BottomNavigationBarItem(icon: Icon(Icons.add_box), label: "Mulai Setor"),
-//           BottomNavigationBarItem(icon: Icon(Icons.notifications), label: "Notifikasi"),
-//           BottomNavigationBarItem(icon: Icon(Icons.person), label: "Profil"),
-//         ],
-//       ),
-//     );
-//   }
-//
-//   // ================= TAB BUTTON =================
-//   Widget _tabButton({
-//     required String text,
-//     required IconData icon,
-//     required bool isActive,
-//     required VoidCallback onTap,
-//   }) {
-//     return GestureDetector(
-//       onTap: onTap,
-//       child: Container(
-//         padding: const EdgeInsets.symmetric(vertical: 12),
-//         decoration: BoxDecoration(
-//           color: isActive ? Colors.white : Colors.green[700],
-//           borderRadius: BorderRadius.circular(20),
-//         ),
-//         child: Row(
-//           mainAxisAlignment: MainAxisAlignment.center,
-//           children: [
-//             Icon(icon, color: isActive ? Colors.green : Colors.white),
-//             const SizedBox(width: 5),
-//             Text(
-//               text,
-//               style: TextStyle(
-//                 color: isActive ? Colors.green : Colors.white,
-//                 fontWeight: FontWeight.bold,
-//               ),
-//             ),
-//           ],
-//         ),
-//       ),
-//     );
-//   }
-//
-//   // ================= FILTER TANGGAL =================
-//   Widget _filterTanggal(String text) {
-//     return GestureDetector(
-//       onTap: pickDate,
-//       child: Container(
-//         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-//         decoration: BoxDecoration(
-//           color: Colors.green[700],
-//           borderRadius: BorderRadius.circular(20),
-//         ),
-//         child: Row(
-//           children: [
-//             const Icon(Icons.calendar_month, color: Colors.white, size: 18),
-//             const SizedBox(width: 5),
-//             Expanded(
-//               child: Text(
-//                 text,
-//                 style: const TextStyle(color: Colors.white),
-//               ),
-//             ),
-//             const Icon(Icons.arrow_drop_down, color: Colors.white),
-//           ],
-//         ),
-//       ),
-//     );
-//   }
-//
-//   // ================= FILTER JENIS =================
-//   Widget _filterJenis() {
-//     return Container(
-//       padding: const EdgeInsets.symmetric(horizontal: 12),
-//       decoration: BoxDecoration(
-//         color: Colors.green[700],
-//         borderRadius: BorderRadius.circular(20),
-//       ),
-//       child: DropdownButtonHideUnderline(
-//         child: DropdownButton<String>(
-//           value: selectedJenis,
-//           dropdownColor: Colors.green[700],
-//           icon: const Icon(Icons.arrow_drop_down, color: Colors.white),
-//           style: const TextStyle(color: Colors.white),
-//           items: jenisSampah.map((item) {
-//             return DropdownMenuItem(
-//               value: item,
-//               child: Text(item),
-//             );
-//           }).toList(),
-//           onChanged: (value) {
-//             setState(() {
-//               selectedJenis = value!;
-//             });
-//           },
-//         ),
-//       ),
-//     );
-//   }
-// }
-//
-// // ================= CARD =================
-// class TransactionCard extends StatelessWidget {
-//   final String title;
-//   final String weight;
-//   final String status;
-//   final String price;
-//   final String date;
-//   final VoidCallback onTap; // 🔥 TAMBAHAN
-//
-//   const TransactionCard({
-//     super.key,
-//     required this.title,
-//     required this.weight,
-//     required this.status,
-//     required this.price,
-//     required this.date,
-//     required this.onTap, // 🔥 TAMBAHAN
-//   });
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     return Card(
-//       shape: RoundedRectangleBorder(
-//         borderRadius: BorderRadius.circular(15),
-//       ),
-//       margin: const EdgeInsets.only(bottom: 10),
-//       child: ListTile(
-//         onTap: onTap, // 🔥 INI KUNCI NYA
-//         leading: CircleAvatar(
-//           backgroundColor: Colors.green[200],
-//           child: const Icon(Icons.recycling, color: Colors.green),
-//         ),
-//         title: Row(
-//           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-//           children: [
-//             Text("$title  $weight",
-//                 style: const TextStyle(fontWeight: FontWeight.bold)),
-//             Text(date, style: const TextStyle(fontSize: 12)),
-//           ],
-//         ),
-//         subtitle: Text("Status: $status"),
-//         trailing: Text(
-//           price,
-//           style: const TextStyle(
-//               color: Colors.green, fontWeight: FontWeight.bold),
-//         ),
-//       ),
-//     );
-//   }
-// }
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import '../services/tarik_tunai_service.dart';
+import '../models/tarik_tunai_model.dart';
+
+class RiwayatTarikTunaiPage extends StatefulWidget {
+  const RiwayatTarikTunaiPage({super.key});
+
+  @override
+  State<RiwayatTarikTunaiPage> createState() => _RiwayatTarikTunaiPageState();
+}
+
+class _RiwayatTarikTunaiPageState extends State<RiwayatTarikTunaiPage> {
+  final TarikTunaiService _service = TarikTunaiService();
+  late Future<List<TarikTunaiModel>> _futureRiwayat;
+
+  @override
+  void initState() {
+    super.initState();
+    _futureRiwayat = _service.getRequests(); // Mengambil riwayat milik nasabah login
+  }
+
+  String _formatRupiah(int angka) =>
+      NumberFormat.currency(locale: 'id', symbol: 'Rp ', decimalDigits: 0).format(angka);
+
+  String _formatTanggal(DateTime? date) {
+    if (date == null) return "-";
+    return DateFormat('dd MMM yyyy, HH:mm').format(date);
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'approved':
+        return Colors.green;
+      case 'rejected':
+        return Colors.red;
+      default:
+        return Colors.orange; // Pending
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF9FBF9),
+      appBar: AppBar(
+        title: const Text("Riwayat Penarikan", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+        centerTitle: true,
+        backgroundColor: const Color(0xFF1E521E),
+        elevation: 0,
+      ),
+      body: FutureBuilder<List<TarikTunaiModel>>(
+        future: _futureRiwayat,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator(color: Color(0xFF1E521E)));
+          }
+
+          if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
+            return _buildEmptyState();
+          }
+
+          final list = snapshot.data!;
+          return RefreshIndicator(
+            onRefresh: () async {
+              setState(() {
+                _futureRiwayat = _service.getRequests();
+              });
+            },
+            child: ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: list.length,
+              itemBuilder: (context, index) {
+                final item = list[index];
+                return _buildCardRiwayat(item);
+              },
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildCardRiwayat(TarikTunaiModel item) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  _formatRupiah(item.jumlahNominal),
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFF1E521E)),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: _getStatusColor(item.status).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    item.status.toUpperCase(),
+                    style: TextStyle(color: _getStatusColor(item.status), fontWeight: FontWeight.bold, fontSize: 12),
+                  ),
+                ),
+              ],
+            ),
+            const Divider(height: 24),
+            _infoRow(Icons.calendar_today, "Request:", _formatTanggal(item.tanggalRequest)),
+            if (item.status == 'approved')
+              Padding(
+                padding: const EdgeInsets.only(top: 8.0),
+                child: _infoRow(Icons.check_circle_outline, "Selesai:", _formatTanggal(item.tanggalSelesai)),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _infoRow(IconData icon, String label, String value) {
+    return Row(
+      children: [
+        Icon(icon, size: 14, color: Colors.grey),
+        const SizedBox(width: 8),
+        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+        const SizedBox(width: 5),
+        Text(value, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12)),
+      ],
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.history_edu, size: 80, color: Colors.grey.shade300),
+          const SizedBox(height: 16),
+          const Text("Belum ada riwayat penarikan.", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+        ],
+      ),
+    );
+  }
+}

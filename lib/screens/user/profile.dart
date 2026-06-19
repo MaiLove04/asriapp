@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../../config.dart'; // Menghubungkan aman dengan AppConfig Mai
+import '../../config.dart';
+import '../services/setor_sampah_service.dart';
 
 class profile_page extends StatefulWidget {
   const profile_page({super.key});
@@ -16,7 +17,9 @@ class _profile_pageState extends State<profile_page> {
   String namaNasabah = "...";
   String idNasabah = "-";
   int saldoNasabah = 0;
+  bool _hasPin = false;
   bool isLoading = true;
+  bool _isSubmitting = false;
 
   @override
   void initState() {
@@ -30,7 +33,15 @@ class _profile_pageState extends State<profile_page> {
   Future<void> getProfileNasabah() async {
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
-      int userId = prefs.getInt('user_id') ?? 0;
+      int userId = 0;
+      if (prefs.containsKey('user_id')) {
+        final rawId = prefs.get('user_id');
+        if (rawId is int) {
+          userId = rawId;
+        } else if (rawId is String) {
+          userId = int.tryParse(rawId) ?? 0;
+        }
+      }
 
       final response = await http.get(
         Uri.parse('${AppConfig.baseUrl}/dashboard-nasabah/$userId'),
@@ -43,6 +54,7 @@ class _profile_pageState extends State<profile_page> {
             namaNasabah = data['nasabah']['name'] ?? 'Nasabah Basayan';
             idNasabah = "ID ${data['nasabah']['id'] ?? '-'}";
             saldoNasabah = int.tryParse(data['nasabah']['saldo'].toString()) ?? 0;
+            _hasPin = data['nasabah']['has_pin'] ?? false;
             isLoading = false;
           });
         }
@@ -61,6 +73,83 @@ class _profile_pageState extends State<profile_page> {
     return "Rp " + angka.toString().replaceAllMapped(
         RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.'
     );
+  }
+
+  void _showSetupPinDialog() {
+    final TextEditingController pinController = TextEditingController();
+    final TextEditingController confirmController = TextEditingController();
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(_hasPin ? "Ubah PIN Transaksi" : "Buat PIN Transaksi", textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.bold)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(_hasPin 
+              ? "Silakan masukkan PIN baru Anda." 
+              : "Demi keamanan, silakan buat 6 digit PIN untuk setiap transaksi Anda.", 
+              textAlign: TextAlign.center, style: const TextStyle(fontSize: 13)),
+            const SizedBox(height: 20),
+            TextField(
+              controller: pinController,
+              keyboardType: TextInputType.number,
+              obscureText: true,
+              maxLength: 6,
+              textAlign: TextAlign.center,
+              decoration: const InputDecoration(hintText: "PIN Baru", counterText: ""),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: confirmController,
+              keyboardType: TextInputType.number,
+              obscureText: true,
+              maxLength: 6,
+              textAlign: TextAlign.center,
+              decoration: const InputDecoration(hintText: "Konfirmasi PIN", counterText: ""),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("BATAL", style: TextStyle(color: Colors.grey))),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1E521E)),
+            onPressed: () async {
+              if (pinController.text.length == 6 && pinController.text == confirmController.text) {
+                Navigator.pop(ctx);
+                _eksekusiSetupPin(pinController.text, confirmController.text);
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("PIN tidak cocok atau kurang dari 6 digit."), backgroundColor: Colors.red),
+                );
+              }
+            },
+            child: const Text("SIMPAN PIN", style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _eksekusiSetupPin(String pin, String confirm) async {
+    setState(() => _isSubmitting = true);
+    final result = await SetorSampahService.setupPin(pin: pin, pinConfirmation: confirm);
+    
+    if (mounted) {
+      setState(() => _isSubmitting = false);
+      if (result['status'] == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("PIN berhasil diperbarui!"), backgroundColor: Color(0xFF1E521E)),
+        );
+        setState(() => _hasPin = true);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(result['data']['message'] ?? "Gagal memproses PIN."), backgroundColor: Colors.red),
+        );
+      }
+    }
   }
 
   @override
@@ -162,11 +251,45 @@ class _profile_pageState extends State<profile_page> {
                     const SizedBox(height: 25),
 
                     // ================= MENU OPSI =================
-                    _menuItem(Icons.lock, "Ubah Kata Sandi"),
-                    _menuItem(Icons.settings, "Pengaturan Akun"),
-                    _menuItem(Icons.notifications, "Notifikasi"),
-                    _menuItem(Icons.security, "Keamanan dan Privasi"),
-                    _menuItem(Icons.help, "Pusat Bantuan"),
+                    _menuItem(Icons.lock, "Ubah Kata Sandi", onTap: () {}),
+                    _menuItem(Icons.settings, "Pengaturan Akun", onTap: () {}),
+                    _menuItem(Icons.notifications, "Notifikasi", onTap: () {}),
+                    _menuItem(
+                      _hasPin ? Icons.security_rounded : Icons.lock_open_rounded, 
+                      _hasPin ? "Ubah PIN Transaksi" : "Setel PIN Transaksi", 
+                      onTap: _showSetupPinDialog
+                    ),
+                    _menuItem(Icons.help, "Pusat Bantuan", onTap: () {}),
+                    _menuItem(Icons.power_settings_new_rounded, "Keluar Akun", onTap: () async {
+                      bool? yakin = await showDialog(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                          title: const Text("Konfirmasi"),
+                          content: const Text("Apakah Anda yakin ingin keluar dari akun?"),
+                          actions: [
+                            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Batal")),
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(backgroundColor: Colors.red, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+                              onPressed: () async {
+                                SharedPreferences prefs = await SharedPreferences.getInstance();
+                                await prefs.clear();
+                                if (mounted) {
+                                  Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+                                }
+                              },
+                              child: const Text("Keluar", style: TextStyle(color: Colors.white)),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+                    
+                    if (_isSubmitting)
+                      const Padding(
+                        padding: EdgeInsets.only(top: 10),
+                        child: LinearProgressIndicator(color: Color(0xFF1E521E)),
+                      ),
                   ],
                 ),
               ),
@@ -205,26 +328,30 @@ class _profile_pageState extends State<profile_page> {
   }
 
   // ================= WIDGET COMPONENT MENU ITEM =================
-  Widget _menuItem(IconData icon, String title) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-      decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(15),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: Colors.green[800], size: 22),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              title,
-              style: const TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF0D240D), fontSize: 13),
+  Widget _menuItem(IconData icon, String title, {required VoidCallback onTap}) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(15),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+        decoration: BoxDecoration(
+          color: Colors.grey[100],
+          borderRadius: BorderRadius.circular(15),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: Colors.green[800], size: 22),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                title,
+                style: const TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF0D240D), fontSize: 13),
+              ),
             ),
-          ),
-          const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.grey)
-        ],
+            const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.grey)
+          ],
+        ),
       ),
     );
   }

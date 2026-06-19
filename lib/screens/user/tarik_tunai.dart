@@ -4,15 +4,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../config.dart';
-import '../services/setor_sampah_service.dart';
-import 'success_withdrawal_page.dart';
-
+import '../services/tarik_tunai_service.dart'; // Import service baru
+import 'riwayat_tarik_tunai.dart'; // Nanti kita buat halaman riwayatnya
 
 const primaryColor = Color(0xFF1E521E);
 const softGreenColor = Color(0xFFE8F5E9);
 const backgroundColor = Color(0xFFF9FBF9);
 const darkTextColor = Color(0xFF0D240D);
-const greyTextColor = Color(0xFF555555);
 
 class TarikTunaiPage extends StatefulWidget {
   const TarikTunaiPage({super.key});
@@ -22,6 +20,7 @@ class TarikTunaiPage extends StatefulWidget {
 }
 
 class _TarikTunaiPageState extends State<TarikTunaiPage> {
+  final TarikTunaiService _tarikService = TarikTunaiService();
   int _saldo = 0;
   int _nominal = 0;
   bool _isLoading = true;
@@ -39,20 +38,7 @@ class _TarikTunaiPageState extends State<TarikTunaiPage> {
   Future<void> _fetchUserData() async {
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
-      
-      if (prefs.containsKey('user_id')) {
-        final rawId = prefs.get('user_id');
-        if (rawId is int) {
-          _userId = rawId;
-        } else if (rawId is String) {
-          _userId = int.tryParse(rawId) ?? 0;
-        }
-      }
-
-      if (_userId == 0) {
-        setState(() => _isLoading = false);
-        return;
-      }
+      _userId = prefs.getInt('user_id') ?? 0;
 
       final response = await http.get(
         Uri.parse('${AppConfig.baseUrl}/dashboard-nasabah/$_userId'),
@@ -66,11 +52,8 @@ class _TarikTunaiPageState extends State<TarikTunaiPage> {
             _isLoading = false;
           });
         }
-      } else {
-        setState(() => _isLoading = false);
       }
     } catch (e) {
-      debugPrint("Error fetch user data: $e");
       setState(() => _isLoading = false);
     }
   }
@@ -82,102 +65,77 @@ class _TarikTunaiPageState extends State<TarikTunaiPage> {
     });
   }
 
-  String _selectedMethod = "DANA";
-  final List<String> _methods = ["DANA", "OVO", "GOPAY", "PULSA"];
-  final TextEditingController _phoneController = TextEditingController();
-
-  Future<void> _prosesTarikTunai() async {
-    if (_nominal <= 0) {
-      _showPesan("Silakan masukkan nominal penarikan.", Colors.red);
-      return;
-    }
-
-    if (_phoneController.text.length < 10) {
-      _showPesan("Silakan masukkan nomor HP yang valid.", Colors.red);
+  Future<void> _kirimRequestTarik() async {
+    if (_nominal < 1000) {
+      _showPesan("Minimal penarikan adalah Rp 1.000", Colors.red);
       return;
     }
 
     if (_nominal > _saldo) {
-      // TAMPILKAN POP-UP JIKA SALDO TIDAK CUKUP
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: Row(
-            children: const [
-              Icon(Icons.warning_amber_rounded, color: Colors.red, size: 28),
-              SizedBox(width: 10),
-              Text("Saldo Kurang", style: TextStyle(fontWeight: FontWeight.bold)),
-            ],
-          ),
-          content: Text(
-            "Maaf, saldo tabungan Anda saat ini (${_formatRupiah(_saldo)}) tidak mencukupi untuk melakukan penarikan sebesar ${_formatRupiah(_nominal)}.",
-            style: const TextStyle(fontSize: 14),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text("OK", style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold)),
-            ),
-          ],
-        ),
-      );
+      _showPesan("Saldo Anda tidak mencukupi.", Colors.red);
       return;
     }
 
     setState(() => _isSubmitting = true);
 
-    try {
-      final result = await SetorSampahService.tarikTunai(
-        userId: _userId,
-        nominal: _nominal,
-        metode: _selectedMethod,
-        nomorHp: _phoneController.text,
-      );
+    final result = await _tarikService.createRequestTarik(jumlahNominal: _nominal);
 
-
-// ... (kode lainnya tetap sama) ...
-
-      if (result['status'] == 200) {
-        if (mounted) {
-          // Gunakan ID asli dari database
-          String realId = result['data']['transaction_id'] ?? "TRX-${DateTime.now().millisecondsSinceEpoch}";
-          
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => SuccessWithdrawalPage(
-                nominal: _nominal,
-                transactionId: realId,
-                method: _selectedMethod,
-                phone: _phoneController.text,
-              ),
-            ),
-          );
-        }
+    if (mounted) {
+      setState(() => _isSubmitting = false);
+      if (result['success']) {
+        _showSuksesDialog();
       } else {
-        _showPesan(result['data']['message'] ?? "Gagal memproses penarikan.", Colors.red);
+        _showPesan(result['message'], Colors.red);
       }
-    } catch (e) {
-      _showPesan("Terjadi kesalahan koneksi.", Colors.red);
-    } finally {
-      if (mounted) setState(() => _isSubmitting = false);
     }
   }
 
-  void _showPesan(String pesan, Color warna) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(pesan),
-        backgroundColor: warna,
-        behavior: SnackBarBehavior.floating,
+  void _showSuksesDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Icon(Icons.check_circle, color: primaryColor, size: 60),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              "Request Berhasil!",
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              "Silakan datang ke Bank Sampah dan tunjukkan kartu nasabah Anda untuk mengambil uang tunai sebesar ${_formatRupiah(_nominal)}.",
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 14),
+            ),
+          ],
+        ),
+        actions: [
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: primaryColor),
+              onPressed: () {
+                Navigator.pop(ctx);
+                Navigator.pop(context); // Kembali ke dashboard
+              },
+              child: const Text("Selesai", style: TextStyle(color: Colors.white)),
+            ),
+          )
+        ],
       ),
     );
   }
 
-  String _formatRupiah(int angka) {
-    return "Rp " + NumberFormat.decimalPattern('id').format(angka);
+  void _showPesan(String pesan, Color warna) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(pesan), backgroundColor: warna, behavior: SnackBarBehavior.floating),
+    );
   }
+
+  String _formatRupiah(int angka) => "Rp " + NumberFormat.decimalPattern('id').format(angka);
 
   @override
   Widget build(BuildContext context) {
@@ -186,191 +144,94 @@ class _TarikTunaiPageState extends State<TarikTunaiPage> {
       appBar: AppBar(
         elevation: 0,
         backgroundColor: primaryColor,
-        leading: IconButton(
-          onPressed: () => Navigator.pop(context),
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 22),
-        ),
-        title: const Text("Tarik Tunai", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: const Text("Request Tarik Tunai", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         centerTitle: true,
+        actions: [
+          IconButton(
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const RiwayatTarikTunaiPage())),
+            icon: const Icon(Icons.history, color: Colors.white),
+          )
+        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator(color: primaryColor))
           : SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // CARD SALDO
+            Container(
+              width: double.infinity,
               padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: primaryColor,
+                borderRadius: BorderRadius.circular(20),
+              ),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // CARD SALDO
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [primaryColor, Color(0xFF2E6B2E)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: [
-                        BoxShadow(
-                          color: primaryColor.withOpacity(0.3),
-                          blurRadius: 12,
-                          offset: const Offset(0, 6),
-                        )
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        const Text("Saldo Tabungan Anda", style: TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.w600)),
-                        const SizedBox(height: 8),
-                        Text(
-                          _formatRupiah(_saldo),
-                          style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.w900),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 32),
-                  const Text("Metode Penarikan", style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: darkTextColor)),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    value: _selectedMethod,
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor: Colors.white,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: Colors.grey.shade200)),
-                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: Colors.grey.shade200)),
-                    ),
-                    items: _methods.map((method) => DropdownMenuItem(value: method, child: Text(method))).toList(),
-                    onChanged: (val) => setState(() => _selectedMethod = val!),
-                  ),
-
-                  const SizedBox(height: 24),
-                  const Text("Nomor HP Tujuan", style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: darkTextColor)),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _phoneController,
-                    keyboardType: TextInputType.phone,
-                    decoration: InputDecoration(
-                      hintText: "08xxxxxxxxxx",
-                      prefixIcon: const Icon(Icons.phone_android_rounded, color: primaryColor),
-                      filled: true,
-                      fillColor: Colors.white,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: Colors.grey.shade200)),
-                      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: primaryColor, width: 2)),
-                    ),
-                  ),
-
-                  const SizedBox(height: 32),
-                  const Text("Masukkan Nominal", style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: darkTextColor)),
-                  const SizedBox(height: 16),
-
-                  TextField(
-                    controller: _nominalController,
-                    keyboardType: TextInputType.number,
-                    onChanged: (val) {
-                      setState(() {
-                        _nominal = int.tryParse(val) ?? 0;
-                      });
-                    },
-                    decoration: InputDecoration(
-                      hintText: "Contoh: 10000",
-                      errorText: (_nominal > _saldo) ? "Saldo Anda tidak mencukupi" : null,
-                      errorStyle: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
-                      prefixIcon: const Icon(Icons.payments_rounded, color: primaryColor),
-                      filled: true,
-                      fillColor: Colors.white,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: Colors.grey.shade200)),
-                      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: (_nominal > _saldo) ? Colors.red : primaryColor, width: 2)),
-                    ),
-                  ),
-
-                  const SizedBox(height: 16),
-                  
-                  // QUICK OPTIONS
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      _quickOption(5000),
-                      _quickOption(10000),
-                      _quickOption(20000),
-                      _quickOption(50000),
-                    ],
-                  ),
-
-                  const SizedBox(height: 40),
-
-                  // RINGKASAN
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: softGreenColor,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Column(
-                      children: [
-                        _summaryRow("Jumlah Penarikan", _formatRupiah(_nominal)),
-                        const SizedBox(height: 8),
-                        _summaryRow("Biaya Admin", "Rp 0"),
-                        const Divider(height: 24),
-                        _summaryRow("Total Diterima", _formatRupiah(_nominal), isBold: true),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 32),
-
-                  SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: ElevatedButton(
-                      onPressed: _isSubmitting ? null : _prosesTarikTunai,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: primaryColor,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        elevation: 4,
-                      ),
-                      child: _isSubmitting
-                          ? const CircularProgressIndicator(color: Colors.white)
-                          : const Text("Tarik Tunai Sekarang", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-                    ),
-                  ),
+                  const Text("Saldo Anda", style: TextStyle(color: Colors.white70)),
+                  Text(_formatRupiah(_saldo), style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold)),
                 ],
               ),
             ),
-    );
-  }
-
-  Widget _quickOption(int value) {
-    bool isSelected = _nominal == value;
-    return InkWell(
-      onTap: () => _setNominal(value),
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          color: isSelected ? primaryColor : Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: isSelected ? primaryColor : Colors.grey.shade300),
-        ),
-        child: Text(
-          NumberFormat.compact().format(value),
-          style: TextStyle(color: isSelected ? Colors.white : darkTextColor, fontWeight: FontWeight.bold),
+            const SizedBox(height: 30),
+            const Text("Masukkan Nominal Penarikan", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _nominalController,
+              keyboardType: TextInputType.number,
+              onChanged: (val) => setState(() => _nominal = int.tryParse(val) ?? 0),
+              decoration: InputDecoration(
+                hintText: "Contoh: 50000",
+                prefixIcon: const Icon(Icons.payments, color: primaryColor),
+                filled: true,
+                fillColor: Colors.white,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
+                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide(color: Colors.grey.shade300)),
+              ),
+            ),
+            const SizedBox(height: 15),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [5000, 10000, 20000, 50000].map((val) => _quickOption(val)).toList(),
+            ),
+            const SizedBox(height: 40),
+            const Text("Informasi:", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+            const Text("Penarikan akan diproses secara tunai oleh Admin Bank Sampah saat Anda berkunjung.", style: TextStyle(fontSize: 12, color: Colors.grey)),
+            const SizedBox(height: 50),
+            SizedBox(
+              width: double.infinity,
+              height: 55,
+              child: ElevatedButton(
+                onPressed: _isSubmitting ? null : _kirimRequestTarik,
+                style: ElevatedButton.styleFrom(backgroundColor: primaryColor, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))),
+                child: _isSubmitting
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text("Buat Request Penarikan", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _summaryRow(String label, String value, {bool isBold = false}) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(label, style: TextStyle(color: greyTextColor, fontSize: 14, fontWeight: isBold ? FontWeight.bold : FontWeight.normal)),
-        Text(value, style: TextStyle(color: darkTextColor, fontSize: 14, fontWeight: isBold ? FontWeight.w900 : FontWeight.w700)),
-      ],
+  Widget _quickOption(int value) {
+    return InkWell(
+      onTap: () => _setNominal(value),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+        decoration: BoxDecoration(
+          color: _nominal == value ? primaryColor : Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: primaryColor),
+        ),
+        child: Text(
+          NumberFormat.compact().format(value),
+          style: TextStyle(color: _nominal == value ? Colors.white : primaryColor, fontWeight: FontWeight.bold),
+        ),
+      ),
     );
   }
 }

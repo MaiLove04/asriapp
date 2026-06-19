@@ -9,27 +9,43 @@ import 'screens/user/setor_sampah.dart';
 import 'screens/kurir/dashboard_kurir.dart';
 
 
-void main() {
-  runApp(const MyApp());
+import 'package:shared_preferences/shared_preferences.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  String? token = prefs.getString('token');
+  String? role = prefs.getString('role');
+  String? name = prefs.getString('user_name');
+
+  runApp(MyApp(token: token, role: role, name: name));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final String? token;
+  final String? role;
+  final String? name;
+
+  const MyApp({super.key, this.token, this.role, this.name});
 
   @override
   Widget build(BuildContext context) {
+    String initialRoute = '/login';
+    if (token != null) {
+      initialRoute = (role == 'kurir') ? '/dashboard_kurir' : '/dashboard';
+    }
+
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      initialRoute: '/login', // halaman pertama
+      initialRoute: initialRoute,
       routes: {
         '/login': (context) => const LoginScreen(),
-        '/dashboard': (context) => const DashboardScreen(name: "User"),
+        '/dashboard': (context) => DashboardScreen(name: name ?? "User"),
         '/setorsampah': (context) => const SetorSampahScreen(),
         '/riwayat': (context) => const RiwayatPage(),
         '/tariktunai': (context) => const TarikTunaiPage(),
         '/profil': (context) => const profile_page(),
         '/dashboard_kurir': (context) => const DashboardKurir()
-
       },
     );
   }
