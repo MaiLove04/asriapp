@@ -25,15 +25,24 @@ class SetorSampahService {
     try {
       final items = jenisIds.map((id) => {
         "jenis_sampah_id": id,
-        "berat": 0,
+        "berat": 0.0,
       }).toList();
 
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token') ?? '';
+
       final url = Uri.parse('${AppConfig.baseUrl}/request-penjemputan');
+      
+      print("DEBUG STORE REQUEST: URL=$url");
+      print("DEBUG STORE REQUEST: USER_ID=$userId");
+      print("DEBUG STORE REQUEST: TOKEN=${token.isNotEmpty ? 'EXISTS' : 'EMPTY'}");
+
       final response = await _client.post(
         url,
         headers: {
           "Content-Type": "application/json",
           "Accept": "application/json",
+          if (token.isNotEmpty) "Authorization": "Bearer $token",
         },
         body: jsonEncode({
           "user_id": userId,
@@ -41,8 +50,12 @@ class SetorSampahService {
           "items": items,
         }),
       );
+
+      print("DEBUG STORE RESPONSE: ${response.statusCode} - ${response.body}");
+
       return response.statusCode == 200 || response.statusCode == 201;
     } catch (e) {
+      print("DEBUG STORE EXCEPTION: $e");
       return false;
     }
   }

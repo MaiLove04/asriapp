@@ -291,15 +291,17 @@ class _JadwalJemputScreenState extends State<JadwalJemputScreen> {
                         if (isTerjadwal) {
                           mulaiJemputKurir(item['id']);
                         } else if (isProses) {
+                          // EFEISIEN: Langsung ke Scan, dan Scan akan langsung ke Form Timbang
                           final refresh = await Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => ScanBarcodePage(jadwalId: item['id']),
+                              builder: (_) => ScanBarcodePage(
+                                jadwalId: item['id'],
+                                nasabahId: item['nasabah_id'],
+                              ),
                             ),
                           );
-                          if (refresh == true) {
-                            getJadwal();
-                          }
+                          if (refresh == true) getJadwal();
                         }
                       },
                     ),

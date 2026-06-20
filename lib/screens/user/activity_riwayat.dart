@@ -99,7 +99,7 @@ class _RiwayatPageState extends State<RiwayatPage> {
   String formatDuitRupiah(dynamic nominalRaw) {
     try {
       int angka =
-          int.parse(nominalRaw.toString().replaceAll(RegExp(r'[^0-9]'), ''));
+      int.parse(nominalRaw.toString().replaceAll(RegExp(r'[^0-9]'), ''));
       return "Rp " + NumberFormat.decimalPattern('id').format(angka);
     } catch (e) {
       return "Rp $nominalRaw";
@@ -114,7 +114,7 @@ class _RiwayatPageState extends State<RiwayatPage> {
 
     List<dynamic> riwayatDiFilter = riwayatRaw.where((item) {
       String jenisTx =
-          (item['jenis_transaksi'] ?? 'masuk').toString().toLowerCase();
+      (item['jenis_transaksi'] ?? 'masuk').toString().toLowerCase();
       bool adalahTarikTunai =
           jenisTx.contains('keluar') || jenisTx.contains('tarik');
 
@@ -135,7 +135,7 @@ class _RiwayatPageState extends State<RiwayatPage> {
 
       if (isSetor && selectedJenis != "Semua") {
         String judulDinamis =
-            (item['judul_dinamis'] ?? '').toString().toLowerCase();
+        (item['judul_dinamis'] ?? '').toString().toLowerCase();
         String kueriFilter = selectedJenis.toLowerCase();
         if (!judulDinamis.contains(kueriFilter)) {
           return false;
@@ -254,92 +254,92 @@ class _RiwayatPageState extends State<RiwayatPage> {
           Expanded(
             child: isLoading
                 ? const Center(
-                    child: CircularProgressIndicator(
-                        color: primaryColor, strokeWidth: 4))
+                child: CircularProgressIndicator(
+                    color: primaryColor, strokeWidth: 4))
                 : RefreshIndicator(
-                    color: primaryColor,
-                    onRefresh: loadRiwayat,
-                    child: riwayatDiFilter.isEmpty
-                        ? ListView(
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            children: [
-                              SizedBox(
-                                  height:
-                                      MediaQuery.of(context).size.height * 0.2),
-                              Center(
-                                child: Column(
-                                  children: [
-                                    Icon(Icons.event_busy_rounded,
-                                        size: 54,
-                                        color: greyTextColor.withOpacity(0.5)),
-                                    const SizedBox(height: 12),
-                                    const Text(
-                                      "Tidak ada transaksi ditemukan.",
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          color: greyTextColor,
-                                          height: 1.4),
-                                    ),
-                                    if (selectedDate != null ||
-                                        selectedJenis != "Semua")
-                                      TextButton(
-                                        onPressed: () {
-                                          setState(() {
-                                            selectedDate = null;
-                                            selectedJenis = "Semua";
-                                          });
-                                        },
-                                        child: const Text("Reset Filter",
-                                            style: TextStyle(
-                                                color: primaryColor)),
-                                      )
-                                  ],
-                                ),
-                              ),
-                            ],
-                          )
-                        : ListView.builder(
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 8),
-                            itemCount: riwayatDiFilter.length,
-                            itemBuilder: (context, index) {
-                              final item = riwayatDiFilter[index];
-
-                              // Mapping data dari database ke UI
-                              String judulKartu = (item['nama_kurir'] ?? 'Setoran Sampah').toString();
-                              
-                              // Jika tarik tunai, ganti judulnya
-                              String jenisTx = (item['jenis_transaksi'] ?? 'masuk').toString().toLowerCase();
-                              bool adalahTarikTunai = jenisTx.contains('keluar') || jenisTx.contains('tarik');
-
-                              String subjudul = isSetor 
-                                ? "Kategori: ${item['judul_dinamis'] ?? '-'}" 
-                                : "Penarikan Saldo";
-                                
-                              String hargaDuit = (item['nominal'] ?? '0').toString();
-                              String tanggalFormatted = (item['tanggal_formatted'] ?? '-').toString();
-
-                              return TransactionCard(
-                                title: adalahTarikTunai ? 'Tarik Tunai Dana' : judulKartu,
-                                subtitle: subjudul,
-                                price: formatDuitRupiah(hargaDuit),
-                                date: tanggalFormatted,
-                                isPenarikan: adalahTarikTunai,
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          DetailRiwayatPage(data: item),
-                                    ),
-                                  );
-                                },
-                              );
+              color: primaryColor,
+              onRefresh: loadRiwayat,
+              child: riwayatDiFilter.isEmpty
+                  ? ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: [
+                  SizedBox(
+                      height:
+                      MediaQuery.of(context).size.height * 0.2),
+                  Center(
+                    child: Column(
+                      children: [
+                        Icon(Icons.event_busy_rounded,
+                            size: 54,
+                            color: greyTextColor.withOpacity(0.5)),
+                        const SizedBox(height: 12),
+                        const Text(
+                          "Tidak ada transaksi ditemukan.",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: greyTextColor,
+                              height: 1.4),
+                        ),
+                        if (selectedDate != null ||
+                            selectedJenis != "Semua")
+                          TextButton(
+                            onPressed: () {
+                              setState(() {
+                                selectedDate = null;
+                                selectedJenis = "Semua";
+                              });
                             },
-                          ),
+                            child: const Text("Reset Filter",
+                                style: TextStyle(
+                                    color: primaryColor)),
+                          )
+                      ],
+                    ),
                   ),
+                ],
+              )
+                  : ListView.builder(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 16, vertical: 8),
+                itemCount: riwayatDiFilter.length,
+                itemBuilder: (context, index) {
+                  final item = riwayatDiFilter[index];
+
+                  // Mapping data dari database ke UI
+                  String judulKartu = (item['nama_kurir'] ?? 'Setoran Sampah').toString();
+
+                  // Jika tarik tunai, ganti judulnya
+                  String jenisTx = (item['jenis_transaksi'] ?? 'masuk').toString().toLowerCase();
+                  bool adalahTarikTunai = jenisTx.contains('keluar') || jenisTx.contains('tarik');
+
+                  String subjudul = isSetor
+                      ? "Kategori: ${item['judul_dinamis'] ?? '-'}"
+                      : "Penarikan Saldo";
+
+                  String hargaDuit = (item['nominal'] ?? '0').toString();
+                  String tanggalFormatted = (item['tanggal_formatted'] ?? '-').toString();
+
+                  return TransactionCard(
+                    title: adalahTarikTunai ? 'Tarik Tunai Dana' : judulKartu,
+                    subtitle: subjudul,
+                    price: formatDuitRupiah(hargaDuit),
+                    date: tanggalFormatted,
+                    isPenarikan: adalahTarikTunai,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              DetailRiwayatPage(data: item),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
           ),
         ],
       ),
@@ -348,9 +348,9 @@ class _RiwayatPageState extends State<RiwayatPage> {
 
   Widget _tabButton(
       {required String text,
-      required IconData icon,
-      required bool isActive,
-      required VoidCallback onTap}) {
+        required IconData icon,
+        required bool isActive,
+        required VoidCallback onTap}) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -392,7 +392,7 @@ class _RiwayatPageState extends State<RiwayatPage> {
               color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
           items: jenisSampah
               .map((item) =>
-                  DropdownMenuItem(value: item, child: Text(item)))
+              DropdownMenuItem(value: item, child: Text(item)))
               .toList(),
           onChanged: (value) {
             setState(() {
@@ -415,12 +415,12 @@ class TransactionCard extends StatelessWidget {
 
   const TransactionCard(
       {super.key,
-      required this.title,
-      required this.subtitle,
-      required this.price,
-      required this.date,
-      this.isPenarikan = false,
-      required this.onTap});
+        required this.title,
+        required this.subtitle,
+        required this.price,
+        required this.date,
+        this.isPenarikan = false,
+        required this.onTap});
 
   @override
   Widget build(BuildContext context) {

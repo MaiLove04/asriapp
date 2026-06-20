@@ -10,6 +10,7 @@ import 'profile.dart';
 import 'setor_sampah.dart';
 import 'tarik_tunai.dart';
 import 'aduan_page.dart';
+import 'status_penjemputan.dart';
 
 const primaryColor = Color(0xFF1E521E);
 const secondaryColor = Color(0xFF4CAF50);
@@ -329,6 +330,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               if (result == true) {
                                 fetchDashboardData();
                               }
+                            }),
+                            _menuItem(Icons.local_shipping_rounded, "Lacak\nJemputan", () {
+                              Navigator.push(context, MaterialPageRoute(builder: (context) => const StatusPenjemputanPage()));
                             }),
                             _menuItem(Icons.support_agent_rounded, "Layanan\nAduan", () {
                               Navigator.push(context, MaterialPageRoute(builder: (context) => const AduanPage()));

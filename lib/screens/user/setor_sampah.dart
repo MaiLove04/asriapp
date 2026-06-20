@@ -5,6 +5,7 @@ import '../models/jenis_sampah.dart';
 import '../services/jenis_sampah_service.dart';
 import '../services/setor_sampah_service.dart';
 import '../user/activity_riwayat.dart';
+import '../user/status_penjemputan.dart';
 
 // 🎨 PALET WARNA UTAMA (Tema Konsisten Senior-Friendly Basayan Bestari)
 const primaryColor = Color(0xFF1E521E);
@@ -56,6 +57,80 @@ class _SetorSampahScreenState extends State<SetorSampahScreen> {
       print("Error load jenis sampah: $e");
       setState(() { isLoading = false; });
     }
+  }
+
+  void _showSuccessDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+        contentPadding: const EdgeInsets.all(24),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: softGreenColor,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.check_circle_rounded, color: secondaryColor, size: 64),
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              "Permintaan Berhasil!",
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: darkTextColor),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              "Permintaan penjemputan sampah Anda telah terkirim. Kurir akan segera menuju lokasi Anda.",
+              textAlign: TextAlign.center,
+              style: TextStyle(color: greyTextColor, fontSize: 14, fontWeight: FontWeight.w500, height: 1.5),
+            ),
+            const SizedBox(height: 32),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      side: const BorderSide(color: primaryColor, width: 2),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    ),
+                    onPressed: () {
+                      Navigator.pop(context); // Tutup dialog
+                      Navigator.pop(context); // Kembali ke dashboard
+                    },
+                    child: const Text("OKE", style: TextStyle(color: primaryColor, fontWeight: FontWeight.w900)),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      backgroundColor: primaryColor,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    ),
+                    onPressed: () {
+                      Navigator.pop(context);
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (_) => const RiwayatPage()),
+                      );
+                    },
+                    child: const Text("LIHAT STATUS", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 13)),
+                  ),
+                ),
+              ],
+            )
+          ],
+        ),
+      ),
+    );
   }
 
   String getIcon(String kode) {
@@ -232,12 +307,20 @@ class _SetorSampahScreenState extends State<SetorSampahScreen> {
                     SharedPreferences prefs = await SharedPreferences.getInstance();
                     int idNasabahLogin = prefs.getInt('user_id') ?? 0;
 
-                    print("DEBUG MAI - Mengirim request atas nama User ID: $idNasabahLogin");
+                    print("DEBUG UI - Mengirim request atas nama User ID: $idNasabahLogin");
+
+                    if (idNasabahLogin == 0) {
+                      setState(() { isSubmitting = false; });
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("Gagal: Sesi login tidak ditemukan. Silakan login ulang.")),
+                      );
+                      return;
+                    }
 
                     // 2. Panggil service dengan parameter yang SESUAI murni dengan isi SetorSampahService.dart
                     final berhasil = await SetorSampahService.store(
                       userId: idNasabahLogin,
-                      jenisIds: selectedJenisIds, // Biarkan ini, karena nanti di dalam Service akan diconvert otomatis jadi array 'items'
+                      jenisIds: selectedJenisIds,
                       catatan: catatanController.text,
                     );
 
@@ -246,13 +329,7 @@ class _SetorSampahScreenState extends State<SetorSampahScreen> {
                     if (!mounted) return;
 
                     if (berhasil) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("Request sukses! Kurir akan segera datang menjemput.")),
-                      );
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(builder: (_) => const RiwayatPage()),
-                      );
+                      _showSuccessDialog();
                     } else {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text("Gagal mengirim request penjemputan.")),

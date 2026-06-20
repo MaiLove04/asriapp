@@ -25,7 +25,7 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  final TextEditingController emailController = TextEditingController();
+  final TextEditingController phoneController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
 
   bool isLoading = false;
@@ -40,7 +40,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       final result = await AuthService.login(
-        email: emailController.text,
+        phone: phoneController.text,
         password: passwordController.text,
       );
 
@@ -224,15 +224,15 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             const SizedBox(height: 16),
 
-                            // EMAIL FIELD
+                            // NO HP FIELD
                             TextFormField(
-                              controller: emailController,
-                              keyboardType: TextInputType.emailAddress,
+                              controller: phoneController,
+                              keyboardType: TextInputType.phone,
                               style: const TextStyle(color: Colors.black87, fontSize: 15),
                               decoration: InputDecoration(
-                                hintText: "Email",
+                                hintText: "Nomor HP",
                                 hintStyle: TextStyle(color: Colors.grey.shade400),
-                                prefixIcon: const Icon(Icons.mail_outline_rounded, color: primaryColor, size: 22),
+                                prefixIcon: const Icon(Icons.phone_android_rounded, color: primaryColor, size: 22),
                                 filled: true,
                                 fillColor: backgroundColor.withOpacity(0.5), // Efek kontras halus
                                 contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
@@ -255,11 +255,10 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
-                                  return "Email tidak boleh kosong";
+                                  return "Nomor HP tidak boleh kosong";
                                 }
-                                final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-                                if (!emailRegex.hasMatch(value)) {
-                                  return "Format email tidak valid";
+                                if (value.length < 10) {
+                                  return "Nomor HP tidak valid";
                                 }
                                 return null;
                               },

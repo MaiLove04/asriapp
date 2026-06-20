@@ -19,7 +19,7 @@ class AuthService {
 
   // ================= FUNGSI LOGIN =================
   static Future<Map<String, dynamic>> login({
-    required String email,
+    required String phone,
     required String password,
   }) async {
     final url = Uri.parse('${AppConfig.baseUrl}/login');
@@ -33,7 +33,7 @@ class AuthService {
         'Accept': 'application/json',
       },
       body: jsonEncode({
-        'email': email,
+        'no_hp': phone,
         'password': password,
       }),
     ).timeout(const Duration(seconds: 10));

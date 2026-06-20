@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'services/register_service.dart';
 import 'login_screen.dart';
+import 'models/bank_sampah_model.dart';
 
 // Konsistensi palet warna ASRI
 const primaryColor = Color(0xFF2F6B2F);
@@ -20,7 +21,6 @@ class RegisterScreen extends StatefulWidget {
 class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final nameController = TextEditingController();
-  final emailController = TextEditingController();
   final passwordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
   final phoneController = TextEditingController();
@@ -31,11 +31,43 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool isLoading = false;
   bool isObscure = true;
   bool isObscureConfirm = true;
+  bool isFetchingBank = true;
+
+  List<BankSampahModel> listBank = [];
+
+  @override
+  void initState() {
+    super.initState();
+    fetchBankSampah();
+  }
+
+  Future<void> fetchBankSampah() async {
+    setState(() => isFetchingBank = true);
+    try {
+      final data = await RegisterService.getBankSampah();
+      setState(() {
+        listBank = data;
+        // 🚀 FALLBACK: Jika data dari API kosong, masukkan data manual agar user tetap bisa daftar
+        if (listBank.isEmpty) {
+          listBank.add(BankSampahModel(id: 1, nama: "Basayan Bestari"));
+        }
+        isFetchingBank = false;
+      });
+    } catch (e) {
+      debugPrint("Error fetching bank sampah: $e");
+      setState(() {
+        // 🚀 FALLBACK: Jika terjadi error koneksi, tetap beri pilihan manual
+        if (listBank.isEmpty) {
+          listBank.add(BankSampahModel(id: 1, nama: "Basayan Bestari"));
+        }
+        isFetchingBank = false;
+      });
+    }
+  }
 
   @override
   void dispose() {
     nameController.dispose();
-    emailController.dispose();
     passwordController.dispose();
     confirmPasswordController.dispose();
     phoneController.dispose();
@@ -150,7 +182,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     try {
       final result = await RegisterService.register(
         name: nameController.text,
-        email: emailController.text,
         password: passwordController.text,
         confirmPassword: confirmPasswordController.text,
         phone: phoneController.text,
@@ -298,14 +329,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           const SizedBox(height: 12),
 
                           _buildInput(
-                            controller: emailController,
-                            hint: 'Email',
-                            icon: Icons.mail_outline_rounded,
-                            keyboardType: TextInputType.emailAddress,
-                          ),
-                          const SizedBox(height: 12),
-
-                          _buildInput(
                             controller: passwordController,
                             hint: 'Password',
                             icon: Icons.lock_outline_rounded,
@@ -340,7 +363,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ),
                           const SizedBox(height: 12),
 
-                          // ================= BANK DROPDOWN =================
+                          // ================= BANK DROPDOWN (FIXED) =================
                           DropdownButtonFormField<int>(
                             value: selectedBankId,
                             icon: const Icon(Icons.expand_more_rounded, color: primaryColor, size: 24),
@@ -348,9 +371,26 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             borderRadius: BorderRadius.circular(14),
                             style: const TextStyle(color: darkTextColor, fontSize: 14, fontWeight: FontWeight.w500),
                             decoration: InputDecoration(
-                              hintText: 'Pilih Bank Sampah',
+                              hintText: isFetchingBank
+                                  ? 'Memuat Bank Sampah...'
+                                  : (listBank.isEmpty ? 'Gagal memuat / Data kosong' : 'Pilih Bank Sampah'),
                               hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 13, fontWeight: FontWeight.normal),
-                              prefixIcon: const Icon(Icons.account_balance_rounded, color: primaryColor, size: 20),
+                              prefixIcon: isFetchingBank
+                                  ? const Padding(
+                                padding: EdgeInsets.all(12),
+                                child: SizedBox(
+                                    width: 10,
+                                    height: 10,
+                                    child: CircularProgressIndicator(strokeWidth: 2, color: primaryColor)
+                                ),
+                              )
+                                  : const Icon(Icons.account_balance_rounded, color: primaryColor, size: 20),
+                              suffixIcon: (!isFetchingBank && listBank.isEmpty)
+                                  ? IconButton(
+                                icon: const Icon(Icons.refresh, color: primaryColor, size: 20),
+                                onPressed: fetchBankSampah,
+                              )
+                                  : null,
                               filled: true,
                               fillColor: backgroundColor.withOpacity(0.5),
                               contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
@@ -371,11 +411,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
                               ),
                             ),
-                            items: const [
-                              DropdownMenuItem(value: 1, child: Text('Basayan Bestari')),
-                              DropdownMenuItem(value: 2, child: Text('Asri Mandiri')),
-                            ],
-                            onChanged: (value) => setState(() => selectedBankId = value),
+                            // PENGAMAN: Jika data sedang dimuat, berikan list kosong [] untuk mencegah crash
+                            items: isFetchingBank ? [] : listBank.map((bank) {
+                              return DropdownMenuItem<int>(
+                                value: bank.id,
+                                child: Text(bank.nama, overflow: TextOverflow.ellipsis),
+                              );
+                            }).toList(),
+                            // PENGAMAN: Kunci klik dropdown jika data belum siap
+                            onChanged: isFetchingBank || listBank.isEmpty
+                                ? null
+                                : (value) => setState(() => selectedBankId = value),
                             validator: (value) {
                               if (value == null) return 'Silakan pilih Bank Sampah';
                               return null;
