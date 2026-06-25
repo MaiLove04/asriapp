@@ -289,15 +289,18 @@ class _JadwalJemputScreenState extends State<JadwalJemputScreen> {
                       },
                       onMulaiJemput: () async {
                         if (isTerjadwal) {
-                          mulaiJemputKurir(item['id']);
+                          mulaiJemputKurir(item['id'] is int ? item['id'] : int.parse(item['id'].toString()));
                         } else if (isProses) {
                           // EFEISIEN: Langsung ke Scan, dan Scan akan langsung ke Form Timbang
+                          final int idJadwal = item['id'] is int ? item['id'] : (int.tryParse(item['id'].toString()) ?? 0);
+                          final int idNasabah = item['nasabah_id'] is int ? item['nasabah_id'] : (int.tryParse(item['nasabah_id']?.toString() ?? '0') ?? 0);
+
                           final refresh = await Navigator.push(
                             context,
                             MaterialPageRoute(
                               builder: (_) => ScanBarcodePage(
-                                jadwalId: item['id'],
-                                nasabahId: item['nasabah_id'],
+                                jadwalId: idJadwal,
+                                nasabahId: idNasabah,
                               ),
                             ),
                           );

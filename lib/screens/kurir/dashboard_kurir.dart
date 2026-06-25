@@ -514,7 +514,7 @@ class _ScanFab extends StatelessWidget {
             context,
             MaterialPageRoute(builder: (context) => ScanBarcodePage(
               jadwalId: jadwalId,
-              scheduledNasabahId: scheduledNasabahId,
+              nasabahId: scheduledNasabahId,
             )),
           );
 
