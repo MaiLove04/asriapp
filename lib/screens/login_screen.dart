@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:asriapp/screens/register_screen.dart';
 import 'package:asriapp/screens/kurir/dashboard_kurir.dart';
 import 'package:asriapp/screens/user/dashboard_screen.dart';
+import 'package:asriapp/screens/forgot_password_screen.dart';
 
 // Konsistensi palet warna alam/eco sesuai branding ASRI kamu
 const primaryColor = Color(0xFF2F6B2F);
@@ -354,11 +355,23 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ],
                                 ),
                                 TextButton(
-                                  onPressed: () {},
-                                  style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: Size.zero),
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (_) =>
+                                              const ForgotPasswordScreen()),
+                                    );
+                                  },
+                                  style: TextButton.styleFrom(
+                                      padding: EdgeInsets.zero,
+                                      minimumSize: Size.zero),
                                   child: const Text(
                                     "Forgot Password?",
-                                    style: TextStyle(color: primaryColor, fontSize: 13, fontWeight: FontWeight.bold),
+                                    style: TextStyle(
+                                        color: primaryColor,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.bold),
                                   ),
                                 )
                               ],

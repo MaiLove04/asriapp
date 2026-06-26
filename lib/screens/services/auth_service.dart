@@ -83,4 +83,63 @@ class AuthService {
       "data": jsonDecode(response.body),
     };
   }
+
+  // ================= FUNGSI LUPA PASSWORD =================
+
+  // 1. Request OTP ke WhatsApp
+  static Future<Map<String, dynamic>> requestOtp(String phone) async {
+    final url = Uri.parse('${AppConfig.baseUrl}/password/forgot');
+    final response = await _client.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: jsonEncode({'no_hp': phone}),
+    );
+    return {
+      "status": response.statusCode,
+      "data": jsonDecode(response.body),
+    };
+  }
+
+  // 2. Verifikasi Kode OTP
+  static Future<Map<String, dynamic>> verifyOtp(String phone, String otp) async {
+    final url = Uri.parse('${AppConfig.baseUrl}/password/verify');
+    final response = await _client.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: jsonEncode({'no_hp': phone, 'otp': otp}),
+    );
+    return {
+      "status": response.statusCode,
+      "data": jsonDecode(response.body),
+    };
+  }
+
+  // 3. Reset Password Baru
+  static Future<Map<String, dynamic>> resetPassword(
+      String phone, String otp, String password) async {
+    final url = Uri.parse('${AppConfig.baseUrl}/password/reset');
+    final response = await _client.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: jsonEncode({
+        'no_hp': phone,
+        'otp': otp,
+        'password': password,
+        'password_confirmation': password,
+      }),
+    );
+    return {
+      "status": response.statusCode,
+      "data": jsonDecode(response.body),
+    };
+  }
 }
