@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/dashboard_kurir_service.dart';
+import '../services/jadwal_service.dart';
 import '../../config.dart';
 import '../login_screen.dart';
 import '../kurir/JadwalJemputScreen.dart';
@@ -11,12 +12,12 @@ import 'navigasi_kurir_page.dart';
 import '../user/aduan_page.dart';
 
 // Palet Warna Kontras Tinggi & Profesional
-const primaryColor = Color(0xFF154015);     // Hijau hutan tua (Sangat kontras & formal)
-const secondaryColor = Color(0xFF2E7D32);   // Hijau medium untuk aksen status
-const softGreenColor = Color(0xFFF0F7F0);   // Latar belakang komponen lembut
-const backgroundColor = Color(0xFFF6F8F6);  // Abu-putih bersih untuk mengurangi glare layar
-const darkTextColor = Color(0xFF0A1A0A);    // Hitam-hijau pekat untuk keterbacaan teks maksimal
-const greyTextColor = Color(0xFF424242);    // Abu-abu gelap (bukan abu-abu pudar)
+const primaryColor = Color(0xFF154015);
+const secondaryColor = Color(0xFF2E7D32);
+const softGreenColor = Color(0xFFF0F7F0);
+const backgroundColor = Color(0xFFF6F8F6);
+const darkTextColor = Color(0xFF0A1A0A);
+const greyTextColor = Color(0xFF424242);
 
 class DashboardKurir extends StatefulWidget {
   const DashboardKurir({super.key});
@@ -59,7 +60,26 @@ class _DashboardKurirState extends State<DashboardKurir> {
         return;
       }
 
+      // 1. Ambil data Dashboard Dasar
       final result = await DashboardKurirService.getDashboard(userId);
+      
+      // 2. 🔥 WORKAROUND SINKRONISASI: 
+      // Jika jadwal di dashboard kosong, coba ambil dari JadwalService (Daftar Tugas)
+      if (result['jadwal'] == null || (result['jadwal'] is List && (result['jadwal'] as List).isEmpty)) {
+        debugPrint("DASHBOARD KOSONG: Mencoba sinkronisasi dengan JadwalService...");
+        final fallbackJadwal = await JadwalService.getJadwalKurir(userId);
+        if (fallbackJadwal.isNotEmpty) {
+          // Ambil tugas pertama yang belum selesai
+          final tugasAktif = fallbackJadwal.firstWhere(
+            (j) => j['status'].toString().toLowerCase() != 'selesai',
+            orElse: () => null
+          );
+          if (tugasAktif != null) {
+            result['jadwal'] = tugasAktif;
+          }
+        }
+      }
+
       setState(() {
         dashboardData = result;
         isLoading = false;
@@ -95,10 +115,7 @@ class _DashboardKurirState extends State<DashboardKurir> {
             physics: const AlwaysScrollableScrollPhysics(),
             child: Column(
               children: [
-                // ================= HEADER KOKOH =================
                 _buildHeader(),
-
-                // ================= LAYOUT UTAMA UTK USIA 30+ =================
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Column(
@@ -107,9 +124,12 @@ class _DashboardKurirState extends State<DashboardKurir> {
                       const SizedBox(height: 20),
                       _sectionTitle("Tugas Terdekat Hari Ini"),
                       const SizedBox(height: 10),
-                      dashboardData?['jadwal'] == null
+
+                      // Proteksi ekstra pengecekan data jadwal kosong / null
+                      dashboardData?['jadwal'] == null ||
+                          (dashboardData?['jadwal'] is List && (dashboardData?['jadwal'] as List).isEmpty)
                           ? _buildEmptyTask()
-                          : _UrgentTaskItem(jadwal: dashboardData?['jadwal']),
+                          : _UrgentTaskItem(jadwalRaw: dashboardData?['jadwal']),
 
                       const SizedBox(height: 28),
                       _sectionTitle("Ringkasan Performa Kerja"),
@@ -311,7 +331,7 @@ class _ActiveMissionCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(6),
             child: LinearProgressIndicator(
               value: progress,
-              minHeight: 14, // Lebih tebal agar mudah dilihat
+              minHeight: 14,
               backgroundColor: Colors.grey.shade100,
               color: primaryColor,
             ),
@@ -395,7 +415,6 @@ class _SummaryBox extends StatelessWidget {
   }
 }
 
-// PERBAIKAN: Mengganti GridView kecil dengan Layout Tombol Baris Berukuran Besar (Senior-Friendly)
 class _QuickActionsLayout extends StatelessWidget {
   const _QuickActionsLayout();
 
@@ -405,9 +424,9 @@ class _QuickActionsLayout extends StatelessWidget {
       children: [
         Row(
           children: [
-            Expanded(child: _largeMenuButton(context, Icons.assignment_rounded, "Daftar Tugas Kerja", () => Navigator.push(context, MaterialPageRoute(builder: (_) => const JadwalJemputScreen())))),
+            Expanded(child: _largeMenuButton(context, Icons.assignment_rounded, "Daftar Tugas", () => Navigator.push(context, MaterialPageRoute(builder: (_) => const JadwalJemputScreen())))),
             const SizedBox(width: 12),
-            Expanded(child: _largeMenuButton(context, Icons.map_rounded, "Navigasi Peta Rute", () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NavigasiKurirPage())))),
+            Expanded(child: _largeMenuButton(context, Icons.map_rounded, "Peta Rute", () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NavigasiKurirPage())))),
           ],
         ),
         const SizedBox(height: 12),
@@ -452,85 +471,238 @@ class _QuickActionsLayout extends StatelessWidget {
 }
 
 class _UrgentTaskItem extends StatelessWidget {
-  final dynamic jadwal;
-  const _UrgentTaskItem({required this.jadwal});
+  final dynamic jadwalRaw;
+  const _UrgentTaskItem({required this.jadwalRaw});
 
   @override
   Widget build(BuildContext context) {
+    // 1. Unboxing paksa jika data 'jadwal' dikirim berupa Array/List dari endpoint dashboard
+    final dynamic jadwal = (jadwalRaw is List && jadwalRaw.isNotEmpty) ? jadwalRaw[0] : jadwalRaw;
+
+    if (jadwal == null || (jadwal is Map && jadwal.isEmpty)) {
+      return const SizedBox.shrink();
+    }
+
+    String status = (jadwal['status'] ?? 'terjadwal').toString().toLowerCase();
+    Color statusColor;
+    if (status == 'selesai' || status == 'completed') {
+      statusColor = Colors.green.shade800;
+    } else if (status == 'proses' || status == 'on_progress') {
+      statusColor = Colors.blue.shade800;
+    } else {
+      statusColor = Colors.orange.shade800;
+    }
+
     return Container(
       padding: const EdgeInsets.all(18),
-      decoration: cardDecoration().copyWith(
-        border: Border.all(color: primaryColor.withOpacity(0.3), width: 1.5), // Highlight batas agar fokus mata jelas
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(.04), blurRadius: 16, offset: const Offset(0, 6)),
+        ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              const Icon(Icons.stars_rounded, color: Colors.orange, size: 22),
-              const SizedBox(width: 6),
-              Text(
-                  "JADWAL PENJEMPUTAN TERDEKAT",
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: Colors.orange.shade900, letterSpacing: 0.5)
-              ),
-            ],
-          ),
-          const Divider(height: 24, thickness: 1),
+          // 🔥 HEADER KATEGORI (Badge Kecil di Atas) - Sinkron dengan Daftar Tugas
+          _buildCategoryBadge(jadwal),
+          const SizedBox(height: 12),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const CircleAvatar(backgroundColor: softGreenColor, radius: 24, child: Icon(Icons.person_pin_circle_rounded, color: primaryColor, size: 28)),
+              CircleAvatar(
+                radius: 26,
+                backgroundColor: primaryColor.withOpacity(0.08),
+                child: const Icon(Icons.person_rounded, color: primaryColor, size: 26),
+              ),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // 🔥 EKSTRAKSI TINGKAT TINGGI (Disamakan persis dengan halaman Jadwal)
                     Text(
-                      jadwal['nasabah']?['name'] ?? 'Nama Nasabah Tidak Tersedia',
-                      style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: darkTextColor),
+                      _resolveNamaNasabahSamaPersis(jadwal),
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: darkTextColor, letterSpacing: -0.3),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      jadwal['alamat'] ?? 'Alamat penjemputan belum diatur',
-                      style: const TextStyle(fontSize: 14, color: greyTextColor, fontWeight: FontWeight.w600, height: 1.3),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                    const SizedBox(height: 8),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Padding(
+                          padding: EdgeInsets.only(top: 2.0),
+                          child: Icon(Icons.location_on_rounded, size: 16, color: primaryColor),
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            jadwal['alamat']?.toString() ?? 'Alamat tidak tersedia',
+                            style: const TextStyle(color: greyTextColor, fontSize: 13, fontWeight: FontWeight.w700),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: statusColor.withOpacity(.1),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Text(
+                  status.toUpperCase(),
+                  style: TextStyle(color: statusColor, fontWeight: FontWeight.w900, fontSize: 11, letterSpacing: 0.3),
+                ),
+              ),
             ],
           ),
-          const SizedBox(height: 20),
-          SizedBox(
-            width: double.infinity,
-            height: 52, // Tinggi tombol dimaksimalkan agar nyaman ditekan oleh jari
-            child: ElevatedButton.icon(
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => ScanBarcodePage(
-                    jadwalId: int.parse(jadwal['id'].toString()),
-                    nasabahId: int.parse(jadwal['nasabah_id'].toString()),
+          const SizedBox(height: 18),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => NavigasiKurirPage(initialJadwalData: jadwal),
+                      ),
+                    );
+                  },
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(0, 50),
+                    side: const BorderSide(color: primaryColor, width: 1.5),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                  icon: const Icon(Icons.map_rounded, color: primaryColor, size: 18),
+                  label: const Text("LIHAT LOKASI", style: TextStyle(color: primaryColor, fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 0.3)),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    final int idJadwal = int.tryParse(jadwal['id']?.toString() ?? '0') ?? 0;
+                    final int idNasabah = int.tryParse(jadwal['nasabah_id']?.toString() ?? '') ??
+                        int.tryParse(jadwal['user_id']?.toString() ?? '') ?? 0;
+
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ScanBarcodePage(
+                          jadwalId: idJadwal,
+                          nasabahId: idNasabah,
+                        ),
+                      ),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: status == 'proses' ? Colors.orange.shade800 : primaryColor,
+                    disabledBackgroundColor: Colors.grey.shade200,
+                    minimumSize: const Size(0, 50),
+                    elevation: (status == 'selesai') ? 0 : 2,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                  icon: Icon(
+                      status == 'selesai'
+                          ? Icons.check_circle_rounded
+                          : (status == 'proses' ? Icons.scale_rounded : Icons.local_shipping_rounded),
+                      color: status == 'selesai' ? Colors.grey.shade500 : Colors.white,
+                      size: 18
+                  ),
+                  label: Text(
+                    status == 'terjadwal' || status == 'pending'
+                        ? "MULAI JEMPUT"
+                        : (status == 'proses' ? "TIMBANG SAMPAH" : "SUDAH SELESAI"),
+                    style: TextStyle(
+                        color: status == 'selesai' ? Colors.grey.shade600 : Colors.white,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 12,
+                        letterSpacing: 0.3
+                    ),
                   ),
                 ),
               ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: primaryColor,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                elevation: 0,
-              ),
-              icon: const Icon(Icons.qr_code_scanner_rounded, size: 22),
-              label: const Text("MULAI PROSES & TIMBANG", style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15, letterSpacing: 0.5)),
-            ),
-          )
+            ],
+          ),
         ],
       ),
     );
   }
-}
 
+  // 🔥 MENGGUNAKAN POLA PARSING YANG SAMA DENGAN HALAMAN JADWAL
+  String _resolveNamaNasabahSamaPersis(dynamic j) {
+    if (j == null) return 'Nama Nasabah Tidak Tersedia';
+
+    try {
+      final String nama = (
+          j['nasabah']?['name'] ??
+              j['user']?['name'] ??
+              j['nasabah']?['nama'] ??
+              j['user']?['nama'] ??
+              j['nasabah_name'] ??
+              j['user_name'] ??
+              j['nama_nasabah'] ??
+              j['nama'] ??
+              j['name'] ??
+              (j['nasabah'] is String ? j['nasabah'] : '')
+      ).toString().trim();
+
+      if (nama.isNotEmpty) return nama;
+    } catch (_) {}
+
+    return 'Nama Nasabah';
+  }
+
+  Widget _buildCategoryBadge(dynamic item) {
+    String kategoriJadwal = "Jadwal Khusus";
+    Color kategoriColor = Colors.purple.shade700;
+    IconData icon = Icons.admin_panel_settings_rounded;
+
+    final String tipe = (item['tipe'] ?? item['kategori'] ?? '').toString().toLowerCase();
+    if (tipe == 'rutin' || item['is_rutin'] == true || item['rutin_id'] != null || item['jadwal_rutin_id'] != null) {
+      kategoriJadwal = "Jadwal Rutin";
+      kategoriColor = primaryColor;
+      icon = Icons.sync_rounded;
+    } else if (tipe == 'request' || item['request_id'] != null || (item['user_id'] != null && item['jadwal_rutin_id'] == null)) {
+      kategoriJadwal = "Request Nasabah";
+      kategoriColor = Colors.blue.shade700;
+      icon = Icons.person_add_alt_rounded;
+    }
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: kategoriColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: kategoriColor.withOpacity(0.3), width: 1),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 14, color: kategoriColor),
+              const SizedBox(width: 6),
+              Text(
+                kategoriJadwal.toUpperCase(),
+                style: TextStyle(color: kategoriColor, fontWeight: FontWeight.w900, fontSize: 10, letterSpacing: 0.5),
+              ),
+            ],
+          ),
+        ),
+        Text(
+          "ID: #${item['id'] ?? '0'}",
+          style: const TextStyle(color: greyTextColor, fontSize: 11, fontWeight: FontWeight.bold),
+        ),
+      ],
+    );
+  }
+}
 class _PremiumBottomNav extends StatelessWidget {
   final VoidCallback onRefresh;
   const _PremiumBottomNav({required this.onRefresh});
@@ -603,7 +775,7 @@ class _InsightCard extends StatelessWidget {
 BoxDecoration cardDecoration() {
   return BoxDecoration(
     color: Colors.white,
-    borderRadius: BorderRadius.circular(14), // Radius sudut dikurangi agar tampak kokoh/formal
+    borderRadius: BorderRadius.circular(14),
     boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 12, offset: const Offset(0, 4))],
   );
 }

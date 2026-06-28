@@ -19,10 +19,26 @@ class JadwalService {
   static Future<List<dynamic>> getJadwalKurir(int id) async {
     try {
       final url = Uri.parse('${AppConfig.baseUrl}/kurir/jadwal/$id');
+
+      // 🔥 1. Tambahkan log untuk memastikan URL & ID benar
+      print("DEBUG JADWAL KURIR - URL: $url");
+
       final response = await _client.get(url, headers: {"Accept": "application/json"});
-      
+
+      // 🔥 2. Tambahkan log untuk intip status dan body asli dari Laravel
+      print("DEBUG JADWAL KURIR - STATUS: ${response.statusCode}");
+      print("DEBUG JADWAL KURIR - BODY ASLI: ${response.body}");
+
       final body = jsonDecode(response.body);
-      return body['data'] ?? [];
+
+      // 🔥 3. Amankan antisipasi jika datanya ternyata list langsung tanpa bungkus 'data'
+      if (body is List) {
+        return body;
+      } else if (body is Map && body.containsKey('data')) {
+        return body['data'] ?? [];
+      }
+
+      return [];
     } catch (e) {
       print('GET JADWAL KURIR ERROR: $e');
       return [];

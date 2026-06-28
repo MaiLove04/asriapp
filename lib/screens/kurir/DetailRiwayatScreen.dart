@@ -76,7 +76,11 @@ class _DetailRiwayatScreenState extends State<DetailRiwayatScreen> {
 
   @override
   Widget build(BuildContext context) {
-    String namaNasabah = widget.data['nasabah']?['name'] ?? 'Nasabah ASRI';
+    String namaNasabah = (widget.data['nasabah']?['name'] ?? 
+                          widget.data['user']?['name'] ?? 
+                          widget.data['nasabah']?['nama'] ?? 
+                          widget.data['user']?['nama'] ?? 
+                          'Nasabah ASRI').toString();
     String rawDate = widget.data['created_at'] ?? '';
     String tanggal = '-';
 

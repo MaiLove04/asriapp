@@ -290,7 +290,11 @@ class _RiwayatKurirScreenState extends State<RiwayatKurirScreen> {
   // WIDGET KARTU RIWAYAT DENGAN PARSING KATEGORI MULTI-ITEM
   // ========================================================
   Widget _buildRiwayatCard(Map<String, dynamic> data) {
-    String namaNasabah = data['nasabah']?['name'] ?? 'Nasabah ASRI';
+    String namaNasabah = (data['nasabah']?['name'] ?? 
+                          data['user']?['name'] ?? 
+                          data['nasabah']?['nama'] ?? 
+                          data['user']?['nama'] ?? 
+                          'Nasabah ASRI').toString();
     String rawDate = data['created_at'] ?? '';
     String tanggal = '-';
 

@@ -101,7 +101,7 @@ class SetorSampahService {
     }
   }
 
-  // ================= 4. FETCH BERAT DARI IOT =================
+  // =================ni berat iot =================
   static Future<double?> fetchBeratIot() async {
     try {
       final response = await _client.get(Uri.parse('${AppConfig.baseUrl}/berat-timbangan-iot'));
@@ -115,7 +115,7 @@ class SetorSampahService {
     return null;
   }
 
-  // ================= 5. SUBMIT SETOR SAMPAH =================
+  // ================= setor ni =================
   static Future<http.Response> submitSetoran({
     required int userId,
     required int kurirId,
