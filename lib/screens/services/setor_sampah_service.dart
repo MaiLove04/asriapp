@@ -163,12 +163,11 @@ class SetorSampahService {
 
   // ================= 🔄 PATCH: SUBMIT TIMBANGAN DARI REQUEST NASABAH =================
   static Future<http.Response> submitSetoranRequestNasabah({
-    required int setorSampahId, // ID Induk transaksi 'menunggu_verifikasi' dari nasabah
+    required int setorSampahId,
     required int userId,
     required int kurirId,
     required int grandTotal,
     required String catatan,
-    int? jadwalId,
     required List<Map<String, dynamic>> sampahList,
     required String imagePath,
   }) async {
@@ -189,9 +188,6 @@ class SetorSampahService {
     request.fields['kurir_id'] = kurirId.toString();
     request.fields['grand_total'] = grandTotal.toString();
     request.fields['catatan'] = catatan;
-    if (jadwalId != null && jadwalId != 0) {
-      request.fields['jadwal_id'] = jadwalId.toString();
-    }
     request.fields['sampah_list'] = jsonEncode(sampahList);
 
     print("DEBUG PATCH REQUEST NASABAH: fields=${request.fields}");

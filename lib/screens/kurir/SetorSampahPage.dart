@@ -60,8 +60,13 @@ class _SetorSampahPageState extends State<SetorSampahPage> {
   bool _isSubmitting = false;
 
   List<Map<String, dynamic>> _keranjangSampah = [];
-  int _grandTotalSemua = 0;
+
+  int? _setorSampahId;
+
+// Index item request yang sedang diedit
   int _selectedIndexKeranjang = 0;
+
+  int _grandTotalSemua = 0;
 
   // 🧠 Logika penentu: Apakah ini benar-benar Request dari Nasabah yang beratnya masih 0?
   bool get isRealRequestNasabah => _isRequestDataFromNasabah;
@@ -138,7 +143,11 @@ class _SetorSampahPageState extends State<SetorSampahPage> {
         List<dynamic> itemsDariNasabah = requestData['items'];
 
         setState(() {
+
+          _setorSampahId = requestData['setor_sampah_id'];
+
           _isRequestDataFromNasabah = true;
+
           _keranjangSampah = itemsDariNasabah.map((item) => {
             'jenis_sampah_id': item['jenis_sampah_id'],
             'nama_sampah': item['nama_sampah'] ?? item['nama_jenis'] ?? 'Sampah',
@@ -278,21 +287,28 @@ class _SetorSampahPageState extends State<SetorSampahPage> {
       final prefs = await SharedPreferences.getInstance();
       final kurirId = prefs.getInt('user_id') ?? 0;
 
-      // 🛠️ Pembedaan Eksekusi Fungsi Service Berdasarkan Mode Alur Data
+      // 🛠️ Pembedaan Eksekusi Fungsi Service Berdasarkan Mo;de Alur Data
       final http.Response response;
 
       if (isRealRequestNasabah) {
         // 🔄 Jalur 1: Menggunakan PATCH Request Nasabah
         // Ambil ID Setor gantung dari manifes request yang dimuat di awal
-        final int setorSampahId = widget.jadwalData['id'] ?? 0;
+        if (_setorSampahId == null) {
+          _tampilkanPesan(
+            "ID transaksi request tidak ditemukan!",
+            Colors.red,
+          );
+          setState(() => _isSubmitting = false);
+          return;
+        }
 
+        final int setorSampahId = _setorSampahId!;
         response = await SetorSampahService.submitSetoranRequestNasabah(
           setorSampahId: setorSampahId,
           userId: widget.nasabahId,
           kurirId: kurirId,
           grandTotal: _grandTotalSemua,
           catatan: "Setoran request nasabah diselesaikan oleh kurir",
-          jadwalId: widget.jadwalId,
           sampahList: _keranjangSampah,
           imagePath: _imageFile?.path ?? "",
         );
