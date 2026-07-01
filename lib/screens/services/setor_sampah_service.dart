@@ -1,21 +1,8 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:http/http.dart' as http;
-import 'package:http/io_client.dart';
 import 'package:asriapp/config.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class SetorSampahService {
-  // 🔥 1. CLIENT AMAN UNTUK HOSTING (Bebas SSL Error)
-  static http.Client get _client {
-    final ioClient = HttpClient()
-      ..badCertificateCallback = (X509Certificate cert, String host, int port) {
-        if (host == "pht.my.id") return true;
-        return false;
-      };
-    return IOClient(ioClient);
-  }
-
   // ================= 1. CREATE REQUEST PENJEMPUTAN (NASABAH) =================
   static Future<bool> store({
     required int userId,
@@ -25,24 +12,15 @@ class SetorSampahService {
     try {
       final items = jenisIds.map((id) => {
         "jenis_sampah_id": id,
-        "berat": 0.0,
+        "berat": 0,
       }).toList();
 
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('token') ?? '';
-
       final url = Uri.parse('${AppConfig.baseUrl}/request-penjemputan');
-      
-      print("DEBUG STORE REQUEST: URL=$url");
-      print("DEBUG STORE REQUEST: USER_ID=$userId");
-      print("DEBUG STORE REQUEST: TOKEN=${token.isNotEmpty ? 'EXISTS' : 'EMPTY'}");
-
-      final response = await _client.post(
+      final response = await http.post(
         url,
         headers: {
           "Content-Type": "application/json",
           "Accept": "application/json",
-          if (token.isNotEmpty) "Authorization": "Bearer $token",
         },
         body: jsonEncode({
           "user_id": userId,
@@ -50,24 +28,25 @@ class SetorSampahService {
           "items": items,
         }),
       );
-
-      print("DEBUG STORE RESPONSE: ${response.statusCode} - ${response.body}");
-
       return response.statusCode == 200 || response.statusCode == 201;
     } catch (e) {
-      print("DEBUG STORE EXCEPTION: $e");
       return false;
     }
   }
 
-  // ================= 2. READ RIWAYAT TRANSAKSI (NASABAH) =================
+  // ================= 2. READ RIWAYAT TRANSAKSI (NASABAH) - FIXED =================
   static Future<List<dynamic>> getRiwayat({required int userId}) async {
     try {
       final url = Uri.parse('${AppConfig.baseUrl}/dashboard-nasabah/$userId');
-      final response = await _client.get(
+      print('GET REQUEST RIWAYAT VIA: $url');
+
+      final response = await http.get(
         url,
         headers: {"Accept": "application/json"},
       );
+
+      print('GET STATUS RIWAYAT : ${response.statusCode}');
+      print('GET BODY RIWAYAT : ${response.body}');
 
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body);
@@ -77,6 +56,7 @@ class SetorSampahService {
       }
       return [];
     } catch (e) {
+      print('GET ERROR RIWAYAT : $e');
       return [];
     }
   }
@@ -85,7 +65,7 @@ class SetorSampahService {
   static Future<Map<String, dynamic>?> getRequestDetail(int nasabahId) async {
     try {
       final url = Uri.parse('${AppConfig.baseUrl}/request-detail/$nasabahId');
-      final response = await _client.get(
+      final response = await http.get(
         url,
         headers: {"Accept": "application/json"},
       );
@@ -104,7 +84,7 @@ class SetorSampahService {
   // ================= 4. FETCH BERAT DARI IOT =================
   static Future<double?> fetchBeratIot() async {
     try {
-      final response = await _client.get(Uri.parse('${AppConfig.baseUrl}/berat-timbangan-iot'));
+      final response = await http.get(Uri.parse('${AppConfig.baseUrl}/berat-timbangan-iot'));
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         return double.tryParse(data['berat_iot'].toString()) ?? 0.0;
@@ -140,84 +120,7 @@ class SetorSampahService {
     request.fields['sampah_list'] = jsonEncode(sampahList);
     request.files.add(await http.MultipartFile.fromPath('foto_sampah', imagePath));
 
-    // Khusus multipart, kita send manual via client
     var streamedResponse = await request.send();
     return await http.Response.fromStream(streamedResponse);
-  }
-
-  // ================= 6. TARIK TUNAI SALDO =================
-  static Future<Map<String, dynamic>> tarikTunai({
-    required int userId,
-    required int nominal,
-    required String metode,
-    required String nomorHp,
-    required String pin,
-  }) async {
-    try {
-      final url = Uri.parse('${AppConfig.baseUrl}/tarik-tunai');
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('token') ?? '';
-
-      final response = await _client.post(
-        url,
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json",
-          "Authorization": "Bearer $token",
-        },
-        body: jsonEncode({
-          "user_id": userId,
-          "nominal": nominal,
-          "metode": metode,
-          "nomor_hp": nomorHp,
-          "pin": pin,
-        }),
-      );
-
-      return {
-        "status": response.statusCode,
-        "data": jsonDecode(response.body),
-      };
-    } catch (e) {
-      return {
-        "status": 500,
-        "data": {"message": "Gagal terhubung ke server: $e"},
-      };
-    }
-  }
-
-  // ================= 7. SETUP PIN PERTAMA KALI =================
-  static Future<Map<String, dynamic>> setupPin({
-    required String pin,
-    required String pinConfirmation,
-  }) async {
-    try {
-      final url = Uri.parse('${AppConfig.baseUrl}/setup-pin');
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('token') ?? '';
-
-      final response = await _client.post(
-        url,
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json",
-          "Authorization": "Bearer $token",
-        },
-        body: jsonEncode({
-          "pin": pin,
-          "pin_confirmation": pinConfirmation,
-        }),
-      );
-
-      return {
-        "status": response.statusCode,
-        "data": jsonDecode(response.body),
-      };
-    } catch (e) {
-      return {
-        "status": 500,
-        "data": {"message": "Kesalahan: $e"},
-      };
-    }
   }
 }

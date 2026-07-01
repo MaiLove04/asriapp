@@ -1,16 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
-import '../../config.dart';
-import '../services/tarik_tunai_service.dart'; // Import service baru
-import 'riwayat_tarik_tunai.dart'; // Nanti kita buat halaman riwayatnya
-
-const primaryColor = Color(0xFF1E521E);
-const softGreenColor = Color(0xFFE8F5E9);
-const backgroundColor = Color(0xFFF9FBF9);
-const darkTextColor = Color(0xFF0D240D);
 
 class TarikTunaiPage extends StatefulWidget {
   const TarikTunaiPage({super.key});
@@ -20,195 +9,201 @@ class TarikTunaiPage extends StatefulWidget {
 }
 
 class _TarikTunaiPageState extends State<TarikTunaiPage> {
-  final TarikTunaiService _tarikService = TarikTunaiService();
-  int _saldo = 0;
-  int _nominal = 0;
-  bool _isLoading = true;
-  bool _isSubmitting = false;
-  int _userId = 0;
+  int saldo = 15000;
+  int nominal = 10000;
 
-  final TextEditingController _nominalController = TextEditingController();
-
-  @override
-  void initState() {
-    super.initState();
-    _fetchUserData();
-  }
-
-  Future<void> _fetchUserData() async {
-    try {
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      _userId = prefs.getInt('user_id') ?? 0;
-
-      final response = await http.get(
-        Uri.parse('${AppConfig.baseUrl}/dashboard-nasabah/$_userId'),
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (data['success'] == true) {
-          setState(() {
-            _saldo = int.tryParse(data['nasabah']['saldo'].toString()) ?? 0;
-            _isLoading = false;
-          });
-        }
-      }
-    } catch (e) {
-      setState(() => _isLoading = false);
-    }
-  }
-
-  void _setNominal(int value) {
+  void setNominal(int value) {
     setState(() {
-      _nominal = value;
-      _nominalController.text = value.toString();
+      saldo -= nominal;
     });
   }
-
-  Future<void> _kirimRequestTarik() async {
-    if (_nominal < 1000) {
-      _showPesan("Minimal penarikan adalah Rp 1.000", Colors.red);
-      return;
-    }
-
-    if (_nominal > _saldo) {
-      _showPesan("Saldo Anda tidak mencukupi.", Colors.red);
-      return;
-    }
-
-    setState(() => _isSubmitting = true);
-
-    final result = await _tarikService.createRequestTarik(jumlahNominal: _nominal);
-
-    if (mounted) {
-      setState(() => _isSubmitting = false);
-      if (result['success']) {
-        _showSuksesDialog();
-      } else {
-        _showPesan(result['message'], Colors.red);
-      }
-    }
-  }
-
-  void _showSuksesDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Icon(Icons.check_circle, color: primaryColor, size: 60),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              "Request Berhasil!",
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              "Silakan datang ke Bank Sampah dan tunjukkan kartu nasabah Anda untuk mengambil uang tunai sebesar ${_formatRupiah(_nominal)}.",
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 14),
-            ),
-          ],
-        ),
-        actions: [
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: primaryColor),
-              onPressed: () {
-                Navigator.pop(ctx);
-                Navigator.pop(context); // Kembali ke dashboard
-              },
-              child: const Text("Selesai", style: TextStyle(color: Colors.white)),
-            ),
-          )
-        ],
-      ),
-    );
-  }
-
-  void _showPesan(String pesan, Color warna) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(pesan), backgroundColor: warna, behavior: SnackBarBehavior.floating),
-    );
-  }
-
-  String _formatRupiah(int angka) => "Rp " + NumberFormat.decimalPattern('id').format(angka);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: backgroundColor,
+      backgroundColor: Colors.grey[200],
       appBar: AppBar(
-        elevation: 0,
-        backgroundColor: primaryColor,
-        title: const Text("Request Tarik Tunai", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const RiwayatTarikTunaiPage())),
-            icon: const Icon(Icons.history, color: Colors.white),
-          )
-        ],
+        backgroundColor: Colors.green[900],
+        title: const Text(
+          "Tarik Tunai",
+          style: TextStyle(
+            color: Colors.white,
+          ),
+        ),
+        leading: const BackButton(),
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: primaryColor))
-          : SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+      body: SingleChildScrollView(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // CARD SALDO
+            const SizedBox(height: 20),
+
+            // ================= SALDO =================
             Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(24),
+              margin: const EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: primaryColor,
+                color: Colors.green[200],
                 borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.green.shade800),
               ),
               child: Column(
                 children: [
-                  const Text("Saldo Anda", style: TextStyle(color: Colors.white70)),
-                  Text(_formatRupiah(_saldo), style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold)),
+                  const Text("Saldo Poin Anda"),
+                  const SizedBox(height: 5),
+                  CircleAvatar(
+                    backgroundColor: Colors.green[800],
+                    child: const Text("Rp",
+                        style: TextStyle(color: Colors.white)),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    "Rp ${saldo.toString()}",
+                    style: const TextStyle(
+                        fontSize: 22, fontWeight: FontWeight.bold),
+                  ),
                 ],
               ),
             ),
-            const SizedBox(height: 30),
-            const Text("Masukkan Nominal Penarikan", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _nominalController,
-              keyboardType: TextInputType.number,
-              onChanged: (val) => setState(() => _nominal = int.tryParse(val) ?? 0),
-              decoration: InputDecoration(
-                hintText: "Contoh: 50000",
-                prefixIcon: const Icon(Icons.payments, color: primaryColor),
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
-                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide(color: Colors.grey.shade300)),
+
+            const SizedBox(height: 20),
+
+            // ================= FORM =================
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.grey.shade400),
               ),
-            ),
-            const SizedBox(height: 15),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [5000, 10000, 20000, 50000].map((val) => _quickOption(val)).toList(),
-            ),
-            const SizedBox(height: 40),
-            const Text("Informasi:", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
-            const Text("Penarikan akan diproses secara tunai oleh Admin Bank Sampah saat Anda berkunjung.", style: TextStyle(fontSize: 12, color: Colors.grey)),
-            const SizedBox(height: 50),
-            SizedBox(
-              width: double.infinity,
-              height: 55,
-              child: ElevatedButton(
-                onPressed: _isSubmitting ? null : _kirimRequestTarik,
-                style: ElevatedButton.styleFrom(backgroundColor: primaryColor, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))),
-                child: _isSubmitting
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text("Buat Request Penarikan", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Center(
+                    child: Text(
+                      "Formulir Tarik Tunai",
+                      style:
+                      TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  const Center(
+                    child: Text(
+                      "Silakan isi formulir penarikan di bawah ini",
+                      style: TextStyle(fontSize: 12),
+                    ),
+                  ),
+
+                  const SizedBox(height: 15),
+
+                  // ================= NOMINAL =================
+                  const Text("Nominal Penarikan"),
+
+                  const SizedBox(height: 10),
+
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[200],
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.attach_money),
+                        Expanded(
+                          child: Text(
+                            "Rp $nominal",
+                            style: const TextStyle(fontSize: 16),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  // QUICK BUTTON
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _quickButton(5000),
+                      _quickButton(10000),
+                      _quickButton(15000),
+                    ],
+                  ),
+
+                  const SizedBox(height: 15),
+
+                  // ================= JUMLAH =================
+                  const Text("Jumlah Penarikan"),
+                  const SizedBox(height: 5),
+
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[200],
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    child: Text("Rp $nominal"),
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  // ================= BIAYA =================
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: const [
+                      Text("Biaya Admin"),
+                      Text("Rp 0"),
+                    ],
+                  ),
+
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text("Total Penarikan"),
+                      Text("Rp $nominal"),
+                    ],
+                  ),
+
+                  const SizedBox(height: 15),
+
+                  // ================= BUTTON =================
+                  Center(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green[800],
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                      ),
+                      onPressed: () {
+                        // ✅ validasi saldo
+                        if (nominal > saldo) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text("Saldo tidak cukup")),
+                          );
+                          return;
+                        }
+
+                        setState(() {
+                          saldo -= nominal;
+                        });
+
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text("Penarikan berhasil diajukan")),
+                        );
+                      },
+                      child: const Text(
+                        "Ajukan Penarikan",
+                        style: TextStyle(
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  )
+                ],
               ),
             ),
           ],
@@ -217,21 +212,28 @@ class _TarikTunaiPageState extends State<TarikTunaiPage> {
     );
   }
 
-  Widget _quickOption(int value) {
-    return InkWell(
-      onTap: () => _setNominal(value),
+  // ================= QUICK BUTTON =================
+  Widget _quickButton(int value) {
+    return GestureDetector(
+      onTap: () => setNominal(value),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: _nominal == value ? primaryColor : Colors.white,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: primaryColor),
+          color: nominal == value ? Colors.green : Colors.grey[300],
+          borderRadius: BorderRadius.circular(20),
         ),
         child: Text(
-          NumberFormat.compact().format(value),
-          style: TextStyle(color: _nominal == value ? Colors.white : primaryColor, fontWeight: FontWeight.bold),
+          value.toString(),
+          style: TextStyle(
+            color: nominal == value ? Colors.white : Colors.black,
+          ),
         ),
       ),
     );
   }
+}
+
+String formatRupiah(int value) {
+  return NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0)
+      .format(value);
 }
