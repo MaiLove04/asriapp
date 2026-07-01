@@ -1,18 +1,20 @@
-import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:http/io_client.dart';
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../config.dart';
+import '../services/jadwal_service.dart';
 import 'ScanBarcode.dart';
-import 'navigasi_kurir_page.dart';
+import 'SetorSampahPage.dart';
+import 'navigasi_kurir_page.dart'; // 🔥 Pastikan import halaman navigasi sudah aktif
 
-const primaryColor = Color(0xFF1E521E);
-const backgroundColor = Color(0xFFF9FBF9);
-const darkTextColor = Color(0xFF0D240D);
-const greyTextColor = Color(0xFF444444);
-const softGreenColor = Color(0xFFE8F5E9);
+// Palet warna kontras tinggi (Senior-Friendly Theme)
+const primaryColor = Color(0xFF1E521E);     // Hijau tua pekat
+const secondaryColor = Color(0xFF4CAF50);   // Hijau aksen cerah
+const softGreenColor = Color(0xFFE8F5E9);   // Komponen background hijau lembut
+const backgroundColor = Color(0xFFF9FBF9);  // Putih bersih maksimal
+const darkTextColor = Color(0xFF0D240D);    // Teks super pekat (keterbacaan prima)
+const greyTextColor = Color(0xFF555555);    // Abu-abu gelap kontras tinggi
 
 class JadwalJemputScreen extends StatefulWidget {
   const JadwalJemputScreen({super.key});
@@ -25,6 +27,7 @@ class _JadwalJemputScreenState extends State<JadwalJemputScreen> {
   List<dynamic> jadwalList = [];
   bool isLoading = true;
   String selectedFilter = "Semua";
+
   final TextEditingController searchController = TextEditingController();
   String searchQuery = "";
 
@@ -34,295 +37,388 @@ class _JadwalJemputScreenState extends State<JadwalJemputScreen> {
     getJadwal();
   }
 
-  Future<void> getJadwal() async {
-    try {
-      setState(() => isLoading = true);
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-
-      int userId = 0;
-      var rawId = prefs.get('user_id');
-      if (rawId is int) {
-        userId = rawId;
-      } else if (rawId is String) {
-        userId = int.tryParse(rawId) ?? 0;
-      }
-
-      if (userId == 0) {
-        setState(() => isLoading = false);
-        _bukaDialogInterogasi("⚠️ MASALAH LOGIN:\nID Kurir di HP terbaca 0. Silakan LOGOUT lalu LOGIN ulang agar ID tersimpan di memori HP!");
-        return;
-      }
-
-      final token = prefs.getString('token') ?? '';
-      final url = Uri.parse('${AppConfig.baseUrl}/kurir/jadwal/$userId');
-
-      final ioClient = HttpClient()
-        ..badCertificateCallback = (X509Certificate cert, String host, int port) => true;
-      final secureClient = IOClient(ioClient);
-
-      final response = await secureClient.get(
-        url,
-        headers: {
-          "Accept": "application/json",
-          if (token.isNotEmpty) "Authorization": "Bearer $token",
-        },
-      );
-
-      final Map<String, dynamic> body = jsonDecode(response.body);
-
-      if (!mounted) return;
-      setState(() {
-        jadwalList = body['data'] ?? [];
-        isLoading = false;
-      });
-
-    } catch (e) {
-      if (mounted) setState(() => isLoading = false);
-    }
-  }
-
-  void _bukaDialogInterogasi(String pesan) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => AlertDialog(
-        title: const Text("🔍 Hasil Interogasi Sistem", style: TextStyle(fontWeight: FontWeight.bold, color: primaryColor)),
-        content: Text(pesan, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.black87)),
-        actions: [
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context),
-            style: ElevatedButton.styleFrom(backgroundColor: primaryColor),
-            child: const Text("SAYA PAHAM", style: TextStyle(color: Colors.white)),
-          )
-        ],
-      ),
-    );
-  }
-
-  // =========================================================================
-  // 🛠️ PERBAIKAN: METHOD PATCH & ALAMAT ENDPOINT BARU SEUSAI ROUTE LARAVEL
-  // =========================================================================
   Future<void> mulaiJemputKurir(int jadwalId) async {
     try {
-      setState(() => isLoading = true);
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('token') ?? '';
-
-      final ioClient = HttpClient()
-        ..badCertificateCallback = (X509Certificate cert, String host, int port) => true;
-      final secureClient = IOClient(ioClient);
-
-      // Endpoint diarahkan ke rute tunggal baru di Laravel
-      final targetUrl = "${AppConfig.baseUrl}/jadwal-penjemputan/$jadwalId/mulai";
-      print("DEBUG PATCH REQUEST TO: $targetUrl");
-
-      // Mengubah POST lama menjadi .patch sejalan dengan RESTful API
-      final response = await secureClient.patch(
-        Uri.parse(targetUrl),
+      final response = await http.put(
+        Uri.parse('${AppConfig.baseUrl}/jadwal-penjemputan/$jadwalId/mulai'),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
-          if (token.isNotEmpty) 'Authorization': 'Bearer $token',
         },
-        body: jsonEncode({'status': 'proses'}),
       );
 
-      print("Status Code Server: ${response.statusCode}");
-      print("Isi Respons Server: ${response.body}");
-
-      if (!mounted) return;
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
+      if (response.statusCode == 200) {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-              content: Text("⚠️ STATUS TUGAS: DALAM PROSES PENJEMPUTAN!"),
-              backgroundColor: Colors.blueAccent
+            content: Text("STATUS TUGAS: DALAM PROSES PENJEMPUTAN!", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+            backgroundColor: Colors.blueAccent,
+            duration: Duration(seconds: 3),
           ),
         );
-        await getJadwal();
+        getJadwal();
       } else {
-        String pesanGagal = "Gagal mengubah status! (Code: ${response.statusCode})";
-        try {
-          var errorBody = jsonDecode(response.body);
-          if (errorBody['message'] != null) {
-            pesanGagal = "${errorBody['message']}";
-          }
-        } catch (_) {}
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(pesanGagal),
-            backgroundColor: Colors.redAccent,
-            duration: const Duration(seconds: 5),
-          ),
-        );
-        setState(() => isLoading = false);
+        print("Gagal memperbarui status penjemputan");
       }
     } catch (e) {
-      print("Crash di Flutter: $e");
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Crash Flutter: $e"), backgroundColor: Colors.redAccent),
-        );
-        setState(() => isLoading = false);
+      print("Error koneksi penjemputan: $e");
+    }
+  }
+
+  Future<void> getJadwal() async {
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      int userId = 0;
+      if (prefs.containsKey('user_id')) {
+        final rawId = prefs.get('user_id');
+        if (rawId is int) {
+          userId = rawId;
+        } else if (rawId is String) {
+          userId = int.tryParse(rawId) ?? 0;
+        }
       }
+      final result = await JadwalService.getJadwalKurir(userId);
+
+      setState(() {
+        jadwalList = result;
+        isLoading = false;
+      });
+    } catch (e) {
+      print("DEBUG MAI JADWAL ERROR: $e");
+      setState(() { isLoading = false; });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    List<dynamic> filteredList = List.from(jadwalList);
+    if (isLoading) {
+      return const Scaffold(
+        backgroundColor: backgroundColor,
+        body: Center(child: CircularProgressIndicator(color: primaryColor, strokeWidth: 4)),
+      );
+    }
+
+    List<dynamic> filteredList = jadwalList.where((jadwal) {
+      String status = (jadwal['status'] ?? 'terjadwal').toString().toLowerCase();
+      bool matchFilter = true;
+      if (selectedFilter == "Hari Ini") matchFilter = (status == 'terjadwal' || status == 'proses');
+      else if (selectedFilter == "Proses") matchFilter = (status == 'proses');
+      else if (selectedFilter == "Selesai") matchFilter = (status == 'selesai' || status == 'completed');
+
+      String namaNasabah = (jadwal['nasabah']?['name'] ?? '').toString().toLowerCase();
+      String alamatTugas = (jadwal['alamat'] ?? '').toString().toLowerCase();
+      bool matchSearch = namaNasabah.contains(searchQuery.toLowerCase()) || alamatTugas.contains(searchQuery.toLowerCase());
+
+      return matchFilter && matchSearch;
+    }).toList();
 
     return Scaffold(
       backgroundColor: backgroundColor,
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator(color: primaryColor, strokeWidth: 5))
-          : RefreshIndicator(
-        color: primaryColor,
-        onRefresh: getJadwal,
-        child: CustomScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          slivers: [
-            SliverToBoxAdapter(
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.only(top: 60, bottom: 24, left: 16, right: 16),
-                decoration: const BoxDecoration(
-                  color: primaryColor,
-                  borderRadius: BorderRadius.vertical(bottom: Radius.circular(32)),
+      body: Column(
+        children: [
+          // ================= HEADER FIXED =================
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.only(top: 50, bottom: 20),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [primaryColor, Color(0xFF2E6B2E)],
+              ),
+              borderRadius: BorderRadius.vertical(bottom: Radius.circular(36)),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 26),
+                        onPressed: () => Navigator.pop(context, true),
+                      ),
+                      const SizedBox(width: 4),
+                      const Expanded(
+                        child: Text(
+                          "Jadwal Penjemputan",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 26,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.refresh_rounded, color: Colors.white, size: 28),
+                        onPressed: () => getJadwal(),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Center(
+                    child: Text(
+                      "Ada ${filteredList.length} tugas penjemputan aktif",
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // ================= SEARCH BAR =================
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: TextField(
+              controller: searchController,
+              onChanged: (value) {
+                setState(() { searchQuery = value; });
+              },
+              style: const TextStyle(color: darkTextColor, fontWeight: FontWeight.bold),
+              decoration: InputDecoration(
+                hintText: "Cari nama nasabah atau alamat...",
+                hintStyle: const TextStyle(color: greyTextColor),
+                prefixIcon: const Icon(Icons.search_rounded, color: primaryColor),
+                suffixIcon: searchQuery.isNotEmpty
+                    ? IconButton(
+                  icon: const Icon(Icons.clear_rounded, color: greyTextColor),
+                  onPressed: () {
+                    searchController.clear();
+                    setState(() { searchQuery = ""; });
+                  },
+                )
+                    : null,
+                filled: true,
+                fillColor: Colors.white,
+                contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
                 ),
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        IconButton(icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 26), onPressed: () => Navigator.pop(context)),
-                        const Text("Daftar Tugas", style: TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.w900)),
-                        IconButton(icon: const Icon(Icons.refresh_rounded, color: Colors.white, size: 28), onPressed: getJadwal),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                        "Terdeteksi ${jadwalList.length} total tugas di sistem",
-                        style: const TextStyle(color: Colors.white70, fontSize: 16, fontWeight: FontWeight.bold)
-                    ),
-                  ],
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: const BorderSide(color: primaryColor, width: 2),
                 ),
               ),
             ),
+          ),
 
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 18),
-                child: SizedBox(
-                  height: 46,
-                  child: ListView(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    children: ["Semua", "Hari Ini", "Proses", "Selesai"].map((f) => _buildFilterChip(f)).toList(),
-                  ),
-                ),
-              ),
+          // ================= FILTER CHIPS =================
+          SizedBox(
+            height: 45,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              children: [
+                _buildFilterChip("Semua"),
+                _buildFilterChip("Hari Ini"),
+                _buildFilterChip("Proses"),
+                _buildFilterChip("Selesai"),
+              ],
             ),
+          ),
 
-            filteredList.isEmpty
-                ? const SliverFillRemaining(
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Text(
-                    "Tidak ada data tugas aktif untuk Kurir hari ini.",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: greyTextColor, fontSize: 18, fontWeight: FontWeight.bold),
+          const SizedBox(height: 12),
+
+          // ================= CARDS LIST =================
+          Expanded(
+            child: filteredList.isEmpty
+                ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.assignment_late_rounded, size: 64, color: Colors.grey.shade400),
+                  const SizedBox(height: 12),
+                  Text(
+                    "Tidak ada jadwal penjemputan",
+                    style: TextStyle(fontSize: 16, color: Colors.grey.shade600, fontWeight: FontWeight.bold),
                   ),
-                ),
+                ],
               ),
             )
-                : SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              sliver: SliverList(
-                delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                    final item = filteredList[index];
+                : RefreshIndicator(
+              color: primaryColor,
+              onRefresh: getJadwal,
+              child: ListView.builder(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
+                itemCount: filteredList.length,
+                itemBuilder: (context, index) {
+                  final item = filteredList[index];
 
-                    // =========================================================================
-                    // 🧠 INTERPRETASI LABEL DINAMIS HASIL KIRIMAN DARI LARAVEL
-                    // =========================================================================
-                    String kategori = (item['jenis_tugas_label'] ?? 'JADWAL MANUAL').toString().toUpperCase();
-                    Color kategoriColor = Colors.grey.shade700;
-
-                    if (kategori == 'REQUEST NASABAH') {
-                      kategoriColor = Colors.orange.shade800;
-                    } else if (kategori == 'JADWAL RUTIN') {
-                      kategoriColor = Colors.blue.shade800;
+                  String jamFormatted = "--:--";
+                  if (item['created_at'] != null && item['created_at'].toString().length >= 16) {
+                    try {
+                      jamFormatted = item['created_at'].toString().substring(11, 16);
+                    } catch (e) {
+                      jamFormatted = "--:--";
                     }
+                  }
 
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 16),
-                      child: JadwalCard(
-                        id: int.tryParse(item['id'].toString()) ?? 0,
-                        nama: _resolveNamaNasabah(item),
-                        alamat: item['alamat'] ?? 'Alamat tidak tersedia',
-                        status: (item['status'] ?? 'terjadwal').toString(),
-                        kategori: kategori,
-                        kategoriColor: kategoriColor,
-                        onLihatLokasi: () => Navigator.push(context, MaterialPageRoute(builder: (_) => NavigasiKurirPage(initialJadwalData: item))),
-                        onMulaiJemput: () async {
-                          String st = (item['status'] ?? '').toString().toLowerCase();
-                          if (st == 'terjadwal' || st == 'pending') {
-                            await mulaiJemputKurir(int.parse(item['id'].toString()));
-                          } else {
-                            int idNasabah = int.tryParse(item['nasabah_id']?.toString() ?? '') ?? int.tryParse(item['user_id']?.toString() ?? '') ?? 0;
-                            final res = await Navigator.push(context, MaterialPageRoute(builder: (_) => ScanBarcodePage(jadwalId: int.parse(item['id'].toString()), nasabahId: idNasabah)));
-                            if (res == true) getJadwal();
-                          }
-                        },
-                      ),
-                    );
-                  },
-                  childCount: filteredList.length,
-                ),
+                  String displayStatus = (item['status'] ?? 'terjadwal').toString().toLowerCase();
+                  bool isTerjadwal = (displayStatus == 'terjadwal' || displayStatus == 'pending');
+                  bool isProses = (displayStatus == 'proses' || displayStatus == 'on_progress');
+
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 14),
+                    child: JadwalCard(
+                      id: item['id'] ?? 0,
+                      nama: item['nasabah']?['name'] ?? 'Tanpa Nama',
+                      alamat: item['alamat'] ?? 'Alamat tidak tersedia',
+                      jam: jamFormatted,
+                      status: displayStatus,
+                      // 🔥 AKSI TOMBOL LIHAT LOKASI: Pindah ke halaman Navigasi rute map
+                      onLihatLokasi: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const NavigasiKurirPage(),
+                          ),
+                        );
+                      },
+                      onMulaiJemput: () async {
+                        if (isTerjadwal) {
+                          mulaiJemputKurir(item['id'] is int ? item['id'] : int.parse(item['id'].toString()));
+                        } else if (isProses) {
+                          // EFEISIEN: Langsung ke Scan, dan Scan akan langsung ke Form Timbang
+                          final int idJadwal = item['id'] is int ? item['id'] : (int.tryParse(item['id'].toString()) ?? 0);
+                          final int idNasabah = item['nasabah_id'] is int ? item['nasabah_id'] : (int.tryParse(item['nasabah_id']?.toString() ?? '0') ?? 0);
+
+                          final refresh = await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => ScanBarcodePage(
+                                jadwalId: idJadwal,
+                                nasabahId: idNasabah,
+                              ),
+                            ),
+                          );
+                          if (refresh == true) getJadwal();
+                        }
+                      },
+                    ),
+                  );
+                },
               ),
             ),
-            const SliverToBoxAdapter(child: SizedBox(height: 120)),
+          ),
+        ],
+      ),
+
+      // ================= FLOATING ACTION SCANNER =================
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      floatingActionButton: Container(
+        height: 72,
+        width: 72,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(color: primaryColor.withOpacity(0.4), blurRadius: 16, offset: const Offset(0, 6)),
+          ],
+        ),
+        child: FloatingActionButton(
+          elevation: 0,
+          backgroundColor: primaryColor,
+          shape: const CircleBorder(),
+          onPressed: () async {
+            int idJadwalTerpilih = int.tryParse(jadwalList.isNotEmpty ? jadwalList[0]['id']?.toString() ?? '0' : '0') ?? 0;
+            final result = await Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => ScanBarcodePage(jadwalId: idJadwalTerpilih)),
+            );
+
+            if (result == true) {
+              getJadwal();
+            }
+          },
+          child: const Icon(Icons.qr_code_scanner_rounded, color: Colors.white, size: 32),
+        ),
+      ),
+
+      // ================= BOTTOM NAV BAR =================
+      bottomNavigationBar: BottomAppBar(
+        shape: const CircularNotchedRectangle(),
+        notchMargin: 10,
+        elevation: 24,
+        color: Colors.white,
+        shadowColor: primaryColor.withOpacity(0.4),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _navItem(
+              icon: Icons.home_rounded,
+              label: "Beranda",
+              active: true,
+              onTap: () => Navigator.pop(context, true),
+            ),
+            _navItem(icon: Icons.assignment_turned_in_rounded, label: "Riwayat", onTap: () {}),
+            const SizedBox(width: 48),
+            _navItem(icon: Icons.notifications_rounded, label: "Notifikasi", onTap: () {}),
+            _navItem(icon: Icons.account_circle_rounded, label: "Akun Saya", onTap: () {}),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildFilterChip(String label) {
-    bool isSelected = selectedFilter == label;
-    return Container(
-      margin: const EdgeInsets.only(right: 10),
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      decoration: BoxDecoration(
+  Widget _buildFilterChip(String title) {
+    bool isSelected = (selectedFilter == title);
+    return GestureDetector(
+      onTap: () {
+        setState(() { selectedFilter = title; });
+      },
+      child: Container(
+        margin: const EdgeInsets.only(right: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        decoration: BoxDecoration(
           color: isSelected ? primaryColor : Colors.white,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: primaryColor, width: 2)
-      ),
-      alignment: Alignment.center,
-      child: Text(
-          label,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: isSelected ? primaryColor : Colors.grey.shade300, width: 1),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          title,
           style: TextStyle(
-              color: isSelected ? Colors.white : primaryColor,
-              fontWeight: FontWeight.w900,
-              fontSize: 16
-          )
+            color: isSelected ? Colors.white : darkTextColor,
+            fontWeight: FontWeight.w900,
+            fontSize: 13,
+          ),
+        ),
       ),
     );
   }
 
-  String _resolveNamaNasabah(dynamic j) {
-    if (j == null) return 'Nasabah';
-    var n = j['nasabah'] ?? j['user'];
-    if (n != null && n is Map) {
-      var name = n['name'] ?? n['nama'] ?? (n['user'] != null ? n['user']['name'] ?? n['user']['nama'] : null);
-      if (name != null) return name.toString();
-    }
-    var direct = j['nasabah_name'] ?? j['user_name'] ?? j['nama_nasabah'] ?? j['nama'] ?? j['name'];
-    if (direct != null) return direct.toString();
-    return 'Nasabah ASRI';
+  Widget _navItem({
+    required IconData icon,
+    required String label,
+    bool active = false,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 26, color: active ? primaryColor : Colors.grey.shade600),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: active ? primaryColor : Colors.grey.shade600),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -330,101 +426,136 @@ class JadwalCard extends StatelessWidget {
   final int id;
   final String nama;
   final String alamat;
+  final String jam;
   final String status;
-  final String kategori;
-  final Color kategoriColor;
-  final VoidCallback onLihatLokasi;
+  final VoidCallback onLihatLokasi; // 🔥 Ditambahkan parameter baru
   final VoidCallback onMulaiJemput;
 
-  const JadwalCard({super.key, required this.id, required this.nama, required this.alamat, required this.status, required this.kategori, required this.kategoriColor, required this.onLihatLokasi, required this.onMulaiJemput});
+  const JadwalCard({
+    super.key,
+    required this.id,
+    required this.nama,
+    required this.alamat,
+    required this.jam,
+    required this.status,
+    required this.onLihatLokasi, // 🔥 Ditambahkan ke constructor
+    required this.onMulaiJemput,
+  });
 
   @override
   Widget build(BuildContext context) {
-    String st = status.toLowerCase();
-    Color statusColor = (st == 'selesai' || st == 'completed')
-        ? Colors.green.shade900
-        : (st == 'terjadwal' || st == 'pending' ? Colors.orange.shade900 : Colors.blue.shade900);
+    Color statusColor;
+    String displayStatus = status.toLowerCase();
 
-    bool isProses = (st == 'proses' || st == 'dalam_perjalanan' || st == 'on_progress');
+    if (displayStatus == 'selesai' || displayStatus == 'completed') {
+      statusColor = Colors.green.shade800;
+    } else if (displayStatus == 'proses' || displayStatus == 'on_progress') {
+      statusColor = Colors.blue.shade800;
+    } else {
+      statusColor = Colors.orange.shade800;
+    }
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 4))]
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(.04), blurRadius: 16, offset: const Offset(0, 6)),
+        ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // Badge Atas Dinamis Mengikuti Pola Warna Kategori
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(color: kategoriColor.withOpacity(0.12), borderRadius: BorderRadius.circular(8)),
-                child: Text(kategori, style: TextStyle(color: kategoriColor, fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Text(nama, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: darkTextColor, letterSpacing: -0.5)),
-          const SizedBox(height: 8),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Padding(
-                padding: EdgeInsets.only(top: 2.0),
-                child: Icon(Icons.location_on_rounded, size: 20, color: primaryColor),
+              CircleAvatar(
+                radius: 26,
+                backgroundColor: primaryColor.withOpacity(0.08),
+                child: const Icon(Icons.person_rounded, color: primaryColor, size: 26),
               ),
-              const SizedBox(width: 6),
-              Expanded(child: Text(alamat, style: const TextStyle(fontSize: 16, color: darkTextColor, fontWeight: FontWeight.w600))),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Divider(color: Colors.grey.shade300, thickness: 1),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text("Status Tugas:", style: TextStyle(fontSize: 15, color: greyTextColor, fontWeight: FontWeight.bold)),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      nama,
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: darkTextColor, letterSpacing: -0.3),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Padding(
+                          padding: EdgeInsets.only(top: 2.0),
+                          child: Icon(Icons.location_on_rounded, size: 16, color: primaryColor),
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(child: Text(alamat, style: const TextStyle(color: greyTextColor, fontSize: 13, fontWeight: FontWeight.w700))),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
               Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(color: statusColor.withOpacity(0.15), borderRadius: BorderRadius.circular(8)),
-                  child: Text(status.toUpperCase(), style: TextStyle(color: statusColor, fontSize: 13, fontWeight: FontWeight.w900))
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: statusColor.withOpacity(.1),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Text(
+                  status.toUpperCase(),
+                  style: TextStyle(color: statusColor, fontWeight: FontWeight.w900, fontSize: 11, letterSpacing: 0.3),
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 18),
           Row(
             children: [
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: onLihatLokasi,
+                  onPressed: onLihatLokasi, // 🔥 Sekarang memicu fungsi yang dioper dari list view
                   style: OutlinedButton.styleFrom(
-                    minimumSize: const Size(0, 54),
-                    side: const BorderSide(color: primaryColor, width: 2.5),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    minimumSize: const Size(0, 50),
+                    side: const BorderSide(color: primaryColor, width: 1.5),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   ),
-                  icon: const Icon(Icons.map_rounded, color: primaryColor, size: 22),
-                  label: const Text("LIHAT RUTE", style: TextStyle(color: primaryColor, fontSize: 13, fontWeight: FontWeight.w900)),
+                  icon: const Icon(Icons.map_rounded, color: primaryColor, size: 18),
+                  label: const Text("LIHAT LOKASI", style: TextStyle(color: primaryColor, fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 0.3)),
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 12),
               Expanded(
                 child: ElevatedButton.icon(
                   onPressed: onMulaiJemput,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: isProses ? Colors.orange.shade800 : primaryColor,
-                    minimumSize: const Size(0, 54),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    elevation: 2,
+                    backgroundColor: status.toLowerCase() == 'proses' ? Colors.orange.shade800 : primaryColor,
+                    disabledBackgroundColor: Colors.grey.shade200,
+                    minimumSize: const Size(0, 50),
+                    elevation: (status.toLowerCase() == 'selesai') ? 0 : 2,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   ),
-                  icon: Icon(isProses ? Icons.scale_rounded : Icons.local_shipping_rounded, color: Colors.white, size: 22),
+                  icon: Icon(
+                      status.toLowerCase() == 'selesai'
+                          ? Icons.check_circle_rounded
+                          : (status.toLowerCase() == 'proses' ? Icons.scale_rounded : Icons.local_shipping_rounded),
+                      color: status.toLowerCase() == 'selesai' ? Colors.grey.shade500 : Colors.white,
+                      size: 18
+                  ),
                   label: Text(
-                      st == 'terjadwal' || st == 'pending' ? "MULAI JEMPUT" : "TIMBANG",
-                      style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w900)
+                    status.toLowerCase() == 'terjadwal' || status.toLowerCase() == 'pending'
+                        ? "MULAI JEMPUT"
+                        : (status.toLowerCase() == 'proses' ? "TIMBANG SAMPAH" : "SUDAH SELESAI"),
+                    style: TextStyle(
+                        color: status.toLowerCase() == 'selesai' ? Colors.grey.shade600 : Colors.white,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 12,
+                        letterSpacing: 0.3
+                    ),
                   ),
                 ),
               ),

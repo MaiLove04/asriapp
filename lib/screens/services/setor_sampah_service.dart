@@ -32,7 +32,7 @@ class SetorSampahService {
       final token = prefs.getString('token') ?? '';
 
       final url = Uri.parse('${AppConfig.baseUrl}/request-penjemputan');
-
+      
       print("DEBUG STORE REQUEST: URL=$url");
       print("DEBUG STORE REQUEST: USER_ID=$userId");
       print("DEBUG STORE REQUEST: TOKEN=${token.isNotEmpty ? 'EXISTS' : 'EMPTY'}");
@@ -101,7 +101,7 @@ class SetorSampahService {
     }
   }
 
-  // ================= AMBIL BERAT TIMBANGAN IOT =================
+  // ================= 4. FETCH BERAT DARI IOT =================
   static Future<double?> fetchBeratIot() async {
     try {
       final response = await _client.get(Uri.parse('${AppConfig.baseUrl}/berat-timbangan-iot'));
@@ -115,92 +115,34 @@ class SetorSampahService {
     return null;
   }
 
-  // ================= 🔄 PATCH: SUBMIT TIMBANGAN DARI JADWAL ADMIN =================
-  static Future<http.Response> submitSetoranJadwalAdmin({
-    required int id, // ID Transaksi Induk/Setor terkait
+  // ================= 5. SUBMIT SETOR SAMPAH =================
+  static Future<http.Response> submitSetoran({
     required int userId,
     required int kurirId,
     required int grandTotal,
+    required String judulDinamis,
     required String catatan,
     int? jadwalId,
     required List<Map<String, dynamic>> sampahList,
     required String imagePath,
   }) async {
-    var uri = Uri.parse('${AppConfig.baseUrl}/setor-sampah/jadwal-admin/$id');
-
-    // 🛠️ Perubahan Utama: Gunakan method 'PATCH' untuk MultipartRequest
-    var request = http.MultipartRequest('PATCH', uri);
-
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token') ?? '';
-
-    request.headers['Accept'] = 'application/json';
-    if (token.isNotEmpty) {
-      request.headers['Authorization'] = 'Bearer $token';
-    }
+    var uri = Uri.parse('${AppConfig.baseUrl}/setor-sampah');
+    var request = http.MultipartRequest('POST', uri);
 
     request.fields['user_id'] = userId.toString();
     request.fields['kurir_id'] = kurirId.toString();
     request.fields['grand_total'] = grandTotal.toString();
+    request.fields['judul_dinamis'] = judulDinamis;
     request.fields['catatan'] = catatan;
     if (jadwalId != null && jadwalId != 0) {
       request.fields['jadwal_id'] = jadwalId.toString();
     }
     request.fields['sampah_list'] = jsonEncode(sampahList);
+    request.files.add(await http.MultipartFile.fromPath('foto_sampah', imagePath));
 
-    print("DEBUG PATCH JADWAL ADMIN: fields=${request.fields}");
-
-    if (imagePath.isNotEmpty && imagePath.trim() != "") {
-      request.files.add(await http.MultipartFile.fromPath('foto_sampah', imagePath));
-    }
-
-    var streamedResponse = await _client.send(request);
-    var response = await http.Response.fromStream(streamedResponse);
-
-    print("DEBUG PATCH JADWAL ADMIN RESPONSE: ${response.statusCode} - ${response.body}");
-    return response;
-  }
-
-  // ================= 🔄 PATCH: SUBMIT TIMBANGAN DARI REQUEST NASABAH =================
-  static Future<http.Response> submitSetoranRequestNasabah({
-    required int setorSampahId,
-    required int userId,
-    required int kurirId,
-    required int grandTotal,
-    required String catatan,
-    required List<Map<String, dynamic>> sampahList,
-    required String imagePath,
-  }) async {
-    var uri = Uri.parse('${AppConfig.baseUrl}/setor-sampah/request-nasabah/$setorSampahId');
-
-    // 🛠️ Perubahan Utama: Gunakan method 'PATCH' untuk MultipartRequest
-    var request = http.MultipartRequest('PATCH', uri);
-
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token') ?? '';
-
-    request.headers['Accept'] = 'application/json';
-    if (token.isNotEmpty) {
-      request.headers['Authorization'] = 'Bearer $token';
-    }
-
-    request.fields['user_id'] = userId.toString();
-    request.fields['kurir_id'] = kurirId.toString();
-    request.fields['grand_total'] = grandTotal.toString();
-    request.fields['catatan'] = catatan;
-    request.fields['sampah_list'] = jsonEncode(sampahList);
-
-    print("DEBUG PATCH REQUEST NASABAH: fields=${request.fields}");
-
-    if (imagePath.isNotEmpty && imagePath.trim() != "") {
-      request.files.add(await http.MultipartFile.fromPath('foto_sampah', imagePath));
-    }
-
-    var streamedResponse = await _client.send(request);
-    var response = await http.Response.fromStream(streamedResponse);
-
-    print("DEBUG PATCH REQUEST NASABAH RESPONSE: ${response.statusCode} - ${response.body}");
-    return response;
+    // Khusus multipart, kita send manual via client
+    var streamedResponse = await request.send();
+    return await http.Response.fromStream(streamedResponse);
   }
 
   // ================= 6. TARIK TUNAI SALDO =================

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/dashboard_kurir_service.dart';
-import '../services/jadwal_service.dart';
 import '../../config.dart';
 import '../login_screen.dart';
 import '../kurir/JadwalJemputScreen.dart';
@@ -12,12 +11,12 @@ import 'navigasi_kurir_page.dart';
 import '../user/aduan_page.dart';
 
 // Palet Warna Kontras Tinggi & Profesional
-const primaryColor = Color(0xFF154015);
-const secondaryColor = Color(0xFF2E7D32);
-const softGreenColor = Color(0xFFF0F7F0);
-const backgroundColor = Color(0xFFF6F8F6);
-const darkTextColor = Color(0xFF0A1A0A);
-const greyTextColor = Color(0xFF555555);
+const primaryColor = Color(0xFF154015);     // Hijau hutan tua (Sangat kontras & formal)
+const secondaryColor = Color(0xFF2E7D32);   // Hijau medium untuk aksen status
+const softGreenColor = Color(0xFFF0F7F0);   // Latar belakang komponen lembut
+const backgroundColor = Color(0xFFF6F8F6);  // Abu-putih bersih untuk mengurangi glare layar
+const darkTextColor = Color(0xFF0A1A0A);    // Hitam-hijau pekat untuk keterbacaan teks maksimal
+const greyTextColor = Color(0xFF424242);    // Abu-abu gelap (bukan abu-abu pudar)
 
 class DashboardKurir extends StatefulWidget {
   const DashboardKurir({super.key});
@@ -61,7 +60,6 @@ class _DashboardKurirState extends State<DashboardKurir> {
       }
 
       final result = await DashboardKurirService.getDashboard(userId);
-
       setState(() {
         dashboardData = result;
         isLoading = false;
@@ -88,7 +86,6 @@ class _DashboardKurirState extends State<DashboardKurir> {
       },
       child: Scaffold(
         backgroundColor: backgroundColor,
-        resizeToAvoidBottomInset: false,
         body: isLoading
             ? const Center(child: CircularProgressIndicator(color: primaryColor, strokeWidth: 4))
             : RefreshIndicator(
@@ -98,13 +95,23 @@ class _DashboardKurirState extends State<DashboardKurir> {
             physics: const AlwaysScrollableScrollPhysics(),
             child: Column(
               children: [
+                // ================= HEADER KOKOH =================
                 _buildHeader(),
+
+                // ================= LAYOUT UTAMA UTK USIA 30+ =================
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 20),
+                      _sectionTitle("Tugas Terdekat Hari Ini"),
+                      const SizedBox(height: 10),
+                      dashboardData?['jadwal'] == null
+                          ? _buildEmptyTask()
+                          : _UrgentTaskItem(jadwal: dashboardData?['jadwal']),
+
+                      const SizedBox(height: 28),
                       _sectionTitle("Ringkasan Performa Kerja"),
                       const SizedBox(height: 10),
                       _TodaySummarySection(dashboardData: dashboardData),
@@ -127,136 +134,7 @@ class _DashboardKurirState extends State<DashboardKurir> {
             ),
           ),
         ),
-
-        // 🔥 1. POSISI TOMBOL DI SET TEPAT DI TENGAH COAKAN NAVBAR (DOCKING CENTER)
-        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-
-        // 🔥 2. DESAIN UTUH FAB DENGAN GRADASI GLOSSY & GLOW SHADOW MEWAH
-        floatingActionButton: Container(
-          height: 72,
-          width: 72,
-          margin: const EdgeInsets.only(top: 12), // Memberikan space gantung proporsional di atas notch
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: secondaryColor.withOpacity(0.4),
-                blurRadius: 16,
-                spreadRadius: 2,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: FloatingActionButton(
-            onPressed: () async {
-              final res = await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const ScanBarcodePage(
-                    jadwalId: 0,
-                    nasabahId: 0,
-                  ),
-                ),
-              );
-              if (res == true) getDashboard();
-            },
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            highlightElevation: 0,
-            shape: const CircleBorder(),
-            child: Ink(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  colors: [
-                    secondaryColor,
-                    primaryColor.withOpacity(0.9),
-                  ],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                ),
-                border: Border.all(color: Colors.white, width: 2), // Ring Border Putih Kontras
-              ),
-              child: const Center(
-                child: Icon(
-                  Icons.qr_code_scanner_rounded,
-                  color: Colors.white,
-                  size: 30,
-                ),
-              ),
-            ),
-          ),
-        ),
-
-        // 🔥 3. NAVBAR DENGAN LENGKUNGAN SEMPURNA MENGIKUTI FAB GRADASI
-        bottomNavigationBar: BottomAppBar(
-          clipBehavior: Clip.antiAlias,
-          notchMargin: 8.0,
-          shape: const CircularNotchedRectangle(),
-          color: Colors.white,
-          elevation: 16,
-          padding: EdgeInsets.zero,
-          height: 65,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // Sisi Kiri (Beranda & Riwayat)
-              Expanded(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    _buildNavItem(Icons.home_rounded, "Beranda", true, () {}),
-                    _buildNavItem(Icons.history_rounded, "Riwayat", false, () {
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => const RiwayatKurirScreen()));
-                    }),
-                  ],
-                ),
-              ),
-
-              // Spacer pemisah tengah (menghindari tabrakan dengan bulatan tombol glow)
-              const SizedBox(width: 60),
-
-              // Sisi Kanan (Notifikasi & Profil)
-              Expanded(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    _buildNavItem(Icons.notifications_none_rounded, "Notifikasi", false, () {}),
-                    _buildNavItem(Icons.person_rounded, "Profil", false, () {
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfilKurirScreen())).then((_) => getDashboard());
-                    }),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNavItem(IconData icon, String label, bool active, VoidCallback onTap) {
-    return InkWell(
-      onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-              icon,
-              color: active ? primaryColor : greyTextColor.withOpacity(0.7),
-              size: 24
-          ),
-          const SizedBox(height: 3),
-          Text(
-              label,
-              style: TextStyle(
-                color: active ? primaryColor : greyTextColor,
-                fontSize: 11,
-                fontWeight: active ? FontWeight.w800 : FontWeight.w600,
-              )
-          ),
-        ],
+        bottomNavigationBar: _PremiumBottomNav(onRefresh: getDashboard),
       ),
     );
   }
@@ -297,6 +175,29 @@ class _DashboardKurirState extends State<DashboardKurir> {
           child: _ActiveMissionCard(dashboardData: dashboardData),
         ),
       ],
+    );
+  }
+
+  Widget _buildEmptyTask() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 16),
+      decoration: cardDecoration(),
+      child: const Column(
+        children: [
+          Icon(Icons.check_circle_outline_rounded, size: 52, color: secondaryColor),
+          const SizedBox(height: 12),
+          Text(
+            "Tidak Ada Jadwal Penjemputan Aktif",
+            style: TextStyle(color: darkTextColor, fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          SizedBox(height: 4),
+          Text(
+            "Semua antrean tugas untuk hari ini telah selesai diproses.",
+            style: TextStyle(color: greyTextColor, fontSize: 13, fontWeight: FontWeight.w500),
+          ),
+        ],
+      ),
     );
   }
 
@@ -410,7 +311,7 @@ class _ActiveMissionCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(6),
             child: LinearProgressIndicator(
               value: progress,
-              minHeight: 14,
+              minHeight: 14, // Lebih tebal agar mudah dilihat
               backgroundColor: Colors.grey.shade100,
               color: primaryColor,
             ),
@@ -494,6 +395,7 @@ class _SummaryBox extends StatelessWidget {
   }
 }
 
+// PERBAIKAN: Mengganti GridView kecil dengan Layout Tombol Baris Berukuran Besar (Senior-Friendly)
 class _QuickActionsLayout extends StatelessWidget {
   const _QuickActionsLayout();
 
@@ -503,9 +405,9 @@ class _QuickActionsLayout extends StatelessWidget {
       children: [
         Row(
           children: [
-            Expanded(child: _largeMenuButton(context, Icons.assignment_rounded, "Daftar Tugas", () => Navigator.push(context, MaterialPageRoute(builder: (_) => const JadwalJemputScreen())))),
+            Expanded(child: _largeMenuButton(context, Icons.assignment_rounded, "Daftar Tugas Kerja", () => Navigator.push(context, MaterialPageRoute(builder: (_) => const JadwalJemputScreen())))),
             const SizedBox(width: 12),
-            Expanded(child: _largeMenuButton(context, Icons.map_rounded, "Peta Rute", () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NavigasiKurirPage())))),
+            Expanded(child: _largeMenuButton(context, Icons.map_rounded, "Navigasi Peta Rute", () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NavigasiKurirPage())))),
           ],
         ),
         const SizedBox(height: 12),
@@ -549,6 +451,126 @@ class _QuickActionsLayout extends StatelessWidget {
   }
 }
 
+class _UrgentTaskItem extends StatelessWidget {
+  final dynamic jadwal;
+  const _UrgentTaskItem({required this.jadwal});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: cardDecoration().copyWith(
+        border: Border.all(color: primaryColor.withOpacity(0.3), width: 1.5), // Highlight batas agar fokus mata jelas
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.stars_rounded, color: Colors.orange, size: 22),
+              const SizedBox(width: 6),
+              Text(
+                  "JADWAL PENJEMPUTAN TERDEKAT",
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: Colors.orange.shade900, letterSpacing: 0.5)
+              ),
+            ],
+          ),
+          const Divider(height: 24, thickness: 1),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const CircleAvatar(backgroundColor: softGreenColor, radius: 24, child: Icon(Icons.person_pin_circle_rounded, color: primaryColor, size: 28)),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      jadwal['nasabah']?['name'] ?? 'Nama Nasabah Tidak Tersedia',
+                      style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: darkTextColor),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      jadwal['alamat'] ?? 'Alamat penjemputan belum diatur',
+                      style: const TextStyle(fontSize: 14, color: greyTextColor, fontWeight: FontWeight.w600, height: 1.3),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            height: 52, // Tinggi tombol dimaksimalkan agar nyaman ditekan oleh jari
+            child: ElevatedButton.icon(
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ScanBarcodePage(
+                    jadwalId: int.parse(jadwal['id'].toString()),
+                    nasabahId: int.parse(jadwal['nasabah_id'].toString()),
+                  ),
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primaryColor,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                elevation: 0,
+              ),
+              icon: const Icon(Icons.qr_code_scanner_rounded, size: 22),
+              label: const Text("MULAI PROSES & TIMBANG", style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15, letterSpacing: 0.5)),
+            ),
+          )
+        ],
+      ),
+    );
+  }
+}
+
+class _PremiumBottomNav extends StatelessWidget {
+  final VoidCallback onRefresh;
+  const _PremiumBottomNav({required this.onRefresh});
+
+  @override
+  Widget build(BuildContext context) {
+    return BottomAppBar(
+      height: 76,
+      elevation: 10,
+      color: Colors.white,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _navItem(Icons.home_rounded, "Beranda", true, () {}),
+          _navItem(Icons.history_rounded, "Riwayat", false, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RiwayatKurirScreen()))),
+          _navItem(Icons.notifications_none_rounded, "Notifikasi", false, () {}),
+          _navItem(Icons.person_rounded, "Profil Saya", false, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfilKurirScreen())).then((_) => onRefresh())),
+        ],
+      ),
+    );
+  }
+
+  Widget _navItem(IconData icon, String label, bool active, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      child: SizedBox(
+        height: double.infinity,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: active ? primaryColor : greyTextColor, size: 26),
+            const SizedBox(height: 4),
+            Text(label, style: TextStyle(color: active ? primaryColor : greyTextColor, fontSize: 12, fontWeight: FontWeight.bold)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _InsightCard extends StatelessWidget {
   final Map<String, dynamic>? dashboardData;
   const _InsightCard({this.dashboardData});
@@ -568,7 +590,7 @@ class _InsightCard extends StatelessWidget {
           const SizedBox(width: 14),
           Expanded(
             child: Text(
-              dashboardData?['keterangan_tren'] ?? "Total setoran Anda bulan ini tercatat ${dashboardData?['berat_bulan_ini'] ?? 0} Kg. Terus jaga performa berkendara aman.",
+              dashboardData?['keterangan_tren'] ?? "Total setoran Anda bulan ini tercatat ${dashboardData?['berat_bulan_ini'] ?? 0} Kg. Teris jaga performa berkendara aman.",
               style: const TextStyle(color: darkTextColor, fontSize: 14, fontWeight: FontWeight.w600, height: 1.5),
             ),
           ),
@@ -581,7 +603,7 @@ class _InsightCard extends StatelessWidget {
 BoxDecoration cardDecoration() {
   return BoxDecoration(
     color: Colors.white,
-    borderRadius: BorderRadius.circular(14),
+    borderRadius: BorderRadius.circular(14), // Radius sudut dikurangi agar tampak kokoh/formal
     boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 12, offset: const Offset(0, 4))],
   );
 }
