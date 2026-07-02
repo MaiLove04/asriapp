@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../services/client_helper.dart';
 
 import '../../config.dart';
 import '../services/jadwal_service.dart';
@@ -37,10 +38,87 @@ class _JadwalJemputScreenState extends State<JadwalJemputScreen> {
     getJadwal();
   }
 
+  Future<void> getJadwal() async {
+    try {
+      setState(() => isLoading = true);
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+
+      int userId = 0;
+      var rawId = prefs.get('user_id');
+      if (rawId is int) {
+        userId = rawId;
+      } else if (rawId is String) {
+        userId = int.tryParse(rawId) ?? 0;
+      }
+
+      if (userId == 0) {
+        setState(() => isLoading = false);
+        _bukaDialogInterogasi("⚠️ MASALAH LOGIN:\nID Kurir di HP terbaca 0. Silakan LOGOUT lalu LOGIN ulang agar ID tersimpan di memori HP!");
+        return;
+      }
+
+      final token = prefs.getString('token') ?? '';
+      final url = Uri.parse('${AppConfig.baseUrl}/kurir/jadwal/$userId');
+
+      final secureClient = getSafeClient();
+
+      final response = await secureClient.get(
+        url,
+        headers: {
+          "Accept": "application/json",
+          if (token.isNotEmpty) "Authorization": "Bearer $token",
+        },
+      );
+
+      final Map<String, dynamic> body = jsonDecode(response.body);
+
+      if (!mounted) return;
+      setState(() {
+        jadwalList = body['data'] ?? [];
+        isLoading = false;
+      });
+
+    } catch (e) {
+      if (mounted) setState(() => isLoading = false);
+    }
+  }
+
+  void _bukaDialogInterogasi(String pesan) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => AlertDialog(
+        title: const Text("🔍 Hasil Interogasi Sistem", style: TextStyle(fontWeight: FontWeight.bold, color: primaryColor)),
+        content: Text(pesan, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.black87)),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context),
+            style: ElevatedButton.styleFrom(backgroundColor: primaryColor),
+            child: const Text("SAYA PAHAM", style: TextStyle(color: Colors.white)),
+          )
+        ],
+      ),
+    );
+  }
+
+  // =========================================================================
+  // 🛠️ PERBAIKAN: METHOD PATCH & ALAMAT ENDPOINT BARU SEUSAI ROUTE LARAVEL
+  // =========================================================================
   Future<void> mulaiJemputKurir(int jadwalId) async {
     try {
-      final response = await http.put(
-        Uri.parse('${AppConfig.baseUrl}/jadwal-penjemputan/$jadwalId/mulai'),
+      setState(() => isLoading = true);
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token') ?? '';
+
+      final secureClient = getSafeClient();
+
+      // Endpoint diarahkan ke rute tunggal baru di Laravel
+      final targetUrl = "${AppConfig.baseUrl}/jadwal-penjemputan/$jadwalId/mulai";
+      print("DEBUG PATCH REQUEST TO: $targetUrl");
+
+      // Mengubah POST lama menjadi .patch sejalan dengan RESTful API
+      final response = await secureClient.patch(
+        Uri.parse(targetUrl),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',

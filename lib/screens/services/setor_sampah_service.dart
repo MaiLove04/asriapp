@@ -1,8 +1,13 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:asriapp/config.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'client_helper.dart';
 
 class SetorSampahService {
+  // 🔥 1. CLIENT AMAN UNTUK HOSTING (Bebas SSL Error)
+  static http.Client get _client => getSafeClient(trustedHost: 'pht.my.id');
+
   // ================= 1. CREATE REQUEST PENJEMPUTAN (NASABAH) =================
   static Future<bool> store({
     required int userId,
