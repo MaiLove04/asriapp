@@ -27,4 +27,6 @@ class DashboardKurirModel {
       json["riwayat"] ?? [],
     );
   }
+
+  void operator [](String other) {}
 }

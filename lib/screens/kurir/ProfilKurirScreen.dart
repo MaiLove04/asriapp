@@ -4,7 +4,8 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:asriapp/config.dart'; // Jalur config milik Mai
 import '../login_screen.dart';
-import 'ScanBarcode.dart';
+import '../kurir/ScanBarcode.dart';
+
 
 // Palet warna kontras tinggi (Senior-Friendly Theme) - Setema dengan Dashboard
 const primaryColor = Color(0xFF1E521E);

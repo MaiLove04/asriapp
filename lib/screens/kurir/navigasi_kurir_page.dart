@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../services/dashboard_kurir_service.dart';
+import '../services/kurir_service.dart';
 import '../../config.dart';
 import '../kurir/SetorSampahPage.dart';
+import '../models/setor_sampah_model.dart';
 
 // 🎨 PALET WARNA KONSISTEN SENIOR-FRIENDLY ASRI / BASAYAN BESTARI
 const primaryColor = Color(0xFF1E521E);
@@ -56,7 +57,7 @@ class _NavigasiKurirPageState extends State<NavigasiKurirPage> {
         return;
       }
 
-      final result = await DashboardKurirService.getDashboard(userId);
+      final result = await KurirService.getDashboard(userId);
 
       if (result != null && result['jadwal'] != null) {
         final jadwalObj = result['jadwal'];
