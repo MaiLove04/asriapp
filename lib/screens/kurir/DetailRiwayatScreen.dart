@@ -82,6 +82,8 @@ class _DetailRiwayatScreenState extends State<DetailRiwayatScreen> {
 
     if (rawDate.isNotEmpty) {
       try {
+        //disini ok?
+        // ehheheeh iyaa ehehehe
         DateTime parsedDate = DateTime.parse(rawDate);
         tanggal = DateFormat('dd MMMM yyyy, HH:mm').format(parsedDate) + " WIB";
       } catch (e) {
