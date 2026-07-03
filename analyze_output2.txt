@@ -1,0 +1,173 @@
+﻿Analyzing asriapp...                                            
+
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\forgot_password_screen.dart:155:33 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\forgot_password_screen.dart:186:33 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\forgot_password_screen.dart:224:33 - deprecated_member_use
+   info - The file name 'DetailRiwayatScreen.dart' isn't a lower_case_with_underscores identifier - lib\screens\kurir\DetailRiwayatScreen.dart:1:1 - file_names
+   info - Use interpolation to compose strings and values - lib\screens\kurir\DetailRiwayatScreen.dart:86:19 - prefer_interpolation_to_compose_strings
+   info - Use interpolation to compose strings and values - lib\screens\kurir\DetailRiwayatScreen.dart:93:25 - prefer_interpolation_to_compose_strings
+   info - Use interpolation to compose strings and values - lib\screens\kurir\DetailRiwayatScreen.dart:211:52 - prefer_interpolation_to_compose_strings
+   info - Use interpolation to compose strings and values - lib\screens\kurir\DetailRiwayatScreen.dart:215:55 - prefer_interpolation_to_compose_strings
+   info - Use interpolation to compose strings and values - lib\screens\kurir\DetailRiwayatScreen.dart:377:26 - prefer_interpolation_to_compose_strings
+   info - Use interpolation to compose strings and values - lib\screens\kurir\DetailRiwayatScreen.dart:381:29 - prefer_interpolation_to_compose_strings
+   info - The file name 'JadwalJemputScreen.dart' isn't a lower_case_with_underscores identifier - lib\screens\kurir\JadwalJemputScreen.dart:1:1 - file_names
+warning - Unused import: 'package:http/http.dart' - lib\screens\kurir\JadwalJemputScreen.dart:2:8 - unused_import
+warning - Unused import: 'SetorSampahPage.dart' - lib\screens\kurir\JadwalJemputScreen.dart:9:8 - unused_import
+warning - The value of the local variable 'token' isn't used - lib\screens\kurir\JadwalJemputScreen.dart:98:13 - unused_local_variable
+   info - Don't invoke 'print' in production code - lib\screens\kurir\JadwalJemputScreen.dart:104:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\kurir\JadwalJemputScreen.dart:126:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\kurir\JadwalJemputScreen.dart:129:7 - avoid_print
+   info - Statements in an if should be enclosed in a block - lib\screens\kurir\JadwalJemputScreen.dart:147:41 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\screens\kurir\JadwalJemputScreen.dart:148:44 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\screens\kurir\JadwalJemputScreen.dart:149:45 - curly_braces_in_flow_control_structures
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\kurir\JadwalJemputScreen.dart:368:43 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\kurir\JadwalJemputScreen.dart:396:35 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\kurir\JadwalJemputScreen.dart:505:41 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\kurir\JadwalJemputScreen.dart:515:47 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\kurir\JadwalJemputScreen.dart:547:38 - deprecated_member_use
+   info - The file name 'ProfilKurirScreen.dart' isn't a lower_case_with_underscores identifier - lib\screens\kurir\ProfilKurirScreen.dart:1:1 - file_names
+   info - Don't invoke 'print' in production code - lib\screens\kurir\ProfilKurirScreen.dart:73:7 - avoid_print
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\kurir\ProfilKurirScreen.dart:132:47 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\kurir\ProfilKurirScreen.dart:167:43 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\kurir\ProfilKurirScreen.dart:210:47 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\kurir\ProfilKurirScreen.dart:294:35 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\kurir\ProfilKurirScreen.dart:320:35 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\kurir\ProfilKurirScreen.dart:361:35 - deprecated_member_use
+   info - The file name 'RiwayatKurirScreen.dart' isn't a lower_case_with_underscores identifier - lib\screens\kurir\RiwayatKurirScreen.dart:1:1 - file_names
+   info - Don't invoke 'print' in production code - lib\screens\kurir\RiwayatKurirScreen.dart:50:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\kurir\RiwayatKurirScreen.dart:63:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\kurir\RiwayatKurirScreen.dart:67:7 - avoid_print
+   info - Use interpolation to compose strings and values - lib\screens\kurir\RiwayatKurirScreen.dart:301:19 - prefer_interpolation_to_compose_strings
+   info - Use interpolation to compose strings and values - lib\screens\kurir\RiwayatKurirScreen.dart:308:25 - prefer_interpolation_to_compose_strings
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\kurir\RiwayatKurirScreen.dart:338:33 - deprecated_member_use
+   info - The file name 'ScanBarcode.dart' isn't a lower_case_with_underscores identifier - lib\screens\kurir\ScanBarcode.dart:1:1 - file_names
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\kurir\ScanBarcode.dart:87:43 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\kurir\ScanBarcode.dart:115:45 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\kurir\ScanBarcode.dart:140:43 - deprecated_member_use
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\screens\kurir\ScanBarcode.dart:186:33 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\screens\kurir\ScanBarcode.dart:200:47 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\screens\kurir\ScanBarcode.dart:210:52 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\screens\kurir\ScanBarcode.dart:223:50 - use_build_context_synchronously
+   info - The file name 'SetorSampahPage.dart' isn't a lower_case_with_underscores identifier - lib\screens\kurir\SetorSampahPage.dart:1:1 - file_names
+warning - Unused import: 'package:asriapp/config.dart' - lib\screens\kurir\SetorSampahPage.dart:4:8 - unused_import
+warning - Unused import: 'package:http/http.dart' - lib\screens\kurir\SetorSampahPage.dart:6:8 - unused_import
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\screens\kurir\SetorSampahPage.dart:380:19 - deprecated_member_use
+   info - Don't invoke 'print' in production code - lib\screens\kurir\dashboard_kurir.dart:49:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\kurir\dashboard_kurir.dart:63:7 - avoid_print
+   info - Don't use 'BuildContext's across async gaps - lib\screens\kurir\dashboard_kurir.dart:313:29 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\screens\kurir\dashboard_kurir.dart:329:29 - use_build_context_synchronously
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\kurir\dashboard_kurir.dart:372:37 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\kurir\dashboard_kurir.dart:402:33 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\kurir\dashboard_kurir.dart:477:63 - deprecated_member_use
+   info - Don't use 'BuildContext's across async gaps - lib\screens\kurir\dashboard_kurir.dart:495:27 - use_build_context_synchronously
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\kurir\dashboard_kurir.dart:609:58 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\kurir\dashboard_kurir.dart:625:47 - deprecated_member_use
+   info - Don't use 'BuildContext's across async gaps - lib\screens\kurir\dashboard_kurir.dart:657:31 - use_build_context_synchronously
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\kurir\dashboard_kurir.dart:737:35 - deprecated_member_use
+   info - Use interpolation to compose strings and values - lib\screens\kurir\dashboard_kurir.dart:793:25 - prefer_interpolation_to_compose_strings
+   info - Use interpolation to compose strings and values - lib\screens\kurir\dashboard_kurir.dart:794:26 - prefer_interpolation_to_compose_strings
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\kurir\dashboard_kurir.dart:840:29 - deprecated_member_use
+warning - Unused import: '../../config.dart' - lib\screens\kurir\navigasi_kurir_page.dart:5:8 - unused_import
+warning - The value of the field '_liveJadwalData' isn't used - lib\screens\kurir\navigasi_kurir_page.dart:25:25 - unused_field
+warning - The operand can't be 'null', so the condition is always 'true' - lib\screens\kurir\navigasi_kurir_page.dart:61:18 - unnecessary_null_comparison
+   info - Don't invoke 'print' in production code - lib\screens\kurir\navigasi_kurir_page.dart:80:7 - avoid_print
+   info - Don't use 'BuildContext's across async gaps - lib\screens\kurir\navigasi_kurir_page.dart:88:28 - use_build_context_synchronously
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\kurir\navigasi_kurir_page.dart:126:59 - deprecated_member_use
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\screens\kurir\navigasi_kurir_page.dart:207:48 - use_build_context_synchronously
+warning - Unused import: 'dart:convert' - lib\screens\login_screen.dart:1:8 - unused_import
+warning - Unused import: 'package:http/http.dart' - lib\screens\login_screen.dart:4:8 - unused_import
+   info - Don't invoke 'print' in production code - lib\screens\login_screen.dart:58:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\login_screen.dart:59:9 - avoid_print
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\screens\login_screen.dart:70:13 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\screens\login_screen.dart:77:13 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\screens\login_screen.dart:88:30 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\screens\login_screen.dart:99:28 - use_build_context_synchronously
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\login_screen.dart:130:39 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\login_screen.dart:143:37 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\login_screen.dart:201:49 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\login_screen.dart:206:49 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\login_screen.dart:238:60 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\login_screen.dart:242:77 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\login_screen.dart:291:60 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\login_screen.dart:295:77 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\login_screen.dart:394:57 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\register_screen.dart:104:39 - deprecated_member_use
+   info - Don't use 'BuildContext's across async gaps - lib\screens\register_screen.dart:203:30 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\screens\register_screen.dart:208:28 - use_build_context_synchronously
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\register_screen.dart:232:39 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\register_screen.dart:244:37 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\register_screen.dart:280:47 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\register_screen.dart:299:76 - deprecated_member_use
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\screens\register_screen.dart:368:29 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\register_screen.dart:395:58 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\register_screen.dart:399:75 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\register_screen.dart:445:55 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\register_screen.dart:525:36 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\register_screen.dart:529:53 - deprecated_member_use
+   info - Don't invoke 'print' in production code - lib\screens\services\aduan_service.dart:32:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\services\aduan_service.dart:39:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\services\aduan_service.dart:58:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\services\auth_service.dart:34:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\services\dashboard_kurir_service.dart:16:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\services\dashboard_kurir_service.dart:33:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\services\dashboard_kurir_service.dart:37:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\services\dashboard_kurir_service.dart:56:7 - avoid_print
+warning - Unused import: 'package:flutter/material.dart' - lib\screens\services\jadwal_service.dart:2:8 - unused_import
+warning - Unused import: 'package:shared_preferences/shared_preferences.dart' - lib\screens\services\jadwal_service.dart:5:8 - unused_import
+   info - Don't invoke 'print' in production code - lib\screens\services\jadwal_service.dart:20:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\services\jadwal_service.dart:29:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\services\jadwal_service.dart:30:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\services\jadwal_service.dart:36:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\services\jadwal_service.dart:37:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\services\jadwal_service.dart:45:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\services\jenis_sampah_service.dart:18:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\services\jenis_sampah_service.dart:25:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\services\jenis_sampah_service.dart:29:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\services\jenis_sampah_service.dart:54:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\services\register_service.dart:34:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\services\setor_sampah_service.dart:46:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\services\setor_sampah_service.dart:53:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\services\setor_sampah_service.dart:54:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\services\setor_sampah_service.dart:64:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\services\setor_sampah_service.dart:98:7 - avoid_print
+   info - Use interpolation to compose strings and values - lib\screens\user\activity_riwayat.dart:103:14 - prefer_interpolation_to_compose_strings
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\user\activity_riwayat.dart:220:51 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\user\activity_riwayat.dart:274:50 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\user\activity_riwayat.dart:359:57 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\user\activity_riwayat.dart:382:31 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\user\activity_riwayat.dart:436:35 - deprecated_member_use
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\screens\user\aduan_page.dart:118:17 - deprecated_member_use
+warning - Unused import: 'package:intl/intl.dart' - lib\screens\user\dashboard_screen.dart:5:8 - unused_import
+   info - Don't invoke 'print' in production code - lib\screens\user\dashboard_screen.dart:64:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\user\dashboard_screen.dart:93:7 - avoid_print
+   info - Use interpolation to compose strings and values - lib\screens\user\dashboard_screen.dart:122:12 - prefer_interpolation_to_compose_strings
+   info - 'onPopInvoked' is deprecated and shouldn't be used. Use onPopInvokedWithResult instead. This feature was deprecated after v3.22.0-12.0.pre - lib\screens\user\dashboard_screen.dart:131:7 - deprecated_member_use
+   info - Don't use 'BuildContext's across async gaps - lib\screens\user\dashboard_screen.dart:135:42 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\screens\user\dashboard_screen.dart:183:66 - use_build_context_synchronously
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\user\dashboard_screen.dart:197:53 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\user\dashboard_screen.dart:254:53 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\user\dashboard_screen.dart:412:39 - deprecated_member_use
+   info - Use interpolation to compose strings and values - lib\screens\user\detail_riwayat.dart:22:14 - prefer_interpolation_to_compose_strings
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\user\detail_riwayat.dart:67:41 - deprecated_member_use
+   info - The type name 'profile_page' isn't an UpperCamelCase identifier - lib\screens\user\profile.dart:8:7 - camel_case_types
+   info - The type name '_profile_pageState' isn't an UpperCamelCase identifier - lib\screens\user\profile.dart:15:7 - camel_case_types
+   info - Don't invoke 'print' in production code - lib\screens\user\profile.dart:62:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\user\profile.dart:66:7 - avoid_print
+   info - Use interpolation to compose strings and values - lib\screens\user\profile.dart:73:12 - prefer_interpolation_to_compose_strings
+warning - The value of the local variable 'yakin' isn't used - lib\screens\user\profile.dart:264:29 - unused_local_variable
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\screens\user\profile.dart:278:69 - use_build_context_synchronously
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\user\riwayat_tarik_tunai.dart:104:57 - deprecated_member_use
+warning - Unused import: '../user/status_penjemputan.dart' - lib\screens\user\setor_sampah.dart:8:8 - unused_import
+   info - Don't invoke 'print' in production code - lib\screens\user\setor_sampah.dart:57:7 - avoid_print
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\user\setor_sampah.dart:200:49 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\user\setor_sampah.dart:232:49 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\user\setor_sampah.dart:293:47 - deprecated_member_use
+   info - Don't invoke 'print' in production code - lib\screens\user\setor_sampah.dart:310:21 - avoid_print
+   info - Don't use 'BuildContext's across async gaps - lib\screens\user\setor_sampah.dart:314:44 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\screens\user\setor_sampah.dart:334:44 - use_build_context_synchronously
+warning - Dead code - lib\screens\user\setor_sampah.dart:382:37 - dead_code
+warning - The left operand can't be null, so the right operand is never executed - lib\screens\user\setor_sampah.dart:382:40 - dead_null_aware_expression
+   info - Don't invoke 'print' in production code - lib\screens\user\status_penjemputan.dart:40:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\user\status_penjemputan.dart:52:7 - avoid_print
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\user\status_penjemputan.dart:115:55 - deprecated_member_use
+

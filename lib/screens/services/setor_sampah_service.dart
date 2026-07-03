@@ -15,12 +15,11 @@ class SetorSampahService {
     required String catatan,
   }) async {
     try {
-      final items = jenisIds.map((id) => {
-        "jenis_sampah_id": id,
-        "berat": 0,
-      }).toList();
-
+      final items = jenisIds
+          .map((id) => {"jenis_sampah_id": id, "berat": 0})
+          .toList();
       final url = Uri.parse('${AppConfig.baseUrl}/request-penjemputan');
+
       final response = await http.post(
         url,
         headers: {
@@ -89,7 +88,9 @@ class SetorSampahService {
   // ================= 4. FETCH BERAT DARI IOT =================
   static Future<double?> fetchBeratIot() async {
     try {
-      final response = await http.get(Uri.parse('${AppConfig.baseUrl}/berat-timbangan-iot'));
+      final response = await http.get(
+        Uri.parse('${AppConfig.baseUrl}/berat-timbangan-iot'),
+      );
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         return double.tryParse(data['berat_iot'].toString()) ?? 0.0;
@@ -110,10 +111,13 @@ class SetorSampahService {
     int? jadwalId,
     required List<Map<String, dynamic>> sampahList,
     required String imagePath,
+    required String setoranId,
   }) async {
-    var uri = Uri.parse('${AppConfig.baseUrl}/setor-sampah');
+    var uri = Uri.parse(
+      '${AppConfig.baseUrl}/setor-sampah/request-nasabah/$setoranId',
+    );
     var request = http.MultipartRequest('POST', uri);
-
+    request.fields['_method'] = 'PATCH';
     request.fields['user_id'] = userId.toString();
     request.fields['kurir_id'] = kurirId.toString();
     request.fields['grand_total'] = grandTotal.toString();
@@ -123,9 +127,40 @@ class SetorSampahService {
       request.fields['jadwal_id'] = jadwalId.toString();
     }
     request.fields['sampah_list'] = jsonEncode(sampahList);
-    request.files.add(await http.MultipartFile.fromPath('foto_sampah', imagePath));
+    request.files.add(
+      await http.MultipartFile.fromPath('foto_sampah', imagePath),
+    );
 
     var streamedResponse = await request.send();
     return await http.Response.fromStream(streamedResponse);
+  }
+
+  // ================= 6. SETUP PIN NASABAH =================
+  static Future<Map<String, dynamic>> setupPin({
+    required String pin,
+    required String pinConfirmation,
+  }) async {
+    try {
+      final url = Uri.parse('${AppConfig.baseUrl}/setup-pin');
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token') ?? '';
+
+      final response = await _client.post(
+        url,
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          if (token.isNotEmpty) "Authorization": "Bearer $token",
+        },
+        body: jsonEncode({"pin": pin, "pin_confirmation": pinConfirmation}),
+      );
+
+      return {"status": response.statusCode, "data": jsonDecode(response.body)};
+    } catch (e) {
+      return {
+        "status": 500,
+        "data": {"message": "Gagal setup PIN: $e"},
+      };
+    }
   }
 }
