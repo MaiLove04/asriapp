@@ -395,30 +395,30 @@ class _JadwalJemputScreenState extends State<JadwalJemputScreen> {
                                 ),
                               );
                             },
-                            // onMulaiJemput: () async {
-                            //   if (isTerjadwal) {
-                            //     mulaiJemputKurir(
-                            //       item['jadwal_id'] is int
-                            //           ? item['jadwal_id']
-                            //           : int.parse(item['jadwal_id'].toString()),
-                            //     );
-                            //   } else if (isProses) {
-                            //     // EFEISIEN: Langsung ke Scan, dan Scan akan langsung ke Form Timbang
-                            //     final int idJadwal = item['id'] is int
-                            //         ? item['id']
-                            //         : (int.tryParse(item['id'].toString()) ??
-                            //               0);
+                            onMulaiJemput: () async {
+                              if (isTerjadwal) {
+                                mulaiJemputKurir(
+                                  item['jadwal_id'] is int
+                                      ? item['jadwal_id']
+                                      : int.parse(item['jadwal_id'].toString()),
+                                );
+                              } else if (isProses) {
+                                // EFEISIEN: Langsung ke Scan, dan Scan akan langsung ke Form Timbang
+                                final int idJadwal = item['id'] is int
+                                    ? item['id']
+                                    : (int.tryParse(item['id'].toString()) ??
+                                          0);
 
-                            //     final refresh = await Navigator.push(
-                            //       context,
-                            //       MaterialPageRoute(
-                            //         builder: (_) =>
-                            //             ScanBarcodePage(jadwalId: idJadwal),
-                            //       ),
-                            //     );
-                            //     if (refresh == true) getJadwal();
-                            //   }
-                            // },
+                                final refresh = await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        ScanBarcodePage(jadwalId: idJadwal),
+                                  ),
+                                );
+                                if (refresh == true) getJadwal();
+                              }
+                            },
                           ),
                         );
                       },
@@ -582,7 +582,7 @@ class JadwalCard extends StatelessWidget {
   final String jam;
   final String status;
   final VoidCallback onLihatLokasi; // 🔥 Ditambahkan parameter baru
-  // final VoidCallback onMulaiJemput;
+  final VoidCallback onMulaiJemput;
 
   const JadwalCard({
     super.key,
@@ -592,7 +592,7 @@ class JadwalCard extends StatelessWidget {
     required this.jam,
     required this.status,
     required this.onLihatLokasi, // 🔥 Ditambahkan ke constructor
-    // required this.onMulaiJemput,
+    required this.onMulaiJemput,
   });
 
   @override
@@ -731,49 +731,50 @@ class JadwalCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: onMulaiJemput,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: status.toLowerCase() == 'proses'
-                        ? Colors.orange.shade800
-                        : primaryColor,
-                    disabledBackgroundColor: Colors.grey.shade200,
-                    minimumSize: const Size(0, 50),
-                    elevation: (status.toLowerCase() == 'selesai') ? 0 : 2,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                  ),
-                  icon: Icon(
-                    status.toLowerCase() == 'selesai'
-                        ? Icons.check_circle_rounded
-                        : (status.toLowerCase() == 'proses'
-                              ? Icons.scale_rounded
-                              : Icons.local_shipping_rounded),
-                    color: status.toLowerCase() == 'selesai'
-                        ? Colors.grey.shade500
-                        : Colors.white,
-                    size: 18,
-                  ),
-                  label: Text(
-                    status.toLowerCase() == 'terjadwal' ||
-                            status.toLowerCase() == 'pending'
-                        ? "MULAI JEMPUT"
-                        : (status.toLowerCase() == 'proses'
-                              ? "TIMBANG SAMPAH"
-                              : "SUDAH SELESAI"),
-                    style: TextStyle(
-                      color: status.toLowerCase() == 'selesai'
-                          ? Colors.grey.shade600
-                          : Colors.white,
-                      fontWeight: FontWeight.w900,
-                      fontSize: 12,
-                      letterSpacing: 0.3,
-                    ),
-                  ),
-                ),
-              ),
+
+              // Expanded(
+              //   child: ElevatedButton.icon(
+              //     onPressed: onMulaiJemput,
+              //     style: ElevatedButton.styleFrom(
+              //       backgroundColor: status.toLowerCase() == 'proses'
+              //           ? Colors.orange.shade800
+              //           : primaryColor,
+              //       disabledBackgroundColor: Colors.grey.shade200,
+              //       minimumSize: const Size(0, 50),
+              //       elevation: (status.toLowerCase() == 'selesai') ? 0 : 2,
+              //       shape: RoundedRectangleBorder(
+              //         borderRadius: BorderRadius.circular(14),
+              //       ),
+              //     ),
+              //     icon: Icon(
+              //       status.toLowerCase() == 'selesai'
+              //           ? Icons.check_circle_rounded
+              //           : (status.toLowerCase() == 'proses'
+              //                 ? Icons.scale_rounded
+              //                 : Icons.local_shipping_rounded),
+              //       color: status.toLowerCase() == 'selesai'
+              //           ? Colors.grey.shade500
+              //           : Colors.white,
+              //       size: 18,
+              //     ),
+              //     label: Text(
+              //       status.toLowerCase() == 'terjadwal' ||
+              //               status.toLowerCase() == 'pending'
+              //           ? "MULAI JEMPUT"
+              //           : (status.toLowerCase() == 'proses'
+              //                 ? "TIMBANG SAMPAH"
+              //                 : "SUDAH SELESAI"),
+              //       style: TextStyle(
+              //         color: status.toLowerCase() == 'selesai'
+              //             ? Colors.grey.shade600
+              //             : Colors.white,
+              //         fontWeight: FontWeight.w900,
+              //         fontSize: 12,
+              //         letterSpacing: 0.3,
+              //       ),
+              //     ),
+              //   ),
+              // ),
             ],
           ),
         ],

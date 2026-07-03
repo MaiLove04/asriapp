@@ -13,6 +13,9 @@ class SetorSampahService {
     required int userId,
     required List<int> jenisIds,
     required String catatan,
+    /// Tanggal penjemputan hasil perhitungan validasi, format: "yyyy-MM-dd".
+    /// null berarti tidak ada jadwal spesifik (backend menentukan sendiri).
+    String? tanggalPenjemputan,
   }) async {
     try {
       final items = jenisIds
@@ -20,17 +23,24 @@ class SetorSampahService {
           .toList();
       final url = Uri.parse('${AppConfig.baseUrl}/request-penjemputan');
 
+      final Map<String, dynamic> body = {
+        "user_id": userId,
+        "catatan": catatan,
+        "items": items,
+      };
+
+      // Hanya sertakan tanggal_penjemputan jika ada nilainya
+      if (tanggalPenjemputan != null && tanggalPenjemputan.isNotEmpty) {
+        body["tanggal_penjemputan"] = tanggalPenjemputan;
+      }
+
       final response = await http.post(
         url,
         headers: {
           "Content-Type": "application/json",
           "Accept": "application/json",
         },
-        body: jsonEncode({
-          "user_id": userId,
-          "catatan": catatan,
-          "items": items,
-        }),
+        body: jsonEncode(body),
       );
       return response.statusCode == 200 || response.statusCode == 201;
     } catch (e) {
