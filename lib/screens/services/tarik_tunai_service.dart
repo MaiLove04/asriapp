@@ -15,6 +15,53 @@ class TarikTunaiService {
     return prefs.getString('token');
   }
 
+  // Tambahkan fungsi ini di dalam class TarikTunaiService kamu
+  Future<int> getSaldoNasabah() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token') ?? '';
+      
+      // 🔥 Ambil userId dari prefs seperti di dashboard
+      int userId = 0;
+      if (prefs.containsKey('user_id')) {
+        final rawId = prefs.get('user_id');
+        if (rawId is int) {
+          userId = rawId;
+        } else if (rawId is String) {
+          userId = int.tryParse(rawId) ?? 0;
+        }
+      }
+
+      if (userId == 0) return 0;
+
+      final url = Uri.parse('$baseUrl/dashboard-nasabah/$userId'); 
+      final client = _getClient();
+
+      final response = await client.get(
+        url,
+        headers: {
+          'Accept': 'application/json',
+          if (token.isNotEmpty) 'Authorization': 'Bearer $token',
+        },
+      );
+
+      print('FETCH SALDO STATUS: ${response.statusCode}');
+      print('FETCH SALDO BODY: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['success'] == true) {
+          var nasabahObj = data['nasabah'] ?? data['user'] ?? data;
+          return int.tryParse(nasabahObj['saldo'].toString()) ?? 0;
+        }
+      }
+      return 0;
+    } catch (e) {
+      print("ERROR FETCH SALDO: $e");
+      return 0;
+    }
+  }
+
   // 1. Nasabah: Membuat Request Tarik Tunai
   Future<Map<String, dynamic>> createRequestTarik({required int jumlahNominal}) async {
     final url = Uri.parse('$baseUrl/tarik-tunai');

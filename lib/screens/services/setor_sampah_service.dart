@@ -1,5 +1,4 @@
 import 'dart:convert';
-// import 'dart:ffi';
 import 'package:http/http.dart' as http;
 import 'package:asriapp/config.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -9,17 +8,18 @@ class SetorSampahService {
   // 🔥 1. CLIENT AMAN UNTUK HOSTING (Bebas SSL Error)
   static http.Client get _client => getSafeClient(trustedHost: 'pht.my.id');
 
-  // ================= 1. CREATE REQUEST PENJEMPUTAN (NASABAH) =================
+  // ================= 1. CREATE REQUEST PENJEMPUTAN (NASABAH) - FIXED AUTHORIZATION =================
   static Future<bool> store({
     required int userId,
     required List<int> jenisIds,
     required String catatan,
-
-    /// Tanggal penjemputan hasil perhitungan validasi, format: "yyyy-MM-dd".
-    /// null berarti tidak ada jadwal spesifik (backend menentukan sendiri).
     String? tanggalPenjemputan,
   }) async {
     try {
+      // Ambil token dari SharedPreferences
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token') ?? '';
+
       final items = jenisIds
           .map((id) => {"jenis_sampah_id": id, "berat": 0})
           .toList();
@@ -31,34 +31,48 @@ class SetorSampahService {
         "items": items,
       };
 
-      // Hanya sertakan tanggal_penjemputan jika ada nilainya
       if (tanggalPenjemputan != null && tanggalPenjemputan.isNotEmpty) {
         body["tanggal_penjemputan"] = tanggalPenjemputan;
       }
 
-      final response = await http.post(
+      // Gunakan _client bawaan agar SSL aman dan selipkan Bearer Token
+      final response = await _client.post(
         url,
         headers: {
           "Content-Type": "application/json",
           "Accept": "application/json",
+          if (token.isNotEmpty) "Authorization": "Bearer $token",
         },
         body: jsonEncode(body),
       );
+
+      print('STORE REQUEST STATUS: ${response.statusCode}');
+      print('STORE REQUEST BODY: ${response.body}');
+
       return response.statusCode == 200 || response.statusCode == 201;
     } catch (e) {
+      print('STORE REQUEST ERROR: $e');
       return false;
     }
   }
 
-  // ================= 2. READ RIWAYAT TRANSAKSI (NASABAH) - FIXED =================
+  // ================= 2. READ RIWAYAT TRANSAKSI (NASABAH) - FIXED AUTHORIZATION =================
   static Future<List<dynamic>> getRiwayat({required int userId}) async {
     try {
+      // Ambil token dari SharedPreferences
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token') ?? '';
+
       final url = Uri.parse('${AppConfig.baseUrl}/dashboard-nasabah/$userId');
       print('GET REQUEST RIWAYAT VIA: $url');
 
-      final response = await http.get(
+      // Gunakan _client bawaan dan selipkan Bearer Token
+      final response = await _client.get(
         url,
-        headers: {"Accept": "application/json"},
+        headers: {
+          "Accept": "application/json",
+          if (token.isNotEmpty) "Authorization": "Bearer $token",
+        },
       );
 
       print('GET STATUS RIWAYAT : ${response.statusCode}');
@@ -80,10 +94,16 @@ class SetorSampahService {
   // ================= 3. AUTOLOAD MANIFES REQUEST (UNTUK KURIR) =================
   static Future<Map<String, dynamic>?> getRequestDetail(int nasabahId) async {
     try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token') ?? '';
+
       final url = Uri.parse('${AppConfig.baseUrl}/request-detail/$nasabahId');
-      final response = await http.get(
+      final response = await _client.get(
         url,
-        headers: {"Accept": "application/json"},
+        headers: {
+          "Accept": "application/json",
+          if (token.isNotEmpty) "Authorization": "Bearer $token",
+        },
       );
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body);
@@ -100,7 +120,7 @@ class SetorSampahService {
   // ================= 4. FETCH BERAT DARI IOT =================
   static Future<double?> fetchBeratIot() async {
     try {
-      final response = await http.get(
+      final response = await _client.get(
         Uri.parse('${AppConfig.baseUrl}/berat-timbangan-iot'),
       );
       if (response.statusCode == 200) {
@@ -113,8 +133,6 @@ class SetorSampahService {
     return null;
   }
 
-  // ================= 5. SUBMIT SETOR SAMPAH =================
-  // ================= 5. SUBMIT SETOR SAMPAH (FIXED ERROR 405) =================
   // ================= 5. SUBMIT SETOR SAMPAH (FIXED 405 VIA CLIENT.PATCH) =================
   static Future<http.Response> submitSetoran({
     required int userId,
@@ -126,6 +144,9 @@ class SetorSampahService {
     required List<Map<String, dynamic>> sampahList,
     required String setoranId,
   }) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token') ?? '';
+
     var urlString = '${AppConfig.baseUrl}/setor-sampah';
 
     if (setoranId.isNotEmpty) {
@@ -149,12 +170,12 @@ class SetorSampahService {
       body['jadwal_id'] = jadwalId;
     }
 
-    // 🔥 Ganti .post menjadi .patch agar metodenya murni PATCH di mata Laravel
     return await _client.patch(
       uri,
       headers: {
         "Content-Type": "application/json",
         "Accept": "application/json",
+        if (token.isNotEmpty) "Authorization": "Bearer $token",
       },
       body: jsonEncode(body),
     );
