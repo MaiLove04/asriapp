@@ -5,13 +5,13 @@ import '../services/dashboard_kurir_service.dart';
 import '../../config.dart';
 import '../kurir/SetorSampahPage.dart';
 
-// 🎨 PALET WARNA KONSISTEN SENIOR-FRIENDLY ASRI / BASAYAN BESTARI
-const primaryColor = Color(0xFF1E521E);
-const secondaryColor = Color(0xFF4CAF50);
-const softGreenColor = Color(0xFFE8F5E9);
-const backgroundColor = Color(0xFFF9FBF9);
-const darkTextColor = Color(0xFF0D240D);
-const greyTextColor = Color(0xFF555555);
+// 🎨 PALET WARNA KONSISTEN PREMIUM ASRI
+const primaryColor = Color(0xFF1B4D1B);
+const secondaryColor = Color(0xFF2E7D32);
+const softGreenColor = Color(0xFFF0F7F1);
+const backgroundColor = Color(0xFFF4F7F4);
+const darkTextColor = Color(0xFF0A1F0A);
+const greyTextColor = Color(0xFF4A554A);
 
 class NavigasiKurirPage extends StatefulWidget {
   const NavigasiKurirPage({super.key});
@@ -22,34 +22,18 @@ class NavigasiKurirPage extends StatefulWidget {
 
 class _NavigasiKurirPageState extends State<NavigasiKurirPage> {
   bool _isLoading = true;
-  Map<String, dynamic>? _liveJadwalData;
-
-  int nasabahId = 0;
-  String namaNasabah = "Memuat...";
-  String alamatNasabah = "Memuat...";
-  String catatanNasabah = "Tidak ada catatan";
-  String jadwalId = "";
-  String statusJemput = "terjadwal";
+  List<dynamic> _daftarRute = [];
 
   @override
   void initState() {
     super.initState();
-    _loadDataJadwalDariDatabase();
+    _loadSemuaRuteHariIni();
   }
 
-  Future<void> _loadDataJadwalDariDatabase() async {
+  Future<void> _loadSemuaRuteHariIni() async {
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
-      
-      int userId = 0;
-      if (prefs.containsKey('user_id')) {
-        final rawId = prefs.get('user_id');
-        if (rawId is int) {
-          userId = rawId;
-        } else if (rawId is String) {
-          userId = int.tryParse(rawId) ?? 0;
-        }
-      }
+      int userId = prefs.getInt('user_id') ?? 0;
 
       if (userId == 0) {
         setState(() { _isLoading = false; });
@@ -58,223 +42,343 @@ class _NavigasiKurirPageState extends State<NavigasiKurirPage> {
 
       final result = await DashboardKurirService.getDashboard(userId);
 
-      if (result != null && result['jadwal'] != null) {
-        final jadwalObj = result['jadwal'];
-        final nasabahObj = jadwalObj['user'] ?? jadwalObj['nasabah'];
+      if (result != null) {
         setState(() {
-          _liveJadwalData = result;
-
-          jadwalId = jadwalObj['id']?.toString() ?? "0";          nasabahId = int.tryParse(jadwalObj['nasabah_id'].toString()) ?? int.tryParse(jadwalObj['user_id'].toString()) ?? 0;
-          namaNasabah = nasabahObj?['name'] ?? "Nasabah Basayan Bestari";
-          alamatNasabah = jadwalObj['alamat'] ?? "Alamat tidak diisi";
-          catatanNasabah = jadwalObj['catatan'] ?? "Ambil sampah penjemputan";
-          statusJemput = (jadwalObj['status'] ?? 'terjadwal').toString().toLowerCase();
-
+          _daftarRute = result['tugas_hari_ini'] ?? result['jadwal_list'] ?? [];
           _isLoading = false;
         });
       } else {
         setState(() { _isLoading = false; });
       }
     } catch (e) {
-      print("DEBUG MAI - Gagal sinkronisasi data rute: $e");
+      debugPrint("Gagal sinkronisasi data rute berantai: $e");
       setState(() { _isLoading = false; });
     }
   }
 
-  Future<void> _openGoogleMaps() async {
-    final Uri url = Uri.parse("https://www.google.com/maps/search/?api=1&query=$alamatNasabah");
+  Future<void> _bukaGoogleMaps(String alamat) async {
+    final String query = Uri.encodeComponent(alamat);
+    final Uri url = Uri.parse("https://www.google.com/maps/search/?api=1&query=$query");
+
     if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Gagal membuka Google Maps")),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Tidak dapat membuka Google Maps")),
+        );
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Scaffold(
-        backgroundColor: backgroundColor,
-        body: Center(child: CircularProgressIndicator(color: primaryColor, strokeWidth: 4)),
-      );
-    }
+    int totalTugas = _daftarRute.length;
+    int tugasSelesai = _daftarRute.where((item) => (item['status'] ?? '').toString().toLowerCase() == 'selesai').length;
 
     return Scaffold(
       backgroundColor: backgroundColor,
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: primaryColor,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text("Detail Penjemputan", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 20)),
-        centerTitle: true,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // CARD INFORMASI NASABAH
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
+      // Menggunakan CustomAppBar / Header Section melengkung agar seragam dengan halaman sebelumnya
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator(color: primaryColor, strokeWidth: 3))
+          : RefreshIndicator(
+        color: primaryColor,
+        onRefresh: _loadSemuaRuteHariIni,
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+          slivers: [
+            // 🔥 HEADER SERAGAM: Menggunakan SliverAppBar melengkung premium
+            SliverAppBar(
+              expandedHeight: 140,
+              pinned: true,
+              elevation: 0,
+              backgroundColor: primaryColor,
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+                onPressed: () => Navigator.pop(context),
               ),
-              child: Column(
-                children: [
-                  Row(
+              centerTitle: true,
+              title: const Text(
+                "Rute Penjemputan",
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+              ),
+              flexibleSpace: FlexibleSpaceBar(
+                background: Container(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [primaryColor, Color(0xFF143A14)],
+                    ),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      const CircleAvatar(
-                        radius: 30,
-                        backgroundColor: softGreenColor,
-                        child: Icon(Icons.person_rounded, color: primaryColor, size: 30),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 24, left: 20, right: 20),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(namaNasabah, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: darkTextColor)),
-                            const SizedBox(height: 4),
-                            Text("ID Jadwal: #$jadwalId", style: const TextStyle(fontSize: 12, color: greyTextColor, fontWeight: FontWeight.bold)),
+                            const Text(
+                                "Daftar Urutan Jalan",
+                                style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500)
+                            ),
+                            Text(
+                                "$tugasSelesai / $totalTugas Lokasi Selesai",
+                                style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)
+                            ),
                           ],
                         ),
                       ),
                     ],
                   ),
-                  const Divider(height: 32),
-                  _infoRow(Icons.location_on_rounded, "Alamat Penjemputan", alamatNasabah),
-                  const SizedBox(height: 16),
-                  _infoRow(Icons.edit_note_rounded, "Catatan Nasabah", catatanNasabah),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            // TOMBOL GOOGLE MAPS
-            SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: ElevatedButton.icon(
-                onPressed: _openGoogleMaps,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue.shade800,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 ),
-                icon: const Icon(Icons.map_rounded),
-                label: const Text("BUKA DI GOOGLE MAPS", style: TextStyle(fontWeight: FontWeight.w900)),
               ),
             ),
 
-            const SizedBox(height: 32),
-
-            // TIMELINE STATUS
-            const Text("Status Penjemputan", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: darkTextColor)),
-            const SizedBox(height: 16),
-            _statusStep("Menunggu", "Jadwal telah dibuat", statusJemput == 'terjadwal' || statusJemput == 'proses' || statusJemput == 'selesai', isFirst: true),
-            _statusStep("Dalam Perjalanan", "Kurir sedang menuju lokasi", statusJemput == 'proses' || statusJemput == 'selesai'),
-            _statusStep("Tiba & Timbang", "Proses penimbangan sampah", statusJemput == 'selesai', isLast: true),
-
-            const SizedBox(height: 40),
-
-            // TOMBOL AKSI
-            if (statusJemput != 'selesai')
-            SizedBox(
-              width: double.infinity,
-              height: 60,
-              child: ElevatedButton(
-                onPressed: () async {
-                  final hasilSetor = await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => SetorSampahPage(
-                        nasabahId: nasabahId,
-                        namaNasabah: namaNasabah,
-                        alamat: alamatNasabah,
-                        barcode: "BRC-${nasabahId}99",
-                        jadwalId: jadwalId,
-                      ),
-                    ),
-                  );
-                  if (hasilSetor == true) {
-                    if (mounted) Navigator.pop(context, true);
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryColor,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+            // Efek lengkungan pemisah header dengan konten di bawahnya
+            SliverToBoxAdapter(
+              child: Container(
+                height: 20,
+                decoration: const BoxDecoration(
+                  color: backgroundColor,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
                 ),
-                child: const Text("SAYA SUDAH SAMPAI & TIMBANG", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 16)),
               ),
             ),
+
+            // AREA DAFTAR KARTU RUTE JALAN
+            _daftarRute.isEmpty
+                ? SliverFillRemaining(child: _buildStateKosong())
+                : SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              sliver: SliverList(
+                delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                    final item = _daftarRute[index];
+                    final nasabahObj = item['user'] ?? item['nasabah'];
+
+                    String idJadwal = item['id']?.toString() ?? "0";
+                    int nasabahId = int.tryParse(item['nasabah_id'].toString()) ?? 0;
+                    String nama = nasabahObj?['name'] ?? "Nasabah ASRI";
+                    String alamat = item['alamat'] ?? "Alamat tidak diisi";
+                    String catatan = item['catatan'] ?? "Ambil sampah berkala";
+                    String status = (item['status'] ?? 'terjadwal').toString().toLowerCase();
+
+                    bool isSelesai = status == 'selesai';
+
+                    // Mencari baris antrean aktif pertama yang belum selesai
+                    bool isUrutanPertamaAktif = false;
+                    if (!isSelesai) {
+                      int indexAktifPertama = _daftarRute.indexWhere((element) =>
+                      (element['status'] ?? '').toString().toLowerCase() != 'selesai');
+                      isUrutanPertamaAktif = (index == indexAktifPertama);
+                    }
+
+                    return _buildRuteItemCard(
+                      index: index + 1,
+                      idJadwal: idJadwal,
+                      nasabahId: nasabahId,
+                      nama: nama,
+                      alamat: alamat,
+                      catatan: catatan,
+                      isSelesai: isSelesai,
+                      isAktif: isUrutanPertamaAktif,
+                    );
+                  },
+                  childCount: _daftarRute.length,
+                ),
+              ),
+            ),
+
+            // Ruang spasi bawah agar tombol tidak tertutup navigasi sistem Android
+            const SliverToBoxAdapter(child: SizedBox(height: 40)),
           ],
         ),
       ),
     );
   }
 
-  Widget _infoRow(IconData icon, String label, String value) {
+  Widget _buildStateKosong() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.directions_bike_rounded, size: 64, color: Colors.grey.shade400),
+          const SizedBox(height: 16),
+          const Text(
+            "Tidak Ada Jadwal Rute Jalan\nUntuk Hari Ini",
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 16, color: greyTextColor, fontWeight: FontWeight.bold, height: 1.4),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRuteItemCard({
+    required int index,
+    required String idJadwal,
+    required int nasabahId,
+    required String nama,
+    required String alamat,
+    required String catatan,
+    required bool isSelesai,
+    required bool isAktif,
+  }) {
+    Color statusCardColor = isSelesai ? Colors.grey.shade100 : Colors.white;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.all(16),
+      decoration: cardDecoration(isAktif),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 28,
+                height: 28,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: isSelesai ? Colors.grey.shade400 : (isAktif ? primaryColor : Colors.grey.shade300),
+                  shape: BoxShape.circle,
+                ),
+                child: Text("$index", style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  nama,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: isSelesai ? greyTextColor : darkTextColor,
+                    decoration: isSelesai ? TextDecoration.lineThrough : null,
+                  ),
+                ),
+              ),
+              _buildBadgeStatus(isSelesai, isAktif),
+            ],
+          ),
+          const Divider(height: 24, thickness: 1),
+
+          _rowDetail(Icons.location_on_rounded, "Alamat Penjemputan:", alamat, isSelesai),
+          const SizedBox(height: 12),
+          _rowDetail(Icons.chat_bubble_rounded, "Catatan Lapangan:", catatan, isSelesai),
+
+          if (isAktif) ...[
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () => _bukaGoogleMaps(alamat),
+                    icon: const Icon(Icons.map_rounded, size: 18),
+                    label: const Text("PETA MAPS", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue.shade800,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      elevation: 0,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () async {
+                      final hasilSetor = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => SetorSampahPage(
+                            nasabahId: nasabahId,
+                            namaNasabah: nama,
+                            alamat: alamat,
+                            barcode: "BRC-${nasabahId}99",
+                            jadwalId: idJadwal,
+                          ),
+                        ),
+                      );
+                      if (hasilSetor == true) {
+                        _loadSemuaRuteHariIni();
+                      }
+                    },
+                    icon: const Icon(Icons.scale_rounded, size: 18),
+                    label: const Text("TIMBANG", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: primaryColor,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      elevation: 0,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ]
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBadgeStatus(bool isSelesai, bool isAktif) {
+    String txt = isSelesai ? "SELESAI" : (isAktif ? "SEKARANG" : "ANTREAN");
+    Color bg = isSelesai ? Colors.grey.shade200 : (isAktif ? softGreenColor : Colors.orange.shade50);
+    Color fg = isSelesai ? Colors.grey.shade600 : (isAktif ? primaryColor : Colors.orange.shade900);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(8)),
+      child: Text(txt, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: fg)),
+    );
+  }
+
+  Widget _rowDetail(IconData icon, String label, String value, bool isSelesai) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, color: primaryColor, size: 20),
-        const SizedBox(width: 12),
+        Icon(icon, size: 16, color: isSelesai ? Colors.grey : secondaryColor),
+        const SizedBox(width: 10),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label, style: const TextStyle(fontSize: 12, color: greyTextColor, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 2),
-              Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: darkTextColor)),
+              Text(label, style: TextStyle(fontSize: 11, color: isSelesai ? Colors.grey : greyTextColor, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 3),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: isSelesai ? Colors.grey : darkTextColor,
+                  fontWeight: FontWeight.w500,
+                  height: 1.4,
+                ),
+              ),
             ],
           ),
         ),
       ],
     );
   }
+}
 
-  Widget _statusStep(String title, String desc, bool isDone, {bool isFirst = false, bool isLast = false}) {
-    return Row(
-      children: [
-        Column(
-          children: [
-            Container(
-              width: 2,
-              height: 20,
-              color: isFirst ? Colors.transparent : (isDone ? primaryColor : Colors.grey.shade300),
-            ),
-            Container(
-              width: 24,
-              height: 24,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: isDone ? primaryColor : Colors.white,
-                border: Border.all(color: isDone ? primaryColor : Colors.grey.shade300, width: 2),
-              ),
-              child: isDone ? const Icon(Icons.check, color: Colors.white, size: 16) : null,
-            ),
-            Container(
-              width: 2,
-              height: 20,
-              color: isLast ? Colors.transparent : (isDone ? primaryColor : Colors.grey.shade300),
-            ),
-          ],
-        ),
-        const SizedBox(width: 16),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title, style: TextStyle(fontWeight: FontWeight.w900, color: isDone ? darkTextColor : greyTextColor)),
-            Text(desc, style: TextStyle(fontSize: 12, color: isDone ? greyTextColor : Colors.grey.shade400)),
-          ],
-        ),
-      ],
-    );
-  }
+// Global System Card Decoration yang diadaptasi khusus untuk indikator aktif
+BoxDecoration cardDecoration(bool isAktif) {
+  return BoxDecoration(
+    color: Colors.white,
+    borderRadius: BorderRadius.circular(20),
+    border: Border.all(
+      color: isAktif ? primaryColor : primaryColor.withOpacity(0.12),
+      width: isAktif ? 2.0 : 1.5,
+    ),
+    boxShadow: [
+      BoxShadow(
+        color: primaryColor.withOpacity(isAktif ? 0.06 : 0.03),
+        blurRadius: 10,
+        offset: const Offset(0, 4),
+      ),
+    ],
+  );
 }
