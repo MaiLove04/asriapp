@@ -7,7 +7,8 @@ import '../kurir/JadwalJemputScreen.dart';
 import 'ProfilKurirScreen.dart';
 import 'RiwayatKurirScreen.dart';
 import 'ScanBarcode.dart';
-import 'navigasi_kurir_page.dart'; // Import halaman navigasi rute baru kita
+import 'navigasi_kurir_page.dart';
+import 'pencapaian_kurir_page.dart';
 
 // Palet warna dengan kontras tinggi (Senior-Friendly Theme)
 const primaryColor = Color(0xFF1E521E);     // Hijau lebih tua agar tulisan lebih kontras dan jelas
@@ -331,8 +332,16 @@ class _QuickActionsRow extends StatelessWidget {
             }
           },
         ),
-        const _MiniActionCard(icon: Icons.bar_chart_rounded, title: "Lihat Data"),
-
+        _MiniActionCard(
+          icon: Icons.bar_chart_rounded,
+          title: "Lihat Data",
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const PencapaianKurirPage()),
+            );
+          },
+        ),
         _MiniActionCard(
           icon: Icons.assignment_turned_in_rounded,
           title: "Riwayat",
