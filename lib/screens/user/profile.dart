@@ -2,21 +2,33 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+
 import '../../config.dart';
 import '../services/setor_sampah_service.dart';
+import 'bantuan_page.dart'; // 🔥 Memastikan import halaman bantuan aktif
+
+// 🎨 PALET WARNA EXECUTIVE PREMIUM (ASRI MODERN)
+const primaryColor = Color(0xFF164716);     // Hijau Botol Mewah
+const secondaryColor = Color(0xFF2E7D32);   // Hijau Aksen Aktif
+const softGreenColor = Color(0xFFE8F0E9);   // Hijau sangat muda bersih
+const backgroundColor = Color(0xFFF7F9F7);  // Putih keabu-abuan mutiara tenang
+const darkTextColor = Color(0xFF0C1F0C);    // Hitam pekat legam teks utama
+const greyTextColor = Color(0xFF5A665A);    // Abu-abu elegan sub-informasi
 
 class profile_page extends StatefulWidget {
-  const profile_page({super.key});
+  final String? foto; // 🔥 Operan URL foto dinamis dari Dashboard
+
+  const profile_page({super.key, this.foto});
 
   @override
   State<profile_page> createState() => _profile_pageState();
 }
 
 class _profile_pageState extends State<profile_page> {
-  // --- STATE DATA PROFILE NASABAH ---
   String namaNasabah = "...";
   String idNasabah = "-";
   int saldoNasabah = 0;
+  String? fotoNasabah; // 🔥 Tambahkan state foto
   bool _hasPin = false;
   bool isLoading = true;
   bool _isSubmitting = false;
@@ -24,12 +36,10 @@ class _profile_pageState extends State<profile_page> {
   @override
   void initState() {
     super.initState();
+    fotoNasabah = widget.foto; // Inisialisasi awal
     getProfileNasabah();
   }
 
-  // ========================================================
-  // ⚡ LOAD DATA PROFIL & SALDO LANGSUNG DARI LARAVEL
-  // ========================================================
   Future<void> getProfileNasabah() async {
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -51,24 +61,34 @@ class _profile_pageState extends State<profile_page> {
         final data = jsonDecode(response.body);
         if (data['success'] == true) {
           setState(() {
-            namaNasabah = data['nasabah']['name'] ?? 'Nasabah Basayan';
-            idNasabah = "ID ${data['nasabah']['id'] ?? '-'}";
-            saldoNasabah = int.tryParse(data['nasabah']['saldo'].toString()) ?? 0;
-            _hasPin = data['nasabah']['has_pin'] ?? false;
+            var nasabahData = data['nasabah'];
+            namaNasabah = nasabahData['name'] ?? 'Nasabah Basayan';
+            saldoNasabah = int.tryParse(nasabahData['saldo'].toString()) ?? 0;
+            _hasPin = nasabahData['has_pin'] ?? false;
+            
+            // 🔥 Ambil foto terbaru dari API
+            if (nasabahData['foto'] != null && nasabahData['foto'].toString().isNotEmpty) {
+              String rawFoto = nasabahData['foto'].toString();
+              if (rawFoto.startsWith('http')) {
+                fotoNasabah = rawFoto;
+              } else {
+                // Bersihkan '/api' dari baseUrl untuk mendapatkan domain utama
+                String domain = AppConfig.baseUrl.replaceAll('/api', '');
+                fotoNasabah = "$domain/$rawFoto";
+              }
+            }
+            
             isLoading = false;
           });
         }
       } else {
-        print("Gagal mengambil data profil. Status: ${response.statusCode}");
         setState(() { isLoading = false; });
       }
     } catch (e) {
-      print("ERROR REAL-TIME PROFILE: $e");
       setState(() { isLoading = false; });
     }
   }
 
-  // Formatter Rupiah Lokalan Basayan Bestari
   String formatRupiah(int angka) {
     return "Rp " + angka.toString().replaceAllMapped(
         RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.'
@@ -83,15 +103,15 @@ class _profile_pageState extends State<profile_page> {
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(_hasPin ? "Ubah PIN Transaksi" : "Buat PIN Transaksi", textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.bold)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Text(_hasPin ? "Ubah PIN Transaksi" : "Setel PIN Transaksi", textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.bold, color: darkTextColor)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(_hasPin 
-              ? "Silakan masukkan PIN baru Anda." 
-              : "Demi keamanan, silakan buat 6 digit PIN untuk setiap transaksi Anda.", 
-              textAlign: TextAlign.center, style: const TextStyle(fontSize: 13)),
+            Text(_hasPin
+                ? "Silakan masukkan 6 digit PIN baru Anda."
+                : "Demi keamanan finansial Anda, silakan buat 6 digit PIN untuk otentikasi transaksi.",
+                textAlign: TextAlign.center, style: const TextStyle(fontSize: 13, color: greyTextColor)),
             const SizedBox(height: 20),
             TextField(
               controller: pinController,
@@ -99,23 +119,43 @@ class _profile_pageState extends State<profile_page> {
               obscureText: true,
               maxLength: 6,
               textAlign: TextAlign.center,
-              decoration: const InputDecoration(hintText: "PIN Baru", counterText: ""),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 8),
+              decoration: InputDecoration(
+                  hintText: "PIN BARU",
+                  hintStyle: const TextStyle(fontSize: 13, letterSpacing: 0, color: Colors.grey),
+                  counterText: "",
+                  filled: true,
+                  fillColor: backgroundColor,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none)
+              ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
             TextField(
               controller: confirmController,
               keyboardType: TextInputType.number,
               obscureText: true,
               maxLength: 6,
               textAlign: TextAlign.center,
-              decoration: const InputDecoration(hintText: "Konfirmasi PIN", counterText: ""),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 8),
+              decoration: InputDecoration(
+                  hintText: "KONFIRMASI PIN",
+                  hintStyle: const TextStyle(fontSize: 13, letterSpacing: 0, color: Colors.grey),
+                  counterText: "",
+                  filled: true,
+                  fillColor: backgroundColor,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none)
+              ),
             ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("BATAL", style: TextStyle(color: Colors.grey))),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("BATAL", style: TextStyle(color: greyTextColor, fontWeight: FontWeight.bold))),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1E521E)),
+            style: ElevatedButton.styleFrom(
+                backgroundColor: primaryColor,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10)
+            ),
             onPressed: () async {
               if (pinController.text.length == 6 && pinController.text == confirmController.text) {
                 Navigator.pop(ctx);
@@ -126,7 +166,7 @@ class _profile_pageState extends State<profile_page> {
                 );
               }
             },
-            child: const Text("SIMPAN PIN", style: TextStyle(color: Colors.white)),
+            child: const Text("SIMPAN", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -136,12 +176,12 @@ class _profile_pageState extends State<profile_page> {
   Future<void> _eksekusiSetupPin(String pin, String confirm) async {
     setState(() => _isSubmitting = true);
     final result = await SetorSampahService.setupPin(pin: pin, pinConfirmation: confirm);
-    
+
     if (mounted) {
       setState(() => _isSubmitting = false);
       if (result['status'] == 200) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("PIN berhasil diperbarui!"), backgroundColor: Color(0xFF1E521E)),
+          const SnackBar(content: Text("PIN transaksi berhasil diperbarui!"), backgroundColor: secondaryColor),
         );
         setState(() => _hasPin = true);
       } else {
@@ -155,141 +195,163 @@ class _profile_pageState extends State<profile_page> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[200],
+      backgroundColor: backgroundColor,
 
-      // ================= APPBAR =================
+      // ================= APPBAR PREMIUM =================
       appBar: AppBar(
-        backgroundColor: Colors.green[900],
+        backgroundColor: primaryColor,
         elevation: 0,
-        title: const Text("Profil Akun", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: const Text("Profil Akun", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
       ),
 
       body: isLoading
-          ? const Center(child: CircularProgressIndicator(color: Color(0xFF1E521E), strokeWidth: 4))
+          ? const Center(child: CircularProgressIndicator(color: primaryColor, strokeWidth: 3))
           : RefreshIndicator(
-        color: Colors.green[900],
-        onRefresh: getProfileNasabah, // Tarik ke bawah untuk refresh data profil & saldo
+        color: primaryColor,
+        onRefresh: getProfileNasabah,
         child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
+          physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
           child: Column(
             children: [
-              const SizedBox(height: 20),
-
-              // ================= CONTAINER UTAMA =================
+              // ================= TAMPILAN HERO KARTU PROFIL =================
               Container(
-                margin: const EdgeInsets.symmetric(horizontal: 20),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(25),
+                width: double.infinity,
+                padding: const EdgeInsets.only(left: 20, right: 20, top: 24, bottom: 28),
+                decoration: const BoxDecoration(
+                  color: primaryColor,
+                  borderRadius: BorderRadius.vertical(bottom: Radius.circular(32)),
                 ),
                 child: Column(
                   children: [
-                    // ================= PROFILE CARD DYNAMIC =================
                     Container(
-                      padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.grey[100],
-                        borderRadius: BorderRadius.circular(15),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white24, width: 3),
                       ),
-                      child: Row(
-                        children: [
-                          const CircleAvatar(
-                            radius: 28,
-                            backgroundColor: Color(0xFF2E7D32),
-                            child: Icon(Icons.person, color: Colors.white, size: 32),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  namaNasabah, // 🔥 Nama Asli dari DB
-                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF0D240D)),
-                                ),
-                                const SizedBox(height: 3),
-                                Text(idNasabah, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.grey)),
-                              ],
-                            ),
-                          )
-                        ],
+                      // 🔥 PERBAIKAN: Gunakan fotoNasabah dari state yang sudah diolah
+                      child: CircleAvatar(
+                        radius: 36,
+                        backgroundColor: Colors.white12,
+                        backgroundImage: fotoNasabah != null && fotoNasabah!.isNotEmpty
+                            ? NetworkImage(fotoNasabah!)
+                            : null,
+                        child: fotoNasabah == null || fotoNasabah!.isEmpty
+                            ? const Icon(Icons.person_rounded, color: Colors.white, size: 44)
+                            : null,
                       ),
                     ),
+                    const SizedBox(height: 14),
+                    Text(
+                      namaNasabah,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.white, letterSpacing: -0.3),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      idNasabah,
+                      style: const TextStyle(fontSize: 13, color: Colors.white60, fontWeight: FontWeight.w400),
+                    ),
+                  ],
+                ),
+              ),
 
-                    const SizedBox(height: 15),
+              const SizedBox(height: 24),
 
-                    // ================= KOTAK SALDO DYNAMIC =================
+              // ================= ISI KONTEN MENU OPSI (CLEAN INTERFACE) =================
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text("Informasi Keuangan", style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: greyTextColor, letterSpacing: 0.5)),
+                    const SizedBox(height: 10),
+
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[100],
-                        borderRadius: BorderRadius.circular(15),
-                      ),
+                      padding: const EdgeInsets.all(18),
+                      decoration: cardDecoration(),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            "Total Saldo Berjalan",
-                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey),
-                          ),
+                          const Text("TOTAL SALDO BERJALAN", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: greyTextColor, letterSpacing: 0.8)),
                           const SizedBox(height: 6),
                           Text(
-                            formatRupiah(saldoNasabah), // 🔥 Saldo Asli dari DB
-                            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Color(0xFF2E7D32)),
+                            formatRupiah(saldoNasabah),
+                            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: primaryColor, letterSpacing: -0.5),
                           ),
                         ],
                       ),
                     ),
 
-                    const SizedBox(height: 25),
+                    const SizedBox(height: 28),
+                    const Text("Pengaturan & Keamanan", style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: greyTextColor, letterSpacing: 0.5)),
+                    const SizedBox(height: 10),
 
-                    // ================= MENU OPSI =================
-                    _menuItem(Icons.lock, "Ubah Kata Sandi", onTap: () {}),
-                    _menuItem(Icons.settings, "Pengaturan Akun", onTap: () {}),
-                    _menuItem(Icons.notifications, "Notifikasi", onTap: () {}),
-                    _menuItem(
-                      _hasPin ? Icons.security_rounded : Icons.lock_open_rounded, 
-                      _hasPin ? "Ubah PIN Transaksi" : "Setel PIN Transaksi", 
-                      onTap: _showSetupPinDialog
+                    Container(
+                      decoration: cardDecoration(),
+                      child: Column(
+                        children: [
+                          _menuItem(Icons.lock_outline_rounded, "Ubah Kata Sandi", onTap: () {}),
+                          _dividerLine(),
+                          _menuItem(Icons.settings_outlined, "Pengaturan Akun", onTap: () {}),
+                          _dividerLine(),
+                          _menuItem(Icons.notifications_none_rounded, "Notifikasi Sistem", onTap: () {}),
+                          _dividerLine(),
+                          _menuItem(
+                              _hasPin ? Icons.security_rounded : Icons.lock_open_rounded,
+                              _hasPin ? "Ubah PIN Transaksi Dompet" : "Setel PIN Transaksi Dompet",
+                              onTap: _showSetupPinDialog
+                          ),
+                          _dividerLine(),
+                          // 🔥 PERBAIKAN: Diarahkan ke halaman BantuanPage()
+                          _menuItem(
+                            Icons.help_outline_rounded,
+                            "Pusat Bantuan",
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => const BantuanPage()),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
                     ),
-                    _menuItem(Icons.help, "Pusat Bantuan", onTap: () {}),
-                    _menuItem(Icons.power_settings_new_rounded, "Keluar Akun", onTap: () async {
-                      bool? yakin = await showDialog(
-                        context: context,
-                        builder: (ctx) => AlertDialog(
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                          title: const Text("Konfirmasi"),
-                          content: const Text("Apakah Anda yakin ingin keluar dari akun?"),
-                          actions: [
-                            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Batal")),
-                            ElevatedButton(
-                              style: ElevatedButton.styleFrom(backgroundColor: Colors.red, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
-                              onPressed: () async {
+
+                    const SizedBox(height: 20),
+
+                    Container(
+                      decoration: cardDecoration(),
+                      child: _menuItem(
+                          Icons.power_settings_new_rounded,
+                          "Keluar Dari Akun",
+                          colorIconText: Colors.red.shade800,
+                          onTap: () async {
+                            showDialog(
+                              context: context,
+                              builder: (ctx) => AppExitDialog(onConfirm: () async {
                                 SharedPreferences prefs = await SharedPreferences.getInstance();
                                 await prefs.clear();
-                                if (mounted) {
+                                if (context.mounted) {
                                   Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
                                 }
-                              },
-                              child: const Text("Keluar", style: TextStyle(color: Colors.white)),
-                            ),
-                          ],
-                        ),
-                      );
-                    }),
-                    
+                              }),
+                            );
+                          }
+                      ),
+                    ),
+
                     if (_isSubmitting)
                       const Padding(
-                        padding: EdgeInsets.only(top: 10),
-                        child: LinearProgressIndicator(color: Color(0xFF1E521E)),
+                        padding: EdgeInsets.only(top: 14),
+                        child: LinearProgressIndicator(color: primaryColor),
                       ),
+                    const SizedBox(height: 40),
                   ],
                 ),
               ),
@@ -298,61 +360,108 @@ class _profile_pageState extends State<profile_page> {
         ),
       ),
 
-      // ================= BOTTOM NAV CONTROL =================
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: Colors.green[900],
-        unselectedItemColor: Colors.grey,
-        currentIndex: 4, // Mengunci indikator aktif di menu Profil
-        onTap: (index) {
-          if (index == 0) {
-            // Kembali ke halaman beranda utama
-            Navigator.popUntil(context, (route) => route.isFirst);
-          } else if (index == 1) {
-            // Arahkan ke halaman Riwayat Aktivitas
-            Navigator.pushReplacementNamed(context, '/riwayat');
-          } else if (index == 2) {
-            // Arahkan ke halaman Setor
-            Navigator.pushReplacementNamed(context, '/setor');
-          }
-        },
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Beranda"),
-          BottomNavigationBarItem(icon: Icon(Icons.history), label: "Riwayat"),
-          BottomNavigationBarItem(icon: Icon(Icons.add_circle), label: "Mulai Setor"),
-          BottomNavigationBarItem(icon: Icon(Icons.notifications), label: "Notifikasi"),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: "Profil"),
-        ],
-      ),
-    );
-  }
-
-  // ================= WIDGET COMPONENT MENU ITEM =================
-  Widget _menuItem(IconData icon, String title, {required VoidCallback onTap}) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(15),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+      bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          color: Colors.grey[100],
-          borderRadius: BorderRadius.circular(15),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, -2))],
         ),
-        child: Row(
-          children: [
-            Icon(icon, color: Colors.green[800], size: 22),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                title,
-                style: const TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF0D240D), fontSize: 13),
-              ),
-            ),
-            const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.grey)
+        child: BottomNavigationBar(
+          type: BottomNavigationBarType.fixed,
+          backgroundColor: Colors.white,
+          selectedItemColor: primaryColor,
+          unselectedItemColor: Colors.grey.shade400,
+          currentIndex: 4,
+          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
+          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
+          onTap: (index) {
+            if (index == 0) {
+              Navigator.popUntil(context, (route) => route.isFirst);
+            } else if (index == 1) {
+              Navigator.pushReplacementNamed(context, '/riwayat');
+            } else if (index == 2) {
+              Navigator.pushReplacementNamed(context, '/setor');
+            }
+          },
+          items: const [
+            BottomNavigationBarItem(icon: Icon(Icons.home_rounded, size: 22), label: "Beranda"),
+            BottomNavigationBarItem(icon: Icon(Icons.history_rounded, size: 22), label: "Riwayat"),
+            BottomNavigationBarItem(icon: Icon(Icons.add_circle_rounded, size: 24), label: "Mulai Setor"),
+            BottomNavigationBarItem(icon: Icon(Icons.notifications_rounded, size: 22), label: "Notifikasi"),
+            BottomNavigationBarItem(icon: Icon(Icons.person_rounded, size: 22), label: "Profil"),
           ],
         ),
       ),
     );
   }
+
+  Widget _menuItem(IconData icon, String title, {required VoidCallback onTap, Color? colorIconText}) {
+    Color activeColor = colorIconText ?? darkTextColor;
+    Color iconColor = colorIconText ?? primaryColor;
+
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        child: Row(
+          children: [
+            Icon(icon, color: iconColor, size: 22),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                title,
+                style: TextStyle(fontWeight: FontWeight.bold, color: activeColor, fontSize: 14),
+              ),
+            ),
+            Icon(Icons.arrow_forward_ios_rounded, size: 14, color: colorIconText != null ? Colors.transparent : Colors.grey.shade400)
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _dividerLine() {
+    return Divider(color: Colors.grey.shade100, height: 1, thickness: 1, indent: 16, endIndent: 16);
+  }
+}
+
+class AppExitDialog extends StatelessWidget {
+  final VoidCallback onConfirm;
+  const AppExitDialog({super.key, required this.onConfirm});
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      title: const Text("Konfirmasi Keluar", style: TextStyle(fontWeight: FontWeight.bold, color: darkTextColor)),
+      content: const Text("Apakah Anda yakin ingin keluar dari akun nasabah saat ini?"),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: const Text("Batal", style: TextStyle(color: greyTextColor, fontWeight: FontWeight.bold))),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red.shade800,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10)
+          ),
+          onPressed: () {
+            Navigator.pop(context);
+            onConfirm();
+          },
+          child: const Text("Keluar", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        ),
+      ],
+    );
+  }
+}
+
+BoxDecoration cardDecoration() {
+  return BoxDecoration(
+    color: Colors.white,
+    borderRadius: BorderRadius.circular(24),
+    boxShadow: [
+      BoxShadow(
+        color: Colors.black.withOpacity(0.02),
+        blurRadius: 12,
+        offset: const Offset(0, 4),
+      )
+    ],
+  );
 }
