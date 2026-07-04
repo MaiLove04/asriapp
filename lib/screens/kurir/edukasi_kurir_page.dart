@@ -3,12 +3,13 @@ import '../services/jenis_sampah_service.dart';
 import '../models/jenis_sampah.dart';
 import 'package:intl/intl.dart';
 
-const primaryColor = Color(0xFF1E521E);
-const secondaryColor = Color(0xFF4CAF50);
-const softGreenColor = Color(0xFFE8F5E9);
-const backgroundColor = Color(0xFFF9FBF9);
-const darkTextColor = Color(0xFF0D240D);
-const greyTextColor = Color(0xFF555555);
+// Palet warna premium dengan kontras tinggi (Senior-Friendly & Professional)
+const primaryColor = Color(0xFF1B4D1B);     // Hijau dalam yang solid
+const secondaryColor = Color(0xFF2E7D32);   // Hijau aktif untuk aksen
+const softGreenColor = Color(0xFFF0F7F1);   // Background elemen penyejuk mata
+const backgroundColor = Color(0xFFF4F7F4);  // Abu-hijau muda kontras maksimal
+const darkTextColor = Color(0xFF0A1F0A);    // Teks utama super pekat
+const greyTextColor = Color(0xFF4A554A);    // Teks deskripsi kontras tinggi
 
 class EdukasiKurirPage extends StatefulWidget {
   const EdukasiKurirPage({super.key});
@@ -52,26 +53,27 @@ class _EdukasiKurirPageState extends State<EdukasiKurirPage> with SingleTickerPr
     return Scaffold(
       backgroundColor: backgroundColor,
       appBar: AppBar(
-        title: const Text("Pusat Edukasi & Panduan", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+        title: const Text("Pusat Panduan & Edukasi", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 18)),
         backgroundColor: primaryColor,
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: Colors.white,
           indicatorWeight: 4,
-          labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500),
+          indicatorSize: TabBarIndicatorSize.tab,
+          labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 0.5),
+          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
           labelColor: Colors.white,
-          unselectedLabelColor: Colors.white70,
+          unselectedLabelColor: Colors.white60,
           tabs: const [
-            Tab(text: "JENIS SAMPAH"),
-            Tab(text: "PANDUAN"),
-            Tab(text: "FAQ"),
+            Tab(text: "KATALOG SAMPAH"),
+            Tab(text: "PANDUAN JALAN"),
+            Tab(text: "TANYA JAWAB"),
           ],
         ),
       ),
@@ -86,44 +88,52 @@ class _EdukasiKurirPageState extends State<EdukasiKurirPage> with SingleTickerPr
     );
   }
 
+  // === 1. TAB KATALOG SAMPAH (Desain Elegan & Kontras Tinggi) ===
   Widget _buildKatalogSampah() {
-    if (isLoading) return const Center(child: CircularProgressIndicator(color: primaryColor));
+    if (isLoading) return const Center(child: CircularProgressIndicator(color: primaryColor, strokeWidth: 3));
     if (listJenis.isEmpty) {
-      return const Center(child: Text("Data jenis sampah tidak ditemukan", style: TextStyle(color: greyTextColor)));
+      return const Center(
+        child: Text("Data jenis sampah belum tersedia.", style: TextStyle(color: greyTextColor, fontSize: 16, fontWeight: FontWeight.w500)),
+      );
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
       itemCount: listJenis.length,
       itemBuilder: (context, index) {
         final item = listJenis[index];
         final hargaFormat = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp', decimalDigits: 0).format(item.harga);
 
         return Container(
-          margin: const EdgeInsets.only(bottom: 16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))],
-          ),
-          child: ListTile(
-            contentPadding: const EdgeInsets.all(16),
-            leading: Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(color: softGreenColor, borderRadius: BorderRadius.circular(12)),
-              child: const Icon(Icons.recycling_rounded, color: primaryColor, size: 32),
-            ),
-            title: Text(item.nama, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: darkTextColor)),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 4),
-                Text("Estimasi: $hargaFormat / Kg", style: const TextStyle(color: primaryColor, fontWeight: FontWeight.bold, fontSize: 14)),
-                const SizedBox(height: 8),
-                Text(_getDeskripsiSampah(item.nama), style: const TextStyle(color: greyTextColor, fontSize: 13, height: 1.4)),
-              ],
-            ),
+          margin: const EdgeInsets.only(bottom: 14),
+          padding: const EdgeInsets.all(16),
+          decoration: cardDecoration(),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(color: softGreenColor, borderRadius: BorderRadius.circular(14)),
+                child: const Icon(Icons.recycling_rounded, color: primaryColor, size: 28),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(item.nama, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: darkTextColor)),
+                    const SizedBox(height: 4),
+                    Text("$hargaFormat / Kg", style: const TextStyle(color: secondaryColor, fontWeight: FontWeight.bold, fontSize: 15)),
+                    const SizedBox(height: 10),
+                    Text(
+                      _getDeskripsiSampah(item.nama),
+                      style: const TextStyle(color: greyTextColor, fontSize: 13, height: 1.5, fontWeight: FontWeight.w500),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         );
       },
@@ -132,69 +142,154 @@ class _EdukasiKurirPageState extends State<EdukasiKurirPage> with SingleTickerPr
 
   String _getDeskripsiSampah(String nama) {
     nama = nama.toLowerCase();
-    if (nama.contains("plastik")) return "Pastikan plastik dalam keadaan bersih dan kering. Lepas label jika memungkinkan.";
-    if (nama.contains("kertas") || nama.contains("karton")) return "Kertas HVS, koran, atau kardus kering. Jangan dicampur dengan kertas karbon.";
-    if (nama.contains("logam") || nama.contains("besi")) return "Kaleng minuman, besi tua, atau tembaga. Pastikan tidak berkarat parah.";
-    if (nama.contains("kaca")) return "Botol kaca atau pecahan kaca. Harap berhati-hati saat menangani kategori ini.";
-    return "Kategori sampah ini dapat ditimbang dan ditukar dengan saldo sesuai berat yang terukur.";
+    if (nama.contains("plastik")) return "Wajib bersih & kering. Botol dipres tipis, lepaskan label plastik luarnya jika memungkinkan.";
+    if (nama.contains("kertas") || nama.contains("karton")) return "Kardus dibongkar mendatar, pastikan kering total. Jangan dicampur kertas karbon.";
+    if (nama.contains("logam") || nama.contains("besi")) return "Bilas kaleng bekas minuman/makanan. Singkirkan benda tajam berbahaya.";
+    if (nama.contains("kaca")) return "Botol/jar utuh bersih. Letakkan di wadah terpisah agar aman saat dibawa berkendara.";
+    return "Dapat ditimbang dan ditukar saldo transaksi langsung melalui aplikasi sesuai timbangan fisik.";
   }
 
+  // === 2. TAB PANDUAN APLIKASI (Desain Berundak / Step-by-Step UI) ===
   Widget _buildPanduanAplikasi() {
     final panduan = [
-      {"judul": "Cara Jemput Sampah", "isi": "1. Buka menu 'Tugas Hari Ini'.\n2. Pilih lokasi nasabah.\n3. Tekan 'Mulai Jemput' untuk navigasi."},
-      {"judul": "Cara Timbang & Input", "isi": "1. Gunakan timbangan IOT atau manual.\n2. Scan QR Code nasabah saat di lokasi.\n3. Masukkan berat sampah per kategori.\n4. Konfirmasi transaksi bersama nasabah."},
-      {"judul": "Sistem Saldo", "isi": "Saldo nasabah akan otomatis bertambah setelah kurir menekan tombol 'Selesai' di aplikasi."},
+      {
+        "judul": "Langkah 1: Cara Jemput Sampah",
+        "steps": [
+          "Buka menu 'Buka Tugas' di halaman utama.",
+          "Pilih baris lokasi nasabah yang ingin dituju hari ini.",
+          "Tekan tombol 'MULAI JEMPUT' untuk melihat navigasi jalan."
+        ]
+      },
+      {
+        "judul": "Langkah 2: Proses Timbang & Input",
+        "steps": [
+          "Nyalakan Bluetooth untuk timbangan pintar (atau pakai manual).",
+          "Pindai/Scan QR Code kartu nasabah di lokasi penjemputan.",
+          "Ketikkan berat sampah yang tertera sesuai kategori bendanya.",
+          "Cek kembali nominal uang lalu konfirmasi bersama nasabah."
+        ]
+      },
+      {
+        "judul": "Langkah 3: Sistem Saldo Nasabah",
+        "steps": [
+          "Pastikan nasabah menyetujui total timbangan di layar hp.",
+          "Tekan tombol 'Selesai Transaksi'.",
+          "Saldo nasabah otomatis bertambah detik itu juga tanpa kendala."
+        ]
+      },
     ];
 
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
       itemCount: panduan.length,
       itemBuilder: (context, index) {
-        return Card(
-          elevation: 0,
-          color: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: Colors.grey.shade200)),
-          margin: const EdgeInsets.only(bottom: 16),
-          child: ExpansionTile(
-            tilePadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-            childrenPadding: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
-            leading: CircleAvatar(backgroundColor: primaryColor, radius: 15, child: Text("${index + 1}", style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold))),
-            title: Text(panduan[index]["judul"]!, style: const TextStyle(fontWeight: FontWeight.bold, color: darkTextColor, fontSize: 16)),
-            children: [
-              Text(panduan[index]["isi"]!, style: const TextStyle(color: greyTextColor, fontSize: 14, height: 1.6)),
-            ],
+        final item = panduan[index];
+        final List<String> steps = item["steps"] as List<String>;
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 14),
+          decoration: cardDecoration(),
+          child: Theme(
+            data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+            child: ExpansionTile(
+              tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              childrenPadding: const EdgeInsets.only(left: 16, right: 16, bottom: 20),
+              iconColor: primaryColor,
+              collapsedIconColor: greyTextColor,
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(color: primaryColor.withOpacity(0.08), shape: BoxShape.circle),
+                child: const Icon(Icons.menu_book_rounded, color: primaryColor, size: 20),
+              ),
+              title: Text(item["judul"] as String, style: const TextStyle(fontWeight: FontWeight.bold, color: darkTextColor, fontSize: 15)),
+              children: steps.map((stepText) {
+                int stepIndex = steps.indexOf(stepText) + 1;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      CircleAvatar(
+                        radius: 10,
+                        backgroundColor: secondaryColor,
+                        child: Text("$stepIndex", style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          stepText,
+                          style: const TextStyle(color: darkTextColor, fontSize: 14, height: 1.4, fontWeight: FontWeight.w500),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
           ),
         );
       },
     );
   }
 
+  // === 3. TAB TANYA JAWAB / FAQ (Desain Kontras & Bold Alert) ===
   Widget _buildFAQ() {
     final faqs = [
-      {"q": "Apa yang dilakukan jika nasabah tidak ada?", "a": "Kurir dapat menandai tugas sebagai 'Gagal' dengan alasan yang jelas, atau menghubungi nasabah via telepon jika tersedia."},
-      {"q": "Timbangan IOT tidak konek?", "a": "Pastikan Bluetooth aktif. Jika tetap gagal, gunakan mode 'Input Manual' di halaman penimbangan."},
-      {"q": "Bagaimana jika jenis sampah tercampur?", "a": "Sarankan nasabah untuk memilah terlebih dahulu atau kategorikan sebagai 'Sampah Residu/Campuran' jika tersedia."},
-      {"q": "Salah input berat, bagaimana?", "a": "Hubungi admin melalui grup atau menu pengaduan untuk revisi data transaksi sebelum akhir hari."},
+      {"q": "Nasabah sedang tidak berada di tempat?", "a": "Bapak/Ibu kurir dapat menandai tugas sebagai 'Gagal' dengan menyertakan alasan, atau coba hubungi nomor telepon nasabah melalui tombol panggil jika tersedia."},
+      {"q": "Timbangan digital macet / tidak konek?", "a": "Periksa apakah Bluetooth HP sudah aktif. Jika masih sulit tersambung, gunakan fitur 'Input Manual' di bagian pojok kanan atas layar penimbangan."},
+      {"q": "Jenis sampah tercampur aduk di karung?", "a": "Mintalah nasabah dengan sopan untuk memilahnya terlebih dahulu, atau masukkan ke dalam kategori 'Sampah Campuran / Residu' jika terpaksa."},
+      {"q": "Salah mengetik angka berat sampah?", "a": "Segera hubungi petugas Admin Kantor lewat grup WA agar dibantu edit data transaksi sebelum hari kerja berakhir."},
     ];
 
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
       itemCount: faqs.length,
       itemBuilder: (context, index) {
         return Container(
           margin: const EdgeInsets.only(bottom: 12),
-          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: softGreenColor)),
-          child: ExpansionTile(
-            title: Text(faqs[index]["q"]!, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: primaryColor)),
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
-                child: Text(faqs[index]["a"]!, style: const TextStyle(fontSize: 14, color: darkTextColor, height: 1.5)),
-              ),
-            ],
+          decoration: cardDecoration(),
+          child: Theme(
+            data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+            child: ExpansionTile(
+              tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              childrenPadding: const EdgeInsets.only(left: 16, right: 16, bottom: 18),
+              iconColor: primaryColor,
+              collapsedIconColor: greyTextColor,
+              title: Text(faqs[index]["q"]!, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: primaryColor, height: 1.3)),
+              children: [
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(color: softGreenColor, borderRadius: BorderRadius.circular(12)),
+                  child: Text(
+                    faqs[index]["a"]!,
+                    style: const TextStyle(fontSize: 14, color: darkTextColor, height: 1.5, fontWeight: FontWeight.w500),
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },
     );
   }
+}
+
+// Sistem dekorasi terpusat agar konsisten di seluruh aplikasi kurir ASRI
+BoxDecoration cardDecoration() {
+  return BoxDecoration(
+    color: Colors.white,
+    borderRadius: BorderRadius.circular(20),
+    border: Border.all(
+      color: primaryColor.withOpacity(0.12),
+      width: 1.5,
+    ),
+    boxShadow: [
+      BoxShadow(
+        color: primaryColor.withOpacity(0.03),
+        blurRadius: 10,
+        offset: const Offset(0, 4),
+      ),
+    ],
+  );
 }
