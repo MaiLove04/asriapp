@@ -27,7 +27,7 @@ class _ProfilKurirScreenState extends State<ProfilKurirScreen> {
   String noHpKurir = '-';
   String alamatKurir = '-';
   String? fotoPath;
-  int idJadwalAktif = 0;
+  String idJadwalAktif = "0";
   bool isLoading = true;
 
   @override
@@ -61,7 +61,7 @@ class _ProfilKurirScreenState extends State<ProfilKurirScreen> {
           alamatKurir = data['alamat'] ?? kurirDariJadwal?['alamat'] ?? '-';
 
           fotoPath = data['foto'] ?? kurirDariJadwal?['foto'];
-          idJadwalAktif = data['jadwal']?['id'] ?? 0;
+          idJadwalAktif = data['jadwal']?['id']?.toString() ?? "0";
           isLoading = false;
         });
       } else {

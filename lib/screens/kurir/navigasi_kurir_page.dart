@@ -28,7 +28,7 @@ class _NavigasiKurirPageState extends State<NavigasiKurirPage> {
   String namaNasabah = "Memuat...";
   String alamatNasabah = "Memuat...";
   String catatanNasabah = "Tidak ada catatan";
-  int jadwalId = 0;
+  String jadwalId = "";
   String statusJemput = "terjadwal";
 
   @override
@@ -64,8 +64,7 @@ class _NavigasiKurirPageState extends State<NavigasiKurirPage> {
         setState(() {
           _liveJadwalData = result;
 
-          jadwalId = int.tryParse(jadwalObj['id'].toString()) ?? 0;
-          nasabahId = int.tryParse(jadwalObj['nasabah_id'].toString()) ?? int.tryParse(jadwalObj['user_id'].toString()) ?? 0;
+          jadwalId = jadwalObj['id']?.toString() ?? "0";          nasabahId = int.tryParse(jadwalObj['nasabah_id'].toString()) ?? int.tryParse(jadwalObj['user_id'].toString()) ?? 0;
           namaNasabah = nasabahObj?['name'] ?? "Nasabah Basayan Bestari";
           alamatNasabah = jadwalObj['alamat'] ?? "Alamat tidak diisi";
           catatanNasabah = jadwalObj['catatan'] ?? "Ambil sampah penjemputan";

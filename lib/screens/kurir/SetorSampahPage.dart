@@ -27,7 +27,7 @@ class SetorSampahPage extends StatefulWidget {
   final String namaNasabah;
   final String alamat;
   final String barcode;
-  final int jadwalId;
+  final String jadwalId;
 
   const SetorSampahPage({
     super.key,
@@ -65,7 +65,7 @@ class _SetorSampahPageState extends State<SetorSampahPage> {
   int _selectedIndexKeranjang = 0;
 
   bool get isRealRequestNasabah =>
-      widget.jadwalId == 0 && _isRequestDataFromNasabah;
+      (widget.jadwalId == "0" || widget.jadwalId == "") && _isRequestDataFromNasabah;
 
   @override
   void initState() {
@@ -75,8 +75,8 @@ class _SetorSampahPageState extends State<SetorSampahPage> {
 
   Future<void> _loadInitialData() async {
     await _getJenisSampah();
-    // Autoload hanya dilakukan jika masuk melalui jalur Scan (jadwalId == 0)
-    if (widget.jadwalId == 0) {
+    // Autoload hanya dilakukan jika masuk melalui jalur Scan (jadwalId == 0 atau kosong)
+    if (widget.jadwalId == "0" || widget.jadwalId == "") {
       await _cekDanAutoloadRequestNasabah();
     }
   }

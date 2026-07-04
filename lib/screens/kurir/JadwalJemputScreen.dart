@@ -105,7 +105,7 @@ class _JadwalJemputScreenState extends State<JadwalJemputScreen> {
   // =========================================================================
   // 🛠️ PERBAIKAN: METHOD PATCH & ALAMAT ENDPOINT BARU SEUSAI ROUTE LARAVEL
   // =========================================================================
-  Future<void> mulaiJemputKurir(int jadwalId) async {
+  Future<void> mulaiJemputKurir(String jadwalId) async {
     try {
       setState(() => isLoading = true);
       SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -381,7 +381,7 @@ class _JadwalJemputScreenState extends State<JadwalJemputScreen> {
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 14),
                           child: JadwalCard(
-                            id: item['id'] ?? 0,
+                            id: item['id'].toString(),
                             nama: item['nasabah']?['name'] ?? 'Tanpa Nama',
                             alamat: item['alamat'] ?? 'Alamat tidak tersedia',
                             jam: jamFormatted,
@@ -398,16 +398,11 @@ class _JadwalJemputScreenState extends State<JadwalJemputScreen> {
                             onMulaiJemput: () async {
                               if (isTerjadwal) {
                                 mulaiJemputKurir(
-                                  item['jadwal_id'] is int
-                                      ? item['jadwal_id']
-                                      : int.parse(item['jadwal_id'].toString()),
+                                  item['jadwal_id'].toString(),
                                 );
                               } else if (isProses) {
                                 // EFEISIEN: Langsung ke Scan, dan Scan akan langsung ke Form Timbang
-                                final int idJadwal = item['id'] is int
-                                    ? item['id']
-                                    : (int.tryParse(item['id'].toString()) ??
-                                          0);
+                                final String idJadwal = item['id'].toString();
 
                                 final refresh = await Navigator.push(
                                   context,
@@ -448,13 +443,10 @@ class _JadwalJemputScreenState extends State<JadwalJemputScreen> {
           backgroundColor: primaryColor,
           shape: const CircleBorder(),
           onPressed: () async {
-            int idJadwalTerpilih =
-                int.tryParse(
-                  jadwalList.isNotEmpty
-                      ? jadwalList[0]['id']?.toString() ?? '0'
-                      : '0',
-                ) ??
-                0;
+            String idJadwalTerpilih =
+                jadwalList.isNotEmpty
+                    ? jadwalList[0]['id']?.toString() ?? ''
+                    : '';
             final result = await Navigator.push(
               context,
               MaterialPageRoute(
@@ -576,11 +568,12 @@ class _JadwalJemputScreenState extends State<JadwalJemputScreen> {
 }
 
 class JadwalCard extends StatelessWidget {
-  final int id;
+  final String id;
   final String nama;
   final String alamat;
   final String jam;
   final String status;
+
   final VoidCallback onLihatLokasi; // 🔥 Ditambahkan parameter baru
   final VoidCallback onMulaiJemput;
 

@@ -10,7 +10,7 @@ const primaryColor = Color(0xFF1E521E);
 const backgroundColor = Color(0xFFF9FBF9);
 
 class ScanBarcodePage extends StatefulWidget {
-  final int jadwalId;
+  final String jadwalId;
 
   const ScanBarcodePage({
     super.key,

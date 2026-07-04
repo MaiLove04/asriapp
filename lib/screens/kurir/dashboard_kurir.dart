@@ -79,8 +79,8 @@ class _DashboardKurirState extends State<DashboardKurir> {
         body: Center(child: CircularProgressIndicator(color: primaryColor, strokeWidth: 4)),
       );
     }
-
-    int idJadwalAktif = dashboardData?['jadwal']?['id'] ?? 0;
+    String? idJadwalAktif =
+    dashboardData?['jadwal']?['id']?.toString();
     List<dynamic> aktivitasTerbaru = dashboardData?['aktivitas_terbaru'] ?? [];
 
     return PopScope(
@@ -459,14 +459,15 @@ class _PremiumBottomNav extends StatelessWidget {
 }
 
 class _ScanFab extends StatelessWidget {
-  final int jadwalId;
+  final String? jadwalId;
   const _ScanFab({required this.jadwalId});
 
   @override
   Widget build(BuildContext context) {
     // Tombol scan sekarang selalu aktif (Biru/Hijau jika ada jadwal, Orange jika request umum)
-    bool adaJadwal = (jadwalId != 0);
 
+    bool adaJadwal =
+        jadwalId != null && jadwalId!.isNotEmpty;
     return Container(
       height: 72,
       width: 72,
@@ -488,7 +489,7 @@ class _ScanFab extends StatelessWidget {
           // Jika ada jadwal aktif, kirim ID-nya. Jika tidak (klik tombol scan langsung), kirim 0.
           final result = await Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => ScanBarcodePage(jadwalId: jadwalId)),
+            MaterialPageRoute(builder: (context) => ScanBarcodePage(jadwalId: jadwalId.toString())),
           );
 
           if (result == true) {
@@ -696,8 +697,11 @@ class _ActiveMissionCard extends StatelessWidget {
 
   static Widget _activeBadge(BuildContext context) {
     final state = context.findAncestorStateOfType<_DashboardKurirState>();
-    int idJadwal = state?.dashboardData?['jadwal']?['id'] ?? 0;
-    bool tidakAdaTugas = (idJadwal == 0);
+    String? idJadwal =
+    state?.dashboardData?['jadwal']?['id']?.toString();
+
+    bool tidakAdaTugas =
+        idJadwal == null || idJadwal.isEmpty;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
@@ -714,8 +718,11 @@ class _ActiveMissionCard extends StatelessWidget {
 
   static Widget _startButton(BuildContext context) {
     final state = context.findAncestorStateOfType<_DashboardKurirState>();
-    int idJadwal = state?.dashboardData?['jadwal']?['id'] ?? 0;
-    bool tidakAdaTugas = (idJadwal == 0);
+    String? idJadwal =
+    state?.dashboardData?['jadwal']?['id']?.toString();
+
+    bool tidakAdaTugas =
+        idJadwal == null || idJadwal.isEmpty;
 
     return ElevatedButton.icon(
       onPressed: tidakAdaTugas

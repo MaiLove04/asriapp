@@ -88,7 +88,7 @@ class SetorSampahModel {
     }
 
     return SetorSampahModel(
-      id: json['id'] ?? 0,
+      id: json['id']?.toString() ?? "",
 
       jenisSampah: namaJenis,
 
