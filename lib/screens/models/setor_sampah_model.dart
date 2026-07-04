@@ -29,89 +29,62 @@ class SetorSampahModel {
     required this.details,
   });
 
-  factory SetorSampahModel.fromJson(
-      Map<String, dynamic> json,
-      ) {
+  factory SetorSampahModel.fromJson(Map<String, dynamic> json) {
     String namaJenis = "-";
-
     List<DetailSetor> detailItems = [];
+    double totalBeratMultiItem = 0.0; // 🔥 Penampung total berat untuk format baru
 
-    // format data baru
-    if (
-    json['details'] != null &&
-        json['details'].isNotEmpty) {
+    // 1. Format Data Baru (Multi-Item)
+    if (json['details'] != null && (json['details'] as List).isNotEmpty) {
+      final rawDetails = json['details'] as List;
 
-      final rawDetails =
-      json['details'] as List;
+      detailItems = rawDetails.map((e) {
+        // Ambil berat mentah untuk diakumulasikan
+        final double beratMentah = double.tryParse(e['berat']?.toString() ?? '0') ?? 0.0;
+        totalBeratMultiItem += beratMentah;
 
-      detailItems =
-          rawDetails.map((e) {
-            return DetailSetor(
-              nama:
-              e['jenis_sampah']['nama'] ?? "-",
+        return DetailSetor(
+          nama: e['jenis_sampah'] != null ? (e['jenis_sampah']['nama'] ?? "-") : "-",
+          berat: "$beratMentah Kg",
+        );
+      }).toList();
 
-              berat:
-              e['berat'] != null
-                  ? "${e['berat']} Kg"
-                  : "0 Kg",
-            );
-          }).toList();
-
-      final firstName =
-          detailItems.first.nama;
-
+      final firstName = detailItems.first.nama;
       if (detailItems.length == 1) {
         namaJenis = firstName;
       } else {
-        namaJenis =
-        "$firstName +${detailItems.length - 1} lainnya";
+        namaJenis = "$firstName +${detailItems.length - 1} lainnya";
       }
     }
-
-    // format data lama
-    else if (
-    json['jenis_sampah'] != null) {
-
-      namaJenis =
-          json['jenis_sampah']['nama'] ?? "-";
+    // 2. Format Data Lama (Single-Item)
+    else if (json['jenis_sampah'] != null) {
+      namaJenis = json['jenis_sampah']['nama'] ?? "-";
+      final double beratLama = double.tryParse(json['berat']?.toString() ?? '0') ?? 0.0;
 
       detailItems = [
         DetailSetor(
           nama: namaJenis,
-
-          berat:
-          json['berat'] != null
-              ? "${json['berat']} Kg"
-              : "0 Kg",
+          berat: "$beratLama Kg",
         ),
       ];
     }
 
+    // 🔥 Tentukan string berat secara cerdas berdasarkan format datanya
+    String tampilkanBerat = "0 Kg";
+    if (json['details'] != null && (json['details'] as List).isNotEmpty) {
+      tampilkanBerat = "${totalBeratMultiItem.toStringAsFixed(totalBeratMultiItem % 1 == 0 ? 0 : 2)} Kg";
+    } else if (json['berat'] != null) {
+      tampilkanBerat = "${json['berat']} Kg";
+    }
+
     return SetorSampahModel(
       id: json['id']?.toString() ?? "",
-
       jenisSampah: namaJenis,
-
-      status:
-      json['status'] ?? "-",
-
-      beratKg:
-      json['berat'] != null
-          ? "${json['berat']} Kg"
-          : "0 Kg",
-
-      totalHarga:
-      json['total'] != null
-          ? "Rp ${json['total']}"
-          : "Rp 0",
-
-      createdAt:
-      json['created_at'] ?? "-",
-
-      catatan:
-      json['catatan'] ??
-          "Tidak ada catatan",
-
+      status: json['status'] ?? "-",
+      beratKg: tampilkanBerat, // 🔥 Sudah sinkron dengan akumulasi detail item
+      totalHarga: json['total'] != null ? "Rp ${json['total']}" : "Rp 0",
+      createdAt: json['created_at'] ?? "-",
+      catatan: json['catatan'] ?? "Tidak ada catatan",
       details: detailItems,
     );
   }

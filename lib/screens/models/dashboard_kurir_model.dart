@@ -17,7 +17,7 @@ class DashboardKurirModel {
     return DashboardKurirModel(
 
       lokasi:
-      (json["lokasi"] ?? 0) as int,
+      int.tryParse(json["lokasi"].toString()) ?? 0,
 
       totalKg:
       (json["total_kg"] ?? 0)

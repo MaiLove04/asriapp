@@ -1,4 +1,5 @@
 import 'dart:convert';
+// import 'dart:ffi';
 import 'package:http/http.dart' as http;
 import 'package:asriapp/config.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -113,6 +114,8 @@ class SetorSampahService {
   }
 
   // ================= 5. SUBMIT SETOR SAMPAH =================
+  // ================= 5. SUBMIT SETOR SAMPAH (FIXED ERROR 405) =================
+  // ================= 5. SUBMIT SETOR SAMPAH (FIXED 405 VIA CLIENT.PATCH) =================
   static Future<http.Response> submitSetoran({
     required int userId,
     required int kurirId,
@@ -121,27 +124,40 @@ class SetorSampahService {
     required String catatan,
     String? jadwalId,
     required List<Map<String, dynamic>> sampahList,
-    required String imagePath,
     required String setoranId,
   }) async {
-    var uri = Uri.parse(
-      '${AppConfig.baseUrl}/setor-sampah/request-nasabah/$setoranId',
-    );
-    var request = http.MultipartRequest('POST', uri);
-    request.fields['_method'] = 'PATCH';
-    request.fields['user_id'] = userId.toString();
-    request.fields['kurir_id'] = kurirId.toString();
-    request.fields['grand_total'] = grandTotal.toString();
-    request.fields['judul_dinamis'] = judulDinamis;
-    request.fields['catatan'] = catatan;
-    request.fields['jadwal_id'] = jadwalId.toString();
-    request.fields['sampah_list'] = jsonEncode(sampahList);
-    request.files.add(
-      await http.MultipartFile.fromPath('foto_sampah', imagePath),
-    );
+    var urlString = '${AppConfig.baseUrl}/setor-sampah';
 
-    var streamedResponse = await request.send();
-    return await http.Response.fromStream(streamedResponse);
+    if (setoranId.isNotEmpty) {
+      urlString += '/request-nasabah/$setoranId';
+    } else if (jadwalId != null && jadwalId.isNotEmpty) {
+      urlString += '/jadwal-admin/$jadwalId';
+    }
+
+    var uri = Uri.parse(urlString);
+
+    final Map<String, dynamic> body = {
+      "user_id": userId,
+      "kurir_id": kurirId,
+      "grand_total": grandTotal,
+      "judul_dinamis": judulDinamis,
+      "catatan": catatan,
+      "sampah_list": jsonEncode(sampahList),
+    };
+
+    if (jadwalId != null && jadwalId.isNotEmpty) {
+      body['jadwal_id'] = jadwalId;
+    }
+
+    // 🔥 Ganti .post menjadi .patch agar metodenya murni PATCH di mata Laravel
+    return await _client.patch(
+      uri,
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+      },
+      body: jsonEncode(body),
+    );
   }
 
   // ================= 6. SETUP PIN NASABAH =================

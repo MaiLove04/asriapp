@@ -18,7 +18,7 @@ const greyTextColor = Color(0xFF555555);
 
 // 🕐 Jam operasional layanan setor sampah
 //const int _jamBukaOperasional = 8; // Buka pukul 08:00
-const int _jamTutupOperasional = 16; // Tutup pukul 16:00
+const int _jamTutupOperasional = 23; // Tutup pukul 16:00
 
 class SetorSampahScreen extends StatefulWidget {
   const SetorSampahScreen({super.key});
@@ -122,12 +122,9 @@ class _SetorSampahScreenState extends State<SetorSampahScreen> {
   //  VALIDASI + PROSES SUBMIT
   // ============================================================
   Future<void> _prosesSubmit() async {
+    // 🛑 POP-UP PERINGATAN jika sampah belum dipilih
     if (selectedJenis.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Silakan pilih minimal 1 jenis sampah dahulu!"),
-        ),
-      );
+      _showWarningBelumPilihSampah();
       return;
     }
 
@@ -208,12 +205,9 @@ class _SetorSampahScreenState extends State<SetorSampahScreen> {
     }
 
     // ============================================================
-    //  SEMUA VALIDASI LOLOS → penjemputan hari ini
+    //  SEMUA VALIDASI LOLOS → Tampilkan Pop-up Konfirmasi Sebelum Kirim
     // ============================================================
-    setState(() {
-      _tanggalPenjemputan = hariIni;
-    });
-    await _kirimRequest(idNasabahLogin);
+    _showKonfirmasiSebelumKirim(idNasabahLogin, hariIni);
   }
 
   // ============================================================
@@ -227,8 +221,8 @@ class _SetorSampahScreenState extends State<SetorSampahScreen> {
     // Format tanggal ke yyyy-MM-dd untuk dikirim ke API
     final String? tanggalStr = _tanggalPenjemputan != null
         ? "${_tanggalPenjemputan!.year.toString().padLeft(4, '0')}-"
-              "${_tanggalPenjemputan!.month.toString().padLeft(2, '0')}-"
-              "${_tanggalPenjemputan!.day.toString().padLeft(2, '0')}"
+        "${_tanggalPenjemputan!.month.toString().padLeft(2, '0')}-"
+        "${_tanggalPenjemputan!.day.toString().padLeft(2, '0')}"
         : null;
 
     print("DEBUG SETOR - Tanggal penjemputan dikirim: $tanggalStr");
@@ -252,6 +246,186 @@ class _SetorSampahScreenState extends State<SetorSampahScreen> {
         const SnackBar(content: Text("Gagal mengirim request penjemputan.")),
       );
     }
+  }
+
+  // ============================================================
+  //  POP-UP PERINGATAN: Sampah Belum Dipilih
+  // ============================================================
+  void _showWarningBelumPilihSampah() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+        contentPadding: const EdgeInsets.all(24),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: const BoxDecoration(
+                color: Color(0xFFFFEBEE), // Merah Lembut
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.warning_amber_rounded,
+                color: Color(0xFFC62828),
+                size: 56,
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              "Sampah Belum Dipilih",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+                color: darkTextColor,
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              "Silakan pilih minimal satu kategori sampah yang ingin Anda setor sebelum melanjutkan permintaan.",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: greyTextColor,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 28),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  backgroundColor: primaryColor,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                onPressed: () => Navigator.pop(context),
+                child: const Text(
+                  "PILIH SAMPAH SEKARANG",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ============================================================
+  //  POP-UP KONFIRMASI: Sebelum Request Dikirim Ke API
+  // ============================================================
+  void _showKonfirmasiSebelumKirim(int userId, DateTime tanggalTarget) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+        contentPadding: const EdgeInsets.all(24),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: const BoxDecoration(
+                color: Color(0xFFE3F2FD), // Biru Lembut
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.help_outline_rounded,
+                color: Color(0xFF1E88E5),
+                size: 56,
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              "Kirim Permintaan?",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+                color: darkTextColor,
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              "Apakah Anda yakin data kategori setoran sampah dan catatan lapangan sudah sesuai?",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: greyTextColor,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 28),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      side: const BorderSide(color: primaryColor, width: 2),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text(
+                      "CEK KEMBALI",
+                      style: TextStyle(
+                        color: primaryColor,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      backgroundColor: primaryColor,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    onPressed: () async {
+                      Navigator.pop(context); // Tutup dialog konfirmasi
+                      if (mounted) {
+                        setState(() {
+                          _tanggalPenjemputan = tanggalTarget;
+                        });
+                        await _kirimRequest(userId);
+                      }
+                    },
+                    child: const Text(
+                      "YA, KIRIM",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   // ============================================================
@@ -318,7 +492,7 @@ class _SetorSampahScreenState extends State<SetorSampahScreen> {
                   ),
                   const TextSpan(
                     text:
-                        ", karena hari tersebut merupakan jadwal setoran sampah ",
+                    ", karena hari tersebut merupakan jadwal setoran sampah ",
                   ),
                   const TextSpan(
                     text: "rutin",
@@ -326,7 +500,7 @@ class _SetorSampahScreenState extends State<SetorSampahScreen> {
                   ),
                   const TextSpan(
                     text:
-                        " Anda.\n\nKurir kami akan datang menjemput sampah Anda sesuai jadwal yang telah ditetapkan.",
+                    " Anda.\n\nKurir kami akan datang menjemput sampah Anda sesuai jadwal yang telah ditetapkan.",
                   ),
                 ],
               ),
@@ -364,17 +538,17 @@ class _SetorSampahScreenState extends State<SetorSampahScreen> {
   //  DIALOG PERINGATAN: Di luar jam kerja
   // ============================================================
   void _showWarningLuarJamKerja(
-    DateTime besok,
-    bool besokAdaRutin,
-    DateTime tanggalFinal,
-    int userId,
-  ) {
+      DateTime besok,
+      bool besokAdaRutin,
+      DateTime tanggalFinal,
+      int userId,
+      ) {
     final namaBesok = _namaHari(besok);
     final namaHariFinal = _namaHari(tanggalFinal);
     final keteranganTambahan = besokAdaRutin
         ? "Dikarenakan hari $namaBesok merupakan hari pengambilan rutin, "
-              "pengambilan sampah by request akan dijadwalkan pada hari "
-              "$namaHariFinal."
+        "pengambilan sampah by request akan dijadwalkan pada hari "
+        "$namaHariFinal."
         : '';
 
     showDialog(
@@ -423,11 +597,10 @@ class _SetorSampahScreenState extends State<SetorSampahScreen> {
                 children: [
                   const TextSpan(
                     text:
-                        "Permintaan diterima! Namun karena saat ini di luar jam operasional "
+                    "Permintaan diterima! Namun karena saat ini di luar jam operasional "
                         "(08.00 – 16.00), kurir akan dijadwalkan pada ",
                   ),
                   TextSpan(
-                    // Jika besok aman tampilkan besok, jika besok rutin tampilkan hari final
                     text: besokAdaRutin
                         ? "hari $namaHariFinal"
                         : "hari $namaBesok",
@@ -512,15 +685,10 @@ class _SetorSampahScreenState extends State<SetorSampahScreen> {
                         borderRadius: BorderRadius.circular(16),
                       ),
                     ),
-                    onPressed: () async {
-                      Navigator.pop(context);
-                      // Simpan tanggal penjemputan final ke state lalu kirim
-                      if (mounted) {
-                        setState(() {
-                          _tanggalPenjemputan = tanggalFinal;
-                        });
-                        await _kirimRequest(userId);
-                      }
+                    onPressed: () {
+                      Navigator.pop(context); // Tutup dialog jam operasional
+                      // Tampilkan pop-up konfirmasi dengan membawa tanggal luar jam kerja
+                      _showKonfirmasiSebelumKirim(userId, tanggalFinal);
                     },
                     child: const Text(
                       "LANJUTKAN",
@@ -740,18 +908,18 @@ class _SetorSampahScreenState extends State<SetorSampahScreen> {
                   const SizedBox(height: 16),
                   isLoading
                       ? const Center(
-                          child: CircularProgressIndicator(
-                            color: primaryColor,
-                            strokeWidth: 3,
-                          ),
-                        )
+                    child: CircularProgressIndicator(
+                      color: primaryColor,
+                      strokeWidth: 3,
+                    ),
+                  )
                       : Wrap(
-                          spacing: 16,
-                          runSpacing: 16,
-                          children: daftarJenis
-                              .map((item) => _itemSampah(item))
-                              .toList(),
-                        ),
+                    spacing: 16,
+                    runSpacing: 16,
+                    children: daftarJenis
+                        .map((item) => _itemSampah(item))
+                        .toList(),
+                  ),
                 ],
               ),
             ),
@@ -822,7 +990,7 @@ class _SetorSampahScreenState extends State<SetorSampahScreen> {
                             ),
                             decoration: InputDecoration(
                               hintText:
-                                  "Contoh: Sampah kardus sudah diikat rapi di depan pagar teras rumah...",
+                              "Contoh: Sampah kardus sudah diikat rapi di depan pagar teras rumah...",
                               hintStyle: const TextStyle(
                                 color: greyTextColor,
                                 fontWeight: FontWeight.normal,
@@ -875,13 +1043,13 @@ class _SetorSampahScreenState extends State<SetorSampahScreen> {
                   onPressed: isSubmitting ? null : _prosesSubmit,
                   icon: isSubmitting
                       ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        )
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  )
                       : const Icon(Icons.local_shipping_rounded, size: 22),
                   label: Text(
                     isSubmitting ? "MEMPROSES..." : "KONFIRMASI PENJEMPUTAN",
@@ -931,7 +1099,7 @@ class _SetorSampahScreenState extends State<SetorSampahScreen> {
               width: 44,
               height: 44,
               errorBuilder: (context, error, stackTrace) =>
-                  const Icon(Icons.eco_rounded, color: primaryColor, size: 44),
+              const Icon(Icons.eco_rounded, color: primaryColor, size: 44),
             ),
           ),
           const SizedBox(height: 8),

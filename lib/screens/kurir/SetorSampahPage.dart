@@ -23,7 +23,7 @@ class AppColors {
 }
 
 class SetorSampahPage extends StatefulWidget {
-  final int nasabahId;
+  final int nasabahId; // 🔥 FIX: Menggunakan int huruf kecil
   final String namaNasabah;
   final String alamat;
   final String barcode;
@@ -112,14 +112,14 @@ class _SetorSampahPageState extends State<SetorSampahPage> {
           _keranjangSampah = itemsDariNasabah
               .map(
                 (item) => {
-                  'jenis_sampah_id': item['jenis_sampah_id'],
-                  'nama_sampah':
-                      item['nama_sampah'] ?? item['nama_jenis'] ?? 'Sampah',
-                  'berat': 0.0,
-                  'harga_per_kg': item['harga_per_kg'] ?? 0,
-                  'total_item': 0,
-                },
-              )
+              'jenis_sampah_id': item['jenis_sampah_id'],
+              'nama_sampah':
+              item['nama_sampah'] ?? item['nama_jenis'] ?? 'Sampah',
+              'berat': 0.0,
+              'harga_per_kg': item['harga_per_kg'] ?? 0,
+              'total_item': 0,
+            },
+          )
               .toList();
 
           _hitungGrandTotal();
@@ -238,20 +238,8 @@ class _SetorSampahPageState extends State<SetorSampahPage> {
   void _hitungGrandTotal() {
     _grandTotalSemua = _keranjangSampah.fold(
       0,
-      (sum, item) => sum + (item['total_item'] as int),
+          (sum, item) => sum + (item['total_item'] as int),
     );
-  }
-
-  Future<void> _pickImage() async {
-    final pickedFile = await _picker.pickImage(
-      source: ImageSource.camera,
-      imageQuality: 70,
-    );
-    if (pickedFile != null) {
-      setState(() {
-        _imageFile = File(pickedFile.path);
-      });
-    }
   }
 
   Future<void> _simpanSetorSampah() async {
@@ -262,7 +250,7 @@ class _SetorSampahPageState extends State<SetorSampahPage> {
 
     if (isRealRequestNasabah) {
       bool adaYangBelumDitimbang = _keranjangSampah.any(
-        (item) => (item['berat'] ?? 0) <= 0,
+            (item) => (item['berat'] ?? 0) <= 0,
       );
       if (adaYangBelumDitimbang) {
         _tampilkanPesan(
@@ -271,14 +259,6 @@ class _SetorSampahPageState extends State<SetorSampahPage> {
         );
         return;
       }
-    }
-
-    if (_imageFile == null) {
-      _tampilkanPesan(
-        "Harap ambil foto bukti penimbangan!",
-        Colors.orange.shade800,
-      );
-      return;
     }
 
     setState(() => _isSubmitting = true);
@@ -303,7 +283,6 @@ class _SetorSampahPageState extends State<SetorSampahPage> {
             : "Setoran manual kurir",
         jadwalId: widget.jadwalId,
         sampahList: _keranjangSampah,
-        imagePath: _imageFile!.path,
         setoranId: requestData != null
             ? requestData['setor_sampah_id']?.toString() ?? ''
             : '',
@@ -315,11 +294,19 @@ class _SetorSampahPageState extends State<SetorSampahPage> {
           _tampilkanPesan("Setoran sukses disimpan!", AppColors.primary);
           Navigator.pop(context, true);
         } else {
-          final errorData = jsonDecode(response.body);
-          _tampilkanPesan(
-            "Gagal: ${errorData['message'] ?? response.reasonPhrase}",
-            Colors.red,
-          );
+          try {
+            final errorData = jsonDecode(response.body);
+            _tampilkanPesan(
+              "Gagal: ${errorData['message'] ?? response.reasonPhrase}",
+              Colors.red,
+            );
+          } catch (_) {
+            print("ERROR DARI SERVER: ${response.body}");
+            _tampilkanPesan(
+              "Gagal (Error Server). Status: ${response.statusCode}",
+              Colors.red,
+            );
+          }
         }
       }
     } catch (e) {
@@ -370,29 +357,27 @@ class _SetorSampahPageState extends State<SetorSampahPage> {
       ),
       body: _isAutoloadLoading
           ? const Center(
-              child: CircularProgressIndicator(color: AppColors.primary),
-            )
+        child: CircularProgressIndicator(color: AppColors.primary),
+      )
           : SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildInfoNasabah(),
-                  const SizedBox(height: 20),
-                  _buildInputSection(),
-                  const SizedBox(height: 24),
-                  _buildKeranjangHeader(),
-                  const SizedBox(height: 10),
-                  _buildKeranjangList(),
-                  const SizedBox(height: 20),
-                  _buildTotalSection(),
-                  const SizedBox(height: 20),
-                  _buildFotoSection(),
-                  const SizedBox(height: 30),
-                  _buildSubmitButton(),
-                ],
-              ),
-            ),
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildInfoNasabah(),
+            const SizedBox(height: 20),
+            _buildInputSection(),
+            const SizedBox(height: 24),
+            _buildKeranjangHeader(),
+            const SizedBox(height: 10),
+            _buildKeranjangList(),
+            const SizedBox(height: 20),
+            _buildTotalSection(),
+            const SizedBox(height: 20),
+            _buildSubmitButton(),
+          ],
+        ),
+      ),
     );
   }
 
@@ -504,13 +489,13 @@ class _SetorSampahPageState extends State<SetorSampahPage> {
                 onPressed: _isCapturingIot ? null : _fetchBeratFromIot,
                 icon: _isCapturingIot
                     ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2,
-                        ),
-                      )
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    color: Colors.white,
+                    strokeWidth: 2,
+                  ),
+                )
                     : const Icon(Icons.monitor_weight_rounded),
                 style: IconButton.styleFrom(
                   backgroundColor: Colors.orange,
@@ -594,13 +579,13 @@ class _SetorSampahPageState extends State<SetorSampahPage> {
             onTap: !isRealRequestNasabah
                 ? null
                 : () {
-                    setState(() {
-                      _selectedIndexKeranjang = index;
-                      _beratController.text = item['berat'] > 0
-                          ? item['berat'].toString()
-                          : "";
-                    });
-                  },
+              setState(() {
+                _selectedIndexKeranjang = index;
+                _beratController.text = item['berat'] > 0
+                    ? item['berat'].toString()
+                    : "";
+              });
+            },
             title: Text(
               item['nama_sampah'],
               style: const TextStyle(fontWeight: FontWeight.bold),
@@ -658,37 +643,6 @@ class _SetorSampahPageState extends State<SetorSampahPage> {
     );
   }
 
-  Widget _buildFotoSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          "3. Foto Bukti",
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 10),
-        GestureDetector(
-          onTap: _pickImage,
-          child: Container(
-            width: double.infinity,
-            height: 150,
-            decoration: BoxDecoration(
-              color: Colors.grey.shade100,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.shade300),
-            ),
-            child: _imageFile == null
-                ? const Icon(Icons.camera_alt, size: 40, color: Colors.grey)
-                : ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.file(_imageFile!, fit: BoxFit.cover),
-                  ),
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildSubmitButton() {
     return SizedBox(
       width: double.infinity,
@@ -703,20 +657,20 @@ class _SetorSampahPageState extends State<SetorSampahPage> {
         ),
         child: _isSubmitting
             ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  color: Colors.white,
-                  strokeWidth: 2,
-                ),
-              )
+          width: 20,
+          height: 20,
+          child: CircularProgressIndicator(
+            color: Colors.white,
+            strokeWidth: 2,
+          ),
+        )
             : const Text(
-                "SIMPAN DATA",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+          "SIMPAN DATA",
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ),
     );
   }
