@@ -9,6 +9,7 @@ import 'RiwayatKurirScreen.dart';
 import 'ScanBarcode.dart';
 import 'navigasi_kurir_page.dart';
 import 'pencapaian_kurir_page.dart';
+import 'edukasi_kurir_page.dart';
 
 // Palet warna dengan kontras tinggi (Senior-Friendly Theme)
 const primaryColor = Color(0xFF1E521E);     // Hijau lebih tua agar tulisan lebih kontras dan jelas
@@ -317,19 +318,15 @@ class _QuickActionsRow extends StatelessWidget {
           },
         ),
 
-        // 🔥 INTEGRASI REFRESH: Otomatis menyegarkan data dashboard setelah kembali dari rute navigasi peta
+        // MENU BARU: Pusat Edukasi & Panduan
         _MiniActionCard(
-          icon: Icons.map_rounded,
-          title: "Peta Rute",
-          onTap: () async {
-            final result = await Navigator.push(
+          icon: Icons.menu_book_rounded,
+          title: "Panduan",
+          onTap: () {
+            Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const NavigasiKurirPage()),
+              MaterialPageRoute(builder: (_) => const EdukasiKurirPage()),
             );
-            if (result == true) {
-              final state = context.findAncestorStateOfType<_DashboardKurirState>();
-              state?.getDashboard();
-            }
           },
         ),
         _MiniActionCard(
