@@ -5,6 +5,9 @@ import 'package:http/http.dart' as http;
 import 'package:asriapp/config.dart'; // Jalur config milik Mai
 import '../login_screen.dart';
 import 'ScanBarcode.dart';
+import 'RiwayatKurirScreen.dart';
+import 'NotifikasiKurirScreen.dart';
+import 'JadwalJemputScreen.dart';
 
 // Palet warna kontras tinggi (Senior-Friendly Theme) - Setema dengan Dashboard
 const primaryColor = Color(0xFF1E521E);
@@ -331,14 +334,24 @@ class _ProfilKurirScreenState extends State<ProfilKurirScreen> {
               icon: Icons.assignment_turned_in_rounded,
               label: "Riwayat",
               active: false,
-              onTap: () {},
+              onTap: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (_) => const RiwayatKurirScreen()),
+                );
+              },
             ),
             const SizedBox(width: 48),
             _navItem(
               icon: Icons.notifications_rounded,
               label: "Notifikasi",
               active: false,
-              onTap: () {},
+              onTap: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (_) => const NotifikasiKurirScreen()),
+                );
+              },
             ),
             _navItem(
               icon: Icons.account_circle_rounded,

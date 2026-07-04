@@ -5,6 +5,9 @@ import '../services/client_helper.dart';
 
 import '../../config.dart';
 import '../services/jadwal_service.dart';
+import 'NotifikasiKurirScreen.dart'; // 🔥 Import halaman notifikasi
+import 'RiwayatKurirScreen.dart'; // 🔥 Import halaman riwayat
+import 'ProfilKurirScreen.dart'; // 🔥 Import halaman profil
 import 'ScanBarcode.dart';
 import 'SetorSampahPage.dart';
 import 'navigasi_kurir_page.dart'; // 🔥 Pastikan import halaman navigasi sudah aktif
@@ -485,18 +488,33 @@ class _JadwalJemputScreenState extends State<JadwalJemputScreen> {
             _navItem(
               icon: Icons.assignment_turned_in_rounded,
               label: "Riwayat",
-              onTap: () {},
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const RiwayatKurirScreen()),
+                );
+              },
             ),
             const SizedBox(width: 48),
             _navItem(
               icon: Icons.notifications_rounded,
               label: "Notifikasi",
-              onTap: () {},
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const NotifikasiKurirScreen()),
+                );
+              },
             ),
             _navItem(
               icon: Icons.account_circle_rounded,
               label: "Akun Saya",
-              onTap: () {},
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ProfilKurirScreen()),
+                );
+              },
             ),
           ],
         ),

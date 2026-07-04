@@ -4,6 +4,7 @@ import '../services/dashboard_kurir_service.dart';
 import '../../config.dart';
 import '../login_screen.dart';
 import '../kurir/JadwalJemputScreen.dart';
+import 'NotifikasiKurirScreen.dart'; // 🔥 Import halaman notifikasi
 import 'ProfilKurirScreen.dart';
 import 'RiwayatKurirScreen.dart';
 import 'ScanBarcode.dart';
@@ -666,7 +667,13 @@ class _PremiumBottomNav extends StatelessWidget {
               }
           ),
           const SizedBox(width: 44),
-          _navItem(icon: Icons.notifications_rounded, label: "Notifikasi", onTap: () {}),
+          _navItem(
+            icon: Icons.notifications_rounded,
+            label: "Notifikasi",
+            onTap: () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const NotifikasiKurirScreen()));
+            },
+          ),
           _navItem(
             icon: Icons.account_circle_rounded,
             label: "Profil",
