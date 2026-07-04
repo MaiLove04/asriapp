@@ -13,6 +13,7 @@ class SetorSampahService {
     required int userId,
     required List<int> jenisIds,
     required String catatan,
+
     /// Tanggal penjemputan hasil perhitungan validasi, format: "yyyy-MM-dd".
     /// null berarti tidak ada jadwal spesifik (backend menentukan sendiri).
     String? tanggalPenjemputan,
@@ -118,7 +119,7 @@ class SetorSampahService {
     required int grandTotal,
     required String judulDinamis,
     required String catatan,
-    int? jadwalId,
+    String? jadwalId,
     required List<Map<String, dynamic>> sampahList,
     required String imagePath,
     required String setoranId,
@@ -133,9 +134,7 @@ class SetorSampahService {
     request.fields['grand_total'] = grandTotal.toString();
     request.fields['judul_dinamis'] = judulDinamis;
     request.fields['catatan'] = catatan;
-    if (jadwalId != null && jadwalId != 0) {
-      request.fields['jadwal_id'] = jadwalId.toString();
-    }
+    request.fields['jadwal_id'] = jadwalId.toString();
     request.fields['sampah_list'] = jsonEncode(sampahList);
     request.files.add(
       await http.MultipartFile.fromPath('foto_sampah', imagePath),

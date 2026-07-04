@@ -17,7 +17,7 @@ const darkTextColor = Color(0xFF0D240D);
 const greyTextColor = Color(0xFF555555);
 
 // 🕐 Jam operasional layanan setor sampah
-const int _jamBukaOperasional = 8; // Buka pukul 08:00
+//const int _jamBukaOperasional = 8; // Buka pukul 08:00
 const int _jamTutupOperasional = 16; // Tutup pukul 16:00
 
 class SetorSampahScreen extends StatefulWidget {
@@ -131,7 +131,9 @@ class _SetorSampahScreenState extends State<SetorSampahScreen> {
       return;
     }
 
-    setState(() { isSubmitting = true; });
+    setState(() {
+      isSubmitting = true;
+    });
 
     // --- Ambil user ID ---
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -146,10 +148,14 @@ class _SetorSampahScreenState extends State<SetorSampahScreen> {
     print("DEBUG UI - Mengirim request atas nama User ID: $idNasabahLogin");
 
     if (idNasabahLogin == 0) {
-      setState(() { isSubmitting = false; });
+      setState(() {
+        isSubmitting = false;
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text("Gagal: Sesi login tidak ditemukan. Silakan login ulang."),
+          content: Text(
+            "Gagal: Sesi login tidak ditemukan. Silakan login ulang.",
+          ),
         ),
       );
       return;
@@ -157,10 +163,12 @@ class _SetorSampahScreenState extends State<SetorSampahScreen> {
 
     // --- Ambil jadwal rutin nasabah ---
     final jadwalData = await JadwalService.getJadwalNasabah(idNasabahLogin);
-    setState(() { isSubmitting = false; });
+    setState(() {
+      isSubmitting = false;
+    });
     if (!mounted) return;
 
-    final now     = DateTime.now();
+    final now = DateTime.now();
     final hariIni = DateTime(now.year, now.month, now.day); // date-only
     final jadwalWD = _getJadwalWeekday(jadwalData);
 
@@ -176,28 +184,35 @@ class _SetorSampahScreenState extends State<SetorSampahScreen> {
     // ============================================================
     //  CEK 2: Apakah saat ini di luar jam kerja?
     // ============================================================
-    final isLuarJamKerja =
-        now.hour < _jamBukaOperasional || now.hour >= _jamTutupOperasional;
+    final isLuarJamKerja = now.hour >= _jamTutupOperasional;
 
     if (isLuarJamKerja) {
-      final besok        = hariIni.add(const Duration(days: 1));
+      final besok = hariIni.add(const Duration(days: 1));
       final besokAdaRutin = jadwalWD != null && jadwalWD == besok.weekday;
 
       // Tentukan tanggal penjemputan aktual:
       //   besok aman         → besok
       //   besok = hari rutin → besok + 1 hari
-      final DateTime tanggalFinal =
-          besokAdaRutin ? besok.add(const Duration(days: 1)) : besok;
+      final DateTime tanggalFinal = besokAdaRutin
+          ? besok.add(const Duration(days: 1))
+          : besok;
 
       // ⚠️ Tampilkan dialog peringatan jam kerja
-      _showWarningLuarJamKerja(besok, besokAdaRutin, tanggalFinal, idNasabahLogin);
+      _showWarningLuarJamKerja(
+        besok,
+        besokAdaRutin,
+        tanggalFinal,
+        idNasabahLogin,
+      );
       return;
     }
 
     // ============================================================
     //  SEMUA VALIDASI LOLOS → penjemputan hari ini
     // ============================================================
-    setState(() { _tanggalPenjemputan = hariIni; });
+    setState(() {
+      _tanggalPenjemputan = hariIni;
+    });
     await _kirimRequest(idNasabahLogin);
   }
 
@@ -205,13 +220,15 @@ class _SetorSampahScreenState extends State<SetorSampahScreen> {
   //  AKSI KIRIM SETELAH SEMUA VALIDASI LOLOS
   // ============================================================
   Future<void> _kirimRequest(int userId) async {
-    setState(() { isSubmitting = true; });
+    setState(() {
+      isSubmitting = true;
+    });
 
     // Format tanggal ke yyyy-MM-dd untuk dikirim ke API
     final String? tanggalStr = _tanggalPenjemputan != null
         ? "${_tanggalPenjemputan!.year.toString().padLeft(4, '0')}-"
-          "${_tanggalPenjemputan!.month.toString().padLeft(2, '0')}-"
-          "${_tanggalPenjemputan!.day.toString().padLeft(2, '0')}"
+              "${_tanggalPenjemputan!.month.toString().padLeft(2, '0')}-"
+              "${_tanggalPenjemputan!.day.toString().padLeft(2, '0')}"
         : null;
 
     print("DEBUG SETOR - Tanggal penjemputan dikirim: $tanggalStr");
@@ -223,7 +240,9 @@ class _SetorSampahScreenState extends State<SetorSampahScreen> {
       tanggalPenjemputan: tanggalStr,
     );
 
-    setState(() { isSubmitting = false; });
+    setState(() {
+      isSubmitting = false;
+    });
     if (!mounted) return;
 
     if (berhasil) {
@@ -350,12 +369,12 @@ class _SetorSampahScreenState extends State<SetorSampahScreen> {
     DateTime tanggalFinal,
     int userId,
   ) {
-    final namaBesok           = _namaHari(besok);
-    final namaHariFinal       = _namaHari(tanggalFinal);
-    final keteranganTambahan  = besokAdaRutin
+    final namaBesok = _namaHari(besok);
+    final namaHariFinal = _namaHari(tanggalFinal);
+    final keteranganTambahan = besokAdaRutin
         ? "Dikarenakan hari $namaBesok merupakan hari pengambilan rutin, "
-          "pengambilan sampah by request akan dijadwalkan pada hari "
-          "$namaHariFinal."
+              "pengambilan sampah by request akan dijadwalkan pada hari "
+              "$namaHariFinal."
         : '';
 
     showDialog(
@@ -409,7 +428,9 @@ class _SetorSampahScreenState extends State<SetorSampahScreen> {
                   ),
                   TextSpan(
                     // Jika besok aman tampilkan besok, jika besok rutin tampilkan hari final
-                    text: besokAdaRutin ? "hari $namaHariFinal" : "hari $namaBesok",
+                    text: besokAdaRutin
+                        ? "hari $namaHariFinal"
+                        : "hari $namaBesok",
                     style: const TextStyle(
                       fontWeight: FontWeight.w900,
                       color: primaryColor,
@@ -495,7 +516,9 @@ class _SetorSampahScreenState extends State<SetorSampahScreen> {
                       Navigator.pop(context);
                       // Simpan tanggal penjemputan final ke state lalu kirim
                       if (mounted) {
-                        setState(() { _tanggalPenjemputan = tanggalFinal; });
+                        setState(() {
+                          _tanggalPenjemputan = tanggalFinal;
+                        });
                         await _kirimRequest(userId);
                       }
                     },

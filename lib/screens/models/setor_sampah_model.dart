@@ -9,7 +9,7 @@ class DetailSetor {
 }
 
 class SetorSampahModel {
-  final int id;
+  final String id;
   final String jenisSampah;
   final String status;
   final String beratKg;

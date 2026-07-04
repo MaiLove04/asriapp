@@ -1,6 +1,5 @@
 class JadwalModel {
-
-  final int id;
+  final String id;
   final String nasabah;
   final String alamat;
   final String tanggal;
@@ -14,11 +13,11 @@ class JadwalModel {
     required this.status,
   });
 
-  factory JadwalModel.fromJson(Map<String,dynamic> json) {
+  factory JadwalModel.fromJson(Map<String, dynamic> json) {
     return JadwalModel(
-      id: json['id'],
+      id: json['id'].toString(),
       nasabah: json['nasabah']['name'],
-      alamat: json['alamat'],
+      alamat: json['alamat'] ?? '',
       tanggal: json['tanggal_penjemputan'],
       status: json['status'],
     );
