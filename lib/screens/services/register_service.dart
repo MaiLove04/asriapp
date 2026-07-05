@@ -104,14 +104,43 @@ class RegisterService {
     } catch (e) {
 
       return {
-
         "status": 500,
-
         "data": {
-
-          "message":
-          e.toString(),
+          "message": e.toString(),
         },
+      };
+    }
+  }
+
+  // ================= 3. UPDATE STATUS NASABAH (FIXED PATCH) =================
+  static Future<Map<String, dynamic>> updateNasabahStatus({
+    required int id,
+    required String status,
+  }) async {
+    try {
+      final url = Uri.parse('${AppConfig.baseUrl}/admin/nasabah/$id/status');
+
+      // 🔥 Gunakan .patch agar sesuai dengan Laravel (Error 405 Fix)
+      final response = await _client.patch(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode({'status': status}),
+      );
+
+      print("UPDATE STATUS DEBUG: ${response.statusCode} - ${response.body}");
+
+      return {
+        "status": response.statusCode,
+        "data": jsonDecode(response.body),
+      };
+    } catch (e) {
+      print("UPDATE STATUS ERROR: $e");
+      return {
+        "status": 500,
+        "data": {"message": "Gagal terhubung ke server: $e"},
       };
     }
   }

@@ -8,15 +8,13 @@ class SetorSampahService {
   // 🔥 1. CLIENT AMAN UNTUK HOSTING (Bebas SSL Error)
   static http.Client get _client => getSafeClient(trustedHost: 'pht.my.id');
 
-  // ================= 1. CREATE REQUEST PENJEMPUTAN (NASABAH) - FIXED AUTHORIZATION =================
-  static Future<bool> store({
+  // ================= 1. CREATE REQUEST PENJEMPUTAN (NASABAH) =================
+  static Future<Map<String, dynamic>> store({
     required int userId,
     required List<int> jenisIds,
     required String catatan,
-    String? tanggalPenjemputan,
   }) async {
     try {
-      // Ambil token dari SharedPreferences
       SharedPreferences prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('token') ?? '';
 
@@ -25,17 +23,17 @@ class SetorSampahService {
           .toList();
       final url = Uri.parse('${AppConfig.baseUrl}/request-penjemputan');
 
+      // Data dikirim tanpa parameter tanggal_penjemputan (otomatis disetel hari ini di Laravel)
       final Map<String, dynamic> body = {
         "user_id": userId,
         "catatan": catatan,
         "items": items,
       };
 
-      if (tanggalPenjemputan != null && tanggalPenjemputan.isNotEmpty) {
-        body["tanggal_penjemputan"] = tanggalPenjemputan;
-      }
+      print('--- DEBUG REQUEST PENJEMPUTAN ---');
+      print('URL: $url');
+      print('BODY: ${jsonEncode(body)}');
 
-      // Gunakan _client bawaan agar SSL aman dan selipkan Bearer Token
       final response = await _client.post(
         url,
         headers: {
@@ -44,29 +42,36 @@ class SetorSampahService {
           if (token.isNotEmpty) "Authorization": "Bearer $token",
         },
         body: jsonEncode(body),
-      );
+      ).timeout(const Duration(seconds: 15));
 
-      print('STORE REQUEST STATUS: ${response.statusCode}');
-      print('STORE REQUEST BODY: ${response.body}');
+      print('RESPONSE STATUS: ${response.statusCode}');
+      print('RESPONSE BODY: ${response.body}');
 
-      return response.statusCode == 200 || response.statusCode == 201;
+      final decodedResponse = jsonDecode(response.body);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {"success": true, "message": "Berhasil terkirim"};
+      } else {
+        return {
+          "success": false,
+          "message": decodedResponse['message'] ?? "Error server (${response.statusCode})"
+        };
+      }
     } catch (e) {
       print('STORE REQUEST ERROR: $e');
-      return false;
+      return {"success": false, "message": "Koneksi bermasalah: $e"};
     }
   }
 
-  // ================= 2. READ RIWAYAT TRANSAKSI (NASABAH) - FIXED AUTHORIZATION =================
+  // ================= 2. READ RIWAYAT TRANSAKSI (NASABAH) =================
   static Future<List<dynamic>> getRiwayat({required int userId}) async {
     try {
-      // Ambil token dari SharedPreferences
       SharedPreferences prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('token') ?? '';
 
       final url = Uri.parse('${AppConfig.baseUrl}/dashboard-nasabah/$userId');
       print('GET REQUEST RIWAYAT VIA: $url');
 
-      // Gunakan _client bawaan dan selipkan Bearer Token
       final response = await _client.get(
         url,
         headers: {
@@ -133,7 +138,7 @@ class SetorSampahService {
     return null;
   }
 
-  // ================= 5. SUBMIT SETOR SAMPAH (FIXED 405 VIA CLIENT.PATCH) =================
+  // ================= 5. SUBMIT SETOR SAMPAH (FIXED UUID VALIDATION) =================
   static Future<http.Response> submitSetoran({
     required int userId,
     required int kurirId,
@@ -142,16 +147,22 @@ class SetorSampahService {
     required String catatan,
     String? jadwalId,
     required List<Map<String, dynamic>> sampahList,
-    required String setoranId,
+    required String setor_sampah_id,
   }) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token') ?? '';
 
     var urlString = '${AppConfig.baseUrl}/setor-sampah';
+    
+    // 🛡️ Filter ID agar tidak mengirim "0" atau "null" ke server (Mencegah Error UUID)
+    bool isJadwalValid = jadwalId != null && 
+                        jadwalId.isNotEmpty && 
+                        jadwalId != "0" && 
+                        jadwalId != "null";
 
-    if (setoranId.isNotEmpty) {
-      urlString += '/request-nasabah/$setoranId';
-    } else if (jadwalId != null && jadwalId.isNotEmpty) {
+    if (setor_sampah_id.isNotEmpty && setor_sampah_id != "0") {
+      urlString += '/request-nasabah/$setor_sampah_id';
+    } else if (isJadwalValid) {
       urlString += '/jadwal-admin/$jadwalId';
     }
 
@@ -166,9 +177,14 @@ class SetorSampahService {
       "sampah_list": jsonEncode(sampahList),
     };
 
-    if (jadwalId != null && jadwalId.isNotEmpty) {
+    // Hanya kirim jadwal_id jika isinya valid (bukan "0")
+    if (isJadwalValid) {
       body['jadwal_id'] = jadwalId;
     }
+
+    print("--- DEBUG SUBMIT SETORAN ---");
+    print("URL: $urlString");
+    print("BODY: $body");
 
     return await _client.patch(
       uri,

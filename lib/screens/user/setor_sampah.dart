@@ -132,7 +132,7 @@ class _SetorSampahScreenState extends State<SetorSampahScreen> {
       isSubmitting = true;
     });
 
-    // --- Ambil user ID ---
+    // --- Ambal user ID ---
     SharedPreferences prefs = await SharedPreferences.getInstance();
     int idNasabahLogin = 0;
     final rawId = prefs.get('user_id');
@@ -158,7 +158,7 @@ class _SetorSampahScreenState extends State<SetorSampahScreen> {
       return;
     }
 
-    // --- Ambil jadwal rutin nasabah ---
+    // --- Ambil jadwal rutin nasabah untuk keperluan jam operasional ---
     final jadwalData = await JadwalService.getJadwalNasabah(idNasabahLogin);
     setState(() {
       isSubmitting = false;
@@ -170,16 +170,7 @@ class _SetorSampahScreenState extends State<SetorSampahScreen> {
     final jadwalWD = _getJadwalWeekday(jadwalData);
 
     // ============================================================
-    //  CEK 1: Apakah hari ini adalah hari jadwal rutin?
-    // ============================================================
-    if (jadwalWD != null && jadwalWD == now.weekday) {
-      // ❌ BLOKIR: Hari ini adalah hari setoran rutin
-      _showErrorHariRutin(_namaHari(now));
-      return;
-    }
-
-    // ============================================================
-    //  CEK 2: Apakah saat ini di luar jam kerja?
+    //  CEK 1: Validasi Luar Jam Kerja (Dipertahankan)
     // ============================================================
     final isLuarJamKerja = now.hour >= _jamTutupOperasional;
 
@@ -187,14 +178,10 @@ class _SetorSampahScreenState extends State<SetorSampahScreen> {
       final besok = hariIni.add(const Duration(days: 1));
       final besokAdaRutin = jadwalWD != null && jadwalWD == besok.weekday;
 
-      // Tentukan tanggal penjemputan aktual:
-      //   besok aman         → besok
-      //   besok = hari rutin → besok + 1 hari
       final DateTime tanggalFinal = besokAdaRutin
           ? besok.add(const Duration(days: 1))
           : besok;
 
-      // ⚠️ Tampilkan dialog peringatan jam kerja
       _showWarningLuarJamKerja(
         besok,
         besokAdaRutin,
@@ -205,13 +192,14 @@ class _SetorSampahScreenState extends State<SetorSampahScreen> {
     }
 
     // ============================================================
-    //  SEMUA VALIDASI LOLOS → Tampilkan Pop-up Konfirmasi Sebelum Kirim
+    //  JIKA LOLOS JAM OPERASIONAL → Tampilkan Konfirmasi Kirim
+    //  (Pengecekan Jadwal Rutin/Interval dihitung langsung oleh Laravel)
     // ============================================================
     _showKonfirmasiSebelumKirim(idNasabahLogin, hariIni);
   }
 
   // ============================================================
-  //  AKSI KIRIM SETELAH SEMUA VALIDASI LOLOS
+  //  AKSI KIRIM REQUEST SETELAH SEMUA VALIDASI LOLOS
   // ============================================================
   Future<void> _kirimRequest(int userId) async {
     setState(() {
@@ -227,11 +215,11 @@ class _SetorSampahScreenState extends State<SetorSampahScreen> {
 
     print("DEBUG SETOR - Tanggal penjemputan dikirim: $tanggalStr");
 
-    final berhasil = await SetorSampahService.store(
+    final result = await SetorSampahService.store(
       userId: userId,
       jenisIds: selectedJenisIds,
       catatan: catatanController.text,
-      tanggalPenjemputan: tanggalStr,
+              // tanggalPenjemputan: tanggalStr,
     );
 
     setState(() {
@@ -239,14 +227,69 @@ class _SetorSampahScreenState extends State<SetorSampahScreen> {
     });
     if (!mounted) return;
 
-    if (berhasil) {
+    if (result['success'] == true) {
       _showSuccessDialog();
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Gagal mengirim request penjemputan.")),
-      );
+      final String message = result['message'] ?? 'Gagal memproses permintaan.';
+
+      // 🔥 LOGIKA PENGUNCI BARU: Deteksi jika ditolak oleh sistem plotting rutin backend
+      if (message.contains('daftar plot jadwal penjemputan rutin')) {
+        // Tampilkan dialog khusus Hari Rutin agar nasabah paham
+        _showErrorHariRutin(_namaHari(_tanggalPenjemputan ?? DateTime.now()));
+      } else {
+        // Tampilkan error validasi umum lainnya via SnackBar
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: Colors.red.shade800,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     }
   }
+
+  // ============================================================
+  //  AKSI KIRIM SETELAH SEMUA VALIDASI LOLOS
+  // ============================================================
+  // Future<void> _kirimRequest(int userId) async {
+  //   setState(() {
+  //     isSubmitting = true;
+  //   });
+  //
+  //   // Format tanggal ke yyyy-MM-dd untuk dikirim ke API
+  //   final String? tanggalStr = _tanggalPenjemputan != null
+  //       ? "${_tanggalPenjemputan!.year.toString().padLeft(4, '0')}-"
+  //       "${_tanggalPenjemputan!.month.toString().padLeft(2, '0')}-"
+  //       "${_tanggalPenjemputan!.day.toString().padLeft(2, '0')}"
+  //       : null;
+  //
+  //   print("DEBUG SETOR - Tanggal penjemputan dikirim: $tanggalStr");
+  //
+  //   final result = await SetorSampahService.store(
+  //     userId: userId,
+  //     jenisIds: selectedJenisIds,
+  //     catatan: catatanController.text,
+  //     tanggalPenjemputan: tanggalStr,
+  //   );
+  //
+  //   setState(() {
+  //     isSubmitting = false;
+  //   });
+  //   if (!mounted) return;
+  //
+  //   if (result['success'] == true) {
+  //     _showSuccessDialog();
+  //   } else {
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(
+  //         content: Text("Gagal: ${result['message']}"),
+  //         backgroundColor: Colors.red.shade800,
+  //         behavior: SnackBarBehavior.floating,
+  //       ),
+  //     );
+  //   }
+  // }
 
   // ============================================================
   //  POP-UP PERINGATAN: Sampah Belum Dipilih

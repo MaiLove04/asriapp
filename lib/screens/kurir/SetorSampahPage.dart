@@ -64,8 +64,7 @@ class _SetorSampahPageState extends State<SetorSampahPage> {
   int _grandTotalSemua = 0;
   int _selectedIndexKeranjang = 0;
 
-  bool get isRealRequestNasabah =>
-      (widget.jadwalId == "0" || widget.jadwalId == "") && _isRequestDataFromNasabah;
+  bool get isRealRequestNasabah => _isRequestDataFromNasabah;
 
   @override
   void initState() {
@@ -75,10 +74,8 @@ class _SetorSampahPageState extends State<SetorSampahPage> {
 
   Future<void> _loadInitialData() async {
     await _getJenisSampah();
-    // Autoload hanya dilakukan jika masuk melalui jalur Scan (jadwalId == 0 atau kosong)
-    if (widget.jadwalId == "0" || widget.jadwalId == "") {
-      await _cekDanAutoloadRequestNasabah();
-    }
+    // 🔥 PERBAIKAN: Selalu coba ambil request nasabah jika ada, jangan batasi lewat jadwalId
+    await _cekDanAutoloadRequestNasabah();
   }
 
   Future<void> _getJenisSampah() async {
@@ -102,6 +99,9 @@ class _SetorSampahPageState extends State<SetorSampahPage> {
         widget.nasabahId,
       );
 
+      debugPrint("--- DEBUG AUTOLOAD KURIR ---");
+      debugPrint("Response API: $requestData");
+
       if (requestData != null &&
           requestData['items'] != null &&
           (requestData['items'] as List).isNotEmpty) {
@@ -111,13 +111,37 @@ class _SetorSampahPageState extends State<SetorSampahPage> {
           _isRequestDataFromNasabah = true;
           _keranjangSampah = itemsDariNasabah
               .map(
-                (item) => {
-              'jenis_sampah_id': item['jenis_sampah_id'],
-              'nama_sampah':
-              item['nama_sampah'] ?? item['nama_jenis'] ?? 'Sampah',
-              'berat': 0.0,
-              'harga_per_kg': item['harga_per_kg'] ?? 0,
-              'total_item': 0,
+                (item) {
+              int idJenis = int.tryParse(item['jenis_sampah_id'].toString()) ?? 0;
+              var detailJenis = item['jenis_sampah'];
+              
+              // 1. Coba ambil harga dari item request langsung
+              int harga = 0;
+              if (item['harga_per_kg'] != null) {
+                harga = int.tryParse(item['harga_per_kg'].toString()) ?? 0;
+              } else if (detailJenis != null && detailJenis['harga_per_kg'] != null) {
+                harga = int.tryParse(detailJenis['harga_per_kg'].toString()) ?? 0;
+              }
+
+              // 2. 🔥 JIKA MASIH 0, cari harganya di Master Data (_jenisSampahList)
+              if (harga <= 0 && _jenisSampahList.isNotEmpty) {
+                try {
+                  final master = _jenisSampahList.firstWhere((j) => j.id == idJenis);
+                  harga = master.harga.toInt();
+                } catch (_) {
+                  if (item['harga'] != null) harga = int.tryParse(item['harga'].toString()) ?? 0;
+                }
+              }
+
+              String nama = item['nama_sampah'] ?? detailJenis?['nama'] ?? 'Sampah';
+
+              return {
+                'jenis_sampah_id': idJenis,
+                'nama_sampah': nama,
+                'berat': 0.0,
+                'harga_per_kg': harga,
+                'total_item': 0,
+              };
             },
           )
               .toList();
@@ -155,7 +179,9 @@ class _SetorSampahPageState extends State<SetorSampahPage> {
   }
 
   void _tambahAtauUpdateBerat() {
-    double berat = double.tryParse(_beratController.text) ?? 0;
+    // 🛡️ AMANKAN INPUT: Ubah koma jadi titik dan hapus spasi
+    String inputBerat = _beratController.text.replaceAll(',', '.').trim();
+    double berat = double.tryParse(inputBerat) ?? 0;
 
     if (berat <= 0) {
       _tampilkanPesan(
@@ -166,35 +192,49 @@ class _SetorSampahPageState extends State<SetorSampahPage> {
     }
 
     if (isRealRequestNasabah) {
+      if (_keranjangSampah.isEmpty) return;
+      
       if (_selectedIndexKeranjang >= _keranjangSampah.length) {
-        _tampilkanPesan(
-          "Pilih item di daftar keranjang dahulu!",
-          Colors.red.shade800,
-        );
+        _tampilkanPesan("Pilih item di daftar keranjang dahulu!", Colors.red.shade800);
         return;
       }
 
       setState(() {
+        // Ambil data lama
         var oldItem = _keranjangSampah[_selectedIndexKeranjang];
-        int hargaBeli = (oldItem['harga_per_kg'] as num).toInt();
+        num hargaBeliRaw = oldItem['harga_per_kg'] ?? 0;
+        int hargaBeli = hargaBeliRaw.toInt();
         int totalItemBaru = (berat * hargaBeli).round();
 
-        _keranjangSampah[_selectedIndexKeranjang] = {
+        // 🔥 PERBAIKAN: Gunakan List.from untuk memaksa re-render total
+        List<Map<String, dynamic>> newList = List.from(_keranjangSampah);
+        newList[_selectedIndexKeranjang] = {
           ...oldItem,
           'berat': berat,
           'total_item': totalItemBaru,
         };
-
+        
+        _keranjangSampah = newList;
         _hitungGrandTotal();
         _beratController.clear();
+        
+        // 🔥 FITUR PINTAR: Otomatis pindah ke item berikutnya yang belum diisi
+        int nextIndex = _selectedIndexKeranjang + 1;
+        if (nextIndex < _keranjangSampah.length) {
+          _selectedIndexKeranjang = nextIndex;
+          // Set controller ke berat item berikutnya (jika sudah ada)
+          double nextBerat = _keranjangSampah[_selectedIndexKeranjang]['berat'] ?? 0;
+          _beratController.text = nextBerat > 0 ? nextBerat.toString() : "";
+        }
+
+        FocusScope.of(context).unfocus();
       });
-      _tampilkanPesan("Berhasil update berat item!", AppColors.primary);
+      
+      _tampilkanPesan("✅ Berhasil diperbarui!", AppColors.primary);
     } else {
+      // Logic untuk manual (bukan request nasabah)
       if (_selectedJenisSampah == null) {
-        _tampilkanPesan(
-          "Pilih kategori jenis sampah terlebih dahulu!",
-          Colors.red.shade800,
-        );
+        _tampilkanPesan("Pilih kategori jenis sampah dahulu!", Colors.red.shade800);
         return;
       }
 
@@ -213,33 +253,39 @@ class _SetorSampahPageState extends State<SetorSampahPage> {
         _hitungGrandTotal();
         _beratController.clear();
         _selectedJenisSampah = null;
+        FocusScope.of(context).unfocus();
       });
-      _tampilkanPesan(
-        "📥 Berhasil ditambahkan ke keranjang!",
-        AppColors.primary,
-      );
+      _tampilkanPesan("📥 Berhasil ditambahkan!", AppColors.primary);
     }
   }
 
   void _hapusItemKeranjang(int index) {
     if (isRealRequestNasabah) {
-      _tampilkanPesan(
-        "Item request nasabah tidak boleh dihapus!",
-        Colors.orange.shade900,
-      );
+      _tampilkanPesan("Item request tidak boleh dihapus!", Colors.orange.shade900);
       return;
     }
     setState(() {
       _keranjangSampah.removeAt(index);
       _hitungGrandTotal();
+      if (_selectedIndexKeranjang >= _keranjangSampah.length) {
+        _selectedIndexKeranjang = 0;
+      }
     });
   }
 
   void _hitungGrandTotal() {
-    _grandTotalSemua = _keranjangSampah.fold(
-      0,
-          (sum, item) => sum + (item['total_item'] as int),
-    );
+    setState(() {
+      _grandTotalSemua = _keranjangSampah.fold(
+        0, (sum, item) {
+          final totalItem = item['total_item'];
+          int nilai = 0;
+          if (totalItem is int) nilai = totalItem;
+          else if (totalItem is double) nilai = totalItem.round();
+          else nilai = int.tryParse(totalItem.toString()) ?? 0;
+          return sum + nilai;
+        },
+      );
+    });
   }
 
   Future<void> _simpanSetorSampah() async {
@@ -249,17 +295,13 @@ class _SetorSampahPageState extends State<SetorSampahPage> {
     }
 
     if (isRealRequestNasabah) {
-      bool adaYangBelumDitimbang = _keranjangSampah.any(
-            (item) => (item['berat'] ?? 0) <= 0,
-      );
+      bool adaYangBelumDitimbang = _keranjangSampah.any((item) => (item['berat'] ?? 0) <= 0);
       if (adaYangBelumDitimbang) {
-        _tampilkanPesan(
-          "Harap isi berat untuk SEMUA item request nasabah!",
-          Colors.red.shade800,
-        );
+        _tampilkanPesan("Harap isi berat untuk SEMUA item!", Colors.red.shade800);
         return;
       }
     }
+    // ... rest of the code ...
 
     setState(() => _isSubmitting = true);
 
@@ -283,7 +325,7 @@ class _SetorSampahPageState extends State<SetorSampahPage> {
             : "Setoran manual kurir",
         jadwalId: widget.jadwalId,
         sampahList: _keranjangSampah,
-        setoranId: requestData != null
+        setor_sampah_id: requestData != null
             ? requestData['setor_sampah_id']?.toString() ?? ''
             : '',
       );
@@ -417,18 +459,31 @@ class _SetorSampahPageState extends State<SetorSampahPage> {
         ),
         const SizedBox(height: 10),
         if (isRealRequestNasabah)
-          Container(
-            padding: const EdgeInsets.all(12),
-            margin: const EdgeInsets.only(bottom: 12),
-            decoration: BoxDecoration(
-              color: Colors.orange.shade50,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: Colors.orange.shade200),
-            ),
-            child: const Text(
-              "Mode Request Nasabah: Jenis sampah sudah terisi otomatis. Silakan pilih item di tabel bawah untuk mengisi beratnya.",
-              style: TextStyle(fontSize: 12, color: Colors.orange),
-            ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade50,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.orange.shade200),
+                ),
+                child: const Text(
+                  "Mode Request Nasabah: Pilih item di daftar keranjang bawah dahulu, lalu masukkan beratnya di sini.",
+                  style: TextStyle(fontSize: 12, color: Colors.orange, fontWeight: FontWeight.w600),
+                ),
+              ),
+              if (_keranjangSampah.isNotEmpty && _selectedIndexKeranjang < _keranjangSampah.length)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8.0, left: 4),
+                  child: Text(
+                    "Mengisi untuk: ${_keranjangSampah[_selectedIndexKeranjang]['nama_sampah']}",
+                    style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
+                ),
+            ],
           )
         else
           Column(
@@ -474,8 +529,11 @@ class _SetorSampahPageState extends State<SetorSampahPage> {
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
                 ),
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                 decoration: InputDecoration(
                   labelText: "Berat (Kg)",
+                  hintText: "0.0",
+                  prefixIcon: const Icon(Icons.scale_rounded),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -485,45 +543,51 @@ class _SetorSampahPageState extends State<SetorSampahPage> {
             const SizedBox(width: 10),
             Tooltip(
               message: "Ambil berat dari IoT",
-              child: IconButton.filled(
-                onPressed: _isCapturingIot ? null : _fetchBeratFromIot,
-                icon: _isCapturingIot
-                    ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(
-                    color: Colors.white,
-                    strokeWidth: 2,
+              child: SizedBox(
+                height: 60,
+                width: 60,
+                child: IconButton.filled(
+                  onPressed: _isCapturingIot ? null : _fetchBeratFromIot,
+                  icon: _isCapturingIot
+                      ? const SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  )
+                      : const Icon(Icons.monitor_weight_rounded, size: 28),
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.orange,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
-                )
-                    : const Icon(Icons.monitor_weight_rounded),
-                style: IconButton.styleFrom(
-                  backgroundColor: Colors.orange,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
                 ),
-              ),
-            ),
-            const SizedBox(width: 10),
-            ElevatedButton(
-              onPressed: _tambahAtauUpdateBerat,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 15,
-                ),
-              ),
-              child: Text(
-                isRealRequestNasabah ? "UPDATE" : "TAMBAH",
-                style: const TextStyle(color: Colors.white),
               ),
             ),
           ],
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          height: 55,
+          child: ElevatedButton.icon(
+            onPressed: _tambahAtauUpdateBerat,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: isRealRequestNasabah ? Colors.blue.shade700 : AppColors.primary,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              elevation: 2,
+            ),
+            icon: Icon(isRealRequestNasabah ? Icons.edit_note_rounded : Icons.add_shopping_cart_rounded, color: Colors.white),
+            label: Text(
+              isRealRequestNasabah ? "UPDATE BERAT SEKARANG" : "TAMBAHKAN KE KERANJANG",
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+            ),
+          ),
         ),
       ],
     );
@@ -586,18 +650,21 @@ class _SetorSampahPageState extends State<SetorSampahPage> {
                     : "";
               });
             },
-            title: Text(
-              item['nama_sampah'],
-              style: const TextStyle(fontWeight: FontWeight.bold),
+            title: Row(
+              children: [
+                Expanded(child: Text(item['nama_sampah'], style: const TextStyle(fontWeight: FontWeight.bold))),
+                if (isRealRequestNasabah && item['berat'] > 0)
+                  const Icon(Icons.check_circle_rounded, color: AppColors.secondary, size: 20),
+              ],
             ),
             subtitle: Text(
-              "${item['berat']} Kg x ${_currencyFormat.format(item['harga_per_kg'])}",
+              "${item['berat'] ?? 0} Kg x ${_currencyFormat.format(item['harga_per_kg'] ?? 0)}",
             ),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  _currencyFormat.format(item['total_item']),
+                  _currencyFormat.format(item['total_item'] ?? 0),
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     color: AppColors.primary,
