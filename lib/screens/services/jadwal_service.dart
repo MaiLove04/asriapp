@@ -11,11 +11,28 @@ class JadwalService {
   // ================= GET JADWAL KURIR =================
   static Future<List<dynamic>> getJadwalKurir(int id) async {
     try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token') ?? '';
+
       final url = Uri.parse('${AppConfig.baseUrl}/kurir/jadwal/$id');
-      final response = await _client.get(url, headers: {"Accept": "application/json"});
+      final response = await _client.get(
+        url,
+        headers: {
+          "Accept": "application/json",
+          if (token.isNotEmpty) "Authorization": "Bearer $token",
+        },
+      );
       
       final body = jsonDecode(response.body);
-      return body['data'] ?? [];
+
+      // 🔥 Perbaikan: Menangani jika body berupa List langsung atau Map dengan key 'data'
+      if (body is List) {
+        return body;
+      } else if (body is Map && body.containsKey('data')) {
+        return body['data'] ?? [];
+      }
+      
+      return [];
     } catch (e) {
       print('GET JADWAL KURIR ERROR: $e');
       return [];

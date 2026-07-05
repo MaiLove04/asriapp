@@ -162,29 +162,30 @@ class _JadwalJemputScreenState extends State<JadwalJemputScreen> {
       );
     }
 
-    List<dynamic> filteredList = jadwalList.where((jadwal) {
-      String status = (jadwal['status'] ?? 'terjadwal')
-          .toString()
-          .toLowerCase();
-      bool matchFilter = true;
-      if (selectedFilter == "Hari Ini")
-        matchFilter = (status == 'terjadwal' || status == 'proses');
-      else if (selectedFilter == "Proses")
-        matchFilter = (status == 'proses');
-      else if (selectedFilter == "Selesai")
-        matchFilter = (status == 'selesai' || status == 'completed');
-
-      String namaNasabah = (jadwal['nasabah']?['name'] ?? '')
-          .toString()
-          .toLowerCase();
-      String alamatTugas = (jadwal['alamat'] ?? '').toString().toLowerCase();
-      bool matchSearch =
-          namaNasabah.contains(searchQuery.toLowerCase()) ||
-          alamatTugas.contains(searchQuery.toLowerCase());
-
-      return matchFilter && matchSearch;
-    }).toList();
-
+    // List<dynamic> filteredList = jadwalList.where((jadwal) {
+    //   String status = (jadwal['status'] ?? 'terjadwal')
+    //       .toString()
+    //       .toLowerCase();
+    //   bool matchFilter = true;
+    //   if (selectedFilter == "Hari Ini")
+    //     matchFilter = (status == 'terjadwal' || status == 'proses');
+    //   else if (selectedFilter == "Proses")
+    //     matchFilter = (status == 'proses');
+    //   else if (selectedFilter == "Selesai")
+    //     matchFilter = (status == 'selesai' || status == 'completed');
+    //
+    //   String namaNasabah = (jadwal['nasabah']?['name'] ?? '')
+    //       .toString()
+    //       .toLowerCase();
+    //   String alamatTugas = (jadwal['alamat'] ?? '').toString().toLowerCase();
+    //   bool matchSearch =
+    //       namaNasabah.contains(searchQuery.toLowerCase()) ||
+    //       alamatTugas.contains(searchQuery.toLowerCase());
+    //
+    //   return matchFilter && matchSearch;
+    // }).toList();
+    // 🚨 UBAH SEMENTARA UNTUK TES BYPASS FILTER:
+    List<dynamic> filteredList = jadwalList;
     return Scaffold(
       backgroundColor: backgroundColor,
       body: Column(
@@ -448,7 +449,7 @@ class _JadwalJemputScreenState extends State<JadwalJemputScreen> {
           onPressed: () async {
             String idJadwalTerpilih =
                 jadwalList.isNotEmpty
-                    ? jadwalList[0]['id']?.toString() ?? ''
+                    ? jadwalList[0]['jadwalId']?.toString() ?? ''
                     : '';
             final result = await Navigator.push(
               context,
@@ -585,6 +586,215 @@ class _JadwalJemputScreenState extends State<JadwalJemputScreen> {
   }
 }
 
+// class JadwalCard extends StatelessWidget {
+//   final String id;
+//   final String nama;
+//   final String alamat;
+//   final String jam;
+//   final String status;
+//
+//   final VoidCallback onLihatLokasi; // 🔥 Ditambahkan parameter baru
+//   final VoidCallback onMulaiJemput;
+//
+//   const JadwalCard({
+//     super.key,
+//     required this.id,
+//     required this.nama,
+//     required this.alamat,
+//     required this.jam,
+//     required this.status,
+//     required this.onLihatLokasi, // 🔥 Ditambahkan ke constructor
+//     required this.onMulaiJemput,
+//   });
+//
+//   @override
+//   Widget build(BuildContext context) {
+//     Color statusColor;
+//     String displayStatus = status.toLowerCase();
+//
+//     if (displayStatus == 'selesai' || displayStatus == 'completed') {
+//       statusColor = Colors.green.shade800;
+//     } else if (displayStatus == 'proses' || displayStatus == 'on_progress') {
+//       statusColor = Colors.blue.shade800;
+//     } else {
+//       statusColor = Colors.orange.shade800;
+//     }
+//
+//     return Container(
+//       padding: const EdgeInsets.all(18),
+//       decoration: BoxDecoration(
+//         color: Colors.white,
+//         borderRadius: BorderRadius.circular(24),
+//         boxShadow: [
+//           BoxShadow(
+//             color: Colors.black.withOpacity(.04),
+//             blurRadius: 16,
+//             offset: const Offset(0, 6),
+//           ),
+//         ],
+//       ),
+//       child: Column(
+//         children: [
+//           Row(
+//             crossAxisAlignment: CrossAxisAlignment.start,
+//             children: [
+//               CircleAvatar(
+//                 radius: 26,
+//                 backgroundColor: primaryColor.withOpacity(0.08),
+//                 child: const Icon(
+//                   Icons.person_rounded,
+//                   color: primaryColor,
+//                   size: 26,
+//                 ),
+//               ),
+//               const SizedBox(width: 14),
+//               Expanded(
+//                 child: Column(
+//                   crossAxisAlignment: CrossAxisAlignment.start,
+//                   children: [
+//                     Text(
+//                       nama,
+//                       style: const TextStyle(
+//                         fontSize: 18,
+//                         fontWeight: FontWeight.w900,
+//                         color: darkTextColor,
+//                         letterSpacing: -0.3,
+//                       ),
+//                     ),
+//                     const SizedBox(height: 8),
+//                     Row(
+//                       crossAxisAlignment: CrossAxisAlignment.start,
+//                       children: [
+//                         const Padding(
+//                           padding: EdgeInsets.only(top: 2.0),
+//                           child: Icon(
+//                             Icons.location_on_rounded,
+//                             size: 16,
+//                             color: primaryColor,
+//                           ),
+//                         ),
+//                         const SizedBox(width: 6),
+//                         Expanded(
+//                           child: Text(
+//                             alamat,
+//                             style: const TextStyle(
+//                               color: greyTextColor,
+//                               fontSize: 13,
+//                               fontWeight: FontWeight.w700,
+//                             ),
+//                           ),
+//                         ),
+//                       ],
+//                     ),
+//                     const SizedBox(height: 6),
+//                   ],
+//                 ),
+//               ),
+//               const SizedBox(width: 8),
+//               Container(
+//                 padding: const EdgeInsets.symmetric(
+//                   horizontal: 12,
+//                   vertical: 6,
+//                 ),
+//                 decoration: BoxDecoration(
+//                   color: statusColor.withOpacity(.1),
+//                   borderRadius: BorderRadius.circular(14),
+//                 ),
+//                 child: Text(
+//                   status.toUpperCase(),
+//                   style: TextStyle(
+//                     color: statusColor,
+//                     fontWeight: FontWeight.w900,
+//                     fontSize: 11,
+//                     letterSpacing: 0.3,
+//                   ),
+//                 ),
+//               ),
+//             ],
+//           ),
+//           const SizedBox(height: 18),
+//           Row(
+//             children: [
+//               Expanded(
+//                 child: OutlinedButton.icon(
+//                   onPressed:
+//                       onLihatLokasi, // 🔥 Sekarang memicu fungsi yang dioper dari list view
+//                   style: OutlinedButton.styleFrom(
+//                     minimumSize: const Size(0, 50),
+//                     side: const BorderSide(color: primaryColor, width: 1.5),
+//                     shape: RoundedRectangleBorder(
+//                       borderRadius: BorderRadius.circular(14),
+//                     ),
+//                   ),
+//                   icon: const Icon(
+//                     Icons.map_rounded,
+//                     color: primaryColor,
+//                     size: 18,
+//                   ),
+//                   label: const Text(
+//                     "LIHAT LOKASI",
+//                     style: TextStyle(
+//                       color: primaryColor,
+//                       fontWeight: FontWeight.w900,
+//                       fontSize: 12,
+//                       letterSpacing: 0.3,
+//                     ),
+//                   ),
+//                 ),
+//               ),
+//               const SizedBox(width: 12),
+//
+//               // Expanded(
+//               //   child: ElevatedButton.icon(
+//               //     onPressed: onMulaiJemput,
+//               //     style: ElevatedButton.styleFrom(
+//               //       backgroundColor: status.toLowerCase() == 'proses'
+//               //           ? Colors.orange.shade800
+//               //           : primaryColor,
+//               //       disabledBackgroundColor: Colors.grey.shade200,
+//               //       minimumSize: const Size(0, 50),
+//               //       elevation: (status.toLowerCase() == 'selesai') ? 0 : 2,
+//               //       shape: RoundedRectangleBorder(
+//               //         borderRadius: BorderRadius.circular(14),
+//               //       ),
+//               //     ),
+//               //     icon: Icon(
+//               //       status.toLowerCase() == 'selesai'
+//               //           ? Icons.check_circle_rounded
+//               //           : (status.toLowerCase() == 'proses'
+//               //                 ? Icons.scale_rounded
+//               //                 : Icons.local_shipping_rounded),
+//               //       color: status.toLowerCase() == 'selesai'
+//               //           ? Colors.grey.shade500
+//               //           : Colors.white,
+//               //       size: 18,
+//               //     ),
+//               //     label: Text(
+//               //       status.toLowerCase() == 'terjadwal' ||
+//               //               status.toLowerCase() == 'pending'
+//               //           ? "MULAI JEMPUT"
+//               //           : (status.toLowerCase() == 'proses'
+//               //                 ? "TIMBANG SAMPAH"
+//               //                 : "SUDAH SELESAI"),
+//               //       style: TextStyle(
+//               //         color: status.toLowerCase() == 'selesai'
+//               //             ? Colors.grey.shade600
+//               //             : Colors.white,
+//               //         fontWeight: FontWeight.w900,
+//               //         fontSize: 12,
+//               //         letterSpacing: 0.3,
+//               //       ),
+//               //     ),
+//               //   ),
+//               // ),
+//             ],
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+// }
+
 class JadwalCard extends StatelessWidget {
   final String id;
   final String nama;
@@ -592,8 +802,8 @@ class JadwalCard extends StatelessWidget {
   final String jam;
   final String status;
 
-  final VoidCallback onLihatLokasi; // 🔥 Ditambahkan parameter baru
-  final VoidCallback onMulaiJemput;
+  final VoidCallback onLihatLokasi;
+  final VoidCallback onMulaiJemput; // Tetap dipertahankan di constructor agar tidak error di screen atas
 
   const JadwalCard({
     super.key,
@@ -602,7 +812,7 @@ class JadwalCard extends StatelessWidget {
     required this.alamat,
     required this.jam,
     required this.status,
-    required this.onLihatLokasi, // 🔥 Ditambahkan ke constructor
+    required this.onLihatLokasi,
     required this.onMulaiJemput,
   });
 
@@ -691,10 +901,7 @@ class JadwalCard extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: statusColor.withOpacity(.1),
                   borderRadius: BorderRadius.circular(14),
@@ -712,81 +919,30 @@ class JadwalCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 18),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed:
-                      onLihatLokasi, // 🔥 Sekarang memicu fungsi yang dioper dari list view
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size(0, 50),
-                    side: const BorderSide(color: primaryColor, width: 1.5),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                  ),
-                  icon: const Icon(
-                    Icons.map_rounded,
-                    color: primaryColor,
-                    size: 18,
-                  ),
-                  label: const Text(
-                    "LIHAT LOKASI",
-                    style: TextStyle(
-                      color: primaryColor,
-                      fontWeight: FontWeight.w900,
-                      fontSize: 12,
-                      letterSpacing: 0.3,
-                    ),
-                  ),
+
+          // Layout tombol dibuat memenuhi lebar (Full Width) karena hanya ada satu tombol navigasi
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: onLihatLokasi,
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size(0, 50),
+                side: const BorderSide(color: primaryColor, width: 1.5),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
                 ),
               ),
-              const SizedBox(width: 12),
-
-              // Expanded(
-              //   child: ElevatedButton.icon(
-              //     onPressed: onMulaiJemput,
-              //     style: ElevatedButton.styleFrom(
-              //       backgroundColor: status.toLowerCase() == 'proses'
-              //           ? Colors.orange.shade800
-              //           : primaryColor,
-              //       disabledBackgroundColor: Colors.grey.shade200,
-              //       minimumSize: const Size(0, 50),
-              //       elevation: (status.toLowerCase() == 'selesai') ? 0 : 2,
-              //       shape: RoundedRectangleBorder(
-              //         borderRadius: BorderRadius.circular(14),
-              //       ),
-              //     ),
-              //     icon: Icon(
-              //       status.toLowerCase() == 'selesai'
-              //           ? Icons.check_circle_rounded
-              //           : (status.toLowerCase() == 'proses'
-              //                 ? Icons.scale_rounded
-              //                 : Icons.local_shipping_rounded),
-              //       color: status.toLowerCase() == 'selesai'
-              //           ? Colors.grey.shade500
-              //           : Colors.white,
-              //       size: 18,
-              //     ),
-              //     label: Text(
-              //       status.toLowerCase() == 'terjadwal' ||
-              //               status.toLowerCase() == 'pending'
-              //           ? "MULAI JEMPUT"
-              //           : (status.toLowerCase() == 'proses'
-              //                 ? "TIMBANG SAMPAH"
-              //                 : "SUDAH SELESAI"),
-              //       style: TextStyle(
-              //         color: status.toLowerCase() == 'selesai'
-              //             ? Colors.grey.shade600
-              //             : Colors.white,
-              //         fontWeight: FontWeight.w900,
-              //         fontSize: 12,
-              //         letterSpacing: 0.3,
-              //       ),
-              //     ),
-              //   ),
-              // ),
-            ],
+              icon: const Icon(Icons.map_rounded, color: primaryColor, size: 18),
+              label: const Text(
+                "LIHAT LOKASI / NAVIGASI MAPS",
+                style: TextStyle(
+                  color: primaryColor,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 12,
+                  letterSpacing: 0.3,
+                ),
+              ),
+            ),
           ),
         ],
       ),
