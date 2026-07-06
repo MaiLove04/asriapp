@@ -136,7 +136,6 @@ class _JadwalJemputScreenState extends State<JadwalJemputScreen> {
       );
     }
 
-    // 🔥 MENAMPILKAN SEMUA DATA JADWAL (Hanya disaring berdasarkan kolom pencarian)
     List<dynamic> filteredList = jadwalList.where((jadwal) {
       String namaNasabah = (jadwal['nasabah']?['name'] ?? '').toString().toLowerCase();
       String alamatTugas = (jadwal['alamat'] ?? '').toString().toLowerCase();
@@ -200,7 +199,7 @@ class _JadwalJemputScreenState extends State<JadwalJemputScreen> {
 
           // ================= SEARCH BAR =================
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 12), // Padding disesuaikan karena filter di bawahnya hilang
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
             child: TextField(
               controller: searchController,
               onChanged: (value) => setState(() => searchQuery = value),
@@ -227,8 +226,6 @@ class _JadwalJemputScreenState extends State<JadwalJemputScreen> {
               ),
             ),
           ),
-
-          // ⚠️ Catatan: Baris Filter Chips (Semua, Hari Ini, Proses, Selesai) telah dihilangkan dari antarmuka tampilan.
 
           // ================= CARDS LIST =================
           Expanded(
@@ -274,6 +271,7 @@ class _JadwalJemputScreenState extends State<JadwalJemputScreen> {
                       id: item['id'].toString(),
                       nama: item['nasabah']?['name'] ?? 'Tanpa Nama',
                       alamat: item['alamat'] ?? 'Alamat tidak tersedia',
+                      catatan: item['catatan'] ?? 'Tidak ada catatan tambahan', // 🔥 Ambil data catatan nasabah
                       jam: jamFormatted,
                       status: displayStatus,
                       onLihatLokasi: () {
@@ -368,6 +366,7 @@ class JadwalCard extends StatelessWidget {
   final String id;
   final String nama;
   final String alamat;
+  final String catatan; // 🔥 Properti catatan ditambahkan
   final String jam;
   final String status;
   final VoidCallback onLihatLokasi;
@@ -378,6 +377,7 @@ class JadwalCard extends StatelessWidget {
     required this.id,
     required this.nama,
     required this.alamat,
+    required this.catatan, // 🔥 Tambah ke constructor
     required this.jam,
     required this.status,
     required this.onLihatLokasi,
@@ -421,12 +421,28 @@ class JadwalCard extends StatelessWidget {
                   children: [
                     Text(nama, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: darkTextColor, letterSpacing: -0.3)),
                     const SizedBox(height: 8),
+                    // BARIS ALAMAT
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Padding(padding: EdgeInsets.only(top: 2.0), child: Icon(Icons.location_on_rounded, size: 16, color: primaryColor)),
                         const SizedBox(width: 6),
                         Expanded(child: Text(alamat, style: const TextStyle(color: greyTextColor, fontSize: 13, fontWeight: FontWeight.w700))),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    // 🔥 BARIS CATATAN NASABAH
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Padding(padding: EdgeInsets.only(top: 2.0), child: Icon(Icons.sticky_note_2_rounded, size: 16, color: secondaryColor)),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                              "Catatan: $catatan",
+                              style: const TextStyle(color: Colors.deepOrange, fontSize: 13, fontWeight: FontWeight.w600)
+                          ),
+                        ),
                       ],
                     ),
                   ],

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../services/dashboard_kurir_service.dart';
+import '../services/jadwal_service.dart';
 import '../../config.dart';
 import '../kurir/SetorSampahPage.dart';
 
@@ -32,27 +32,32 @@ class _NavigasiKurirPageState extends State<NavigasiKurirPage> {
 
   Future<void> _loadSemuaRuteHariIni() async {
     try {
+      setState(() { _isLoading = true; });
       SharedPreferences prefs = await SharedPreferences.getInstance();
-      int userId = prefs.getInt('user_id') ?? 0;
+
+      int userId = 0;
+      var rawId = prefs.get('user_id');
+      if (rawId is int) {
+        userId = rawId;
+      } else if (rawId is String) {
+        userId = int.tryParse(rawId) ?? 0;
+      }
 
       if (userId == 0) {
         setState(() { _isLoading = false; });
         return;
       }
 
-      final result = await DashboardKurirService.getDashboard(userId);
+      final result = await JadwalService.getJadwalKurir(userId);
 
-      if (result != null) {
-        setState(() {
-          _daftarRute = result['tugas_hari_ini'] ?? result['jadwal_list'] ?? [];
-          _isLoading = false;
-        });
-      } else {
-        setState(() { _isLoading = false; });
-      }
+      if (!mounted) return;
+      setState(() {
+        _daftarRute = result ?? [];
+        _isLoading = false;
+      });
     } catch (e) {
       debugPrint("Gagal sinkronisasi data rute berantai: $e");
-      setState(() { _isLoading = false; });
+      if (mounted) setState(() { _isLoading = false; });
     }
   }
 
@@ -72,11 +77,13 @@ class _NavigasiKurirPageState extends State<NavigasiKurirPage> {
   @override
   Widget build(BuildContext context) {
     int totalTugas = _daftarRute.length;
-    int tugasSelesai = _daftarRute.where((item) => (item['status'] ?? '').toString().toLowerCase() == 'selesai').length;
+    int tugasSelesai = _daftarRute.where((item) {
+      String status = (item['status'] ?? '').toString().toLowerCase();
+      return status == 'selesai' || status == 'completed';
+    }).length;
 
     return Scaffold(
       backgroundColor: backgroundColor,
-      // Menggunakan CustomAppBar / Header Section melengkung agar seragam dengan halaman sebelumnya
       body: _isLoading
           ? const Center(child: CircularProgressIndicator(color: primaryColor, strokeWidth: 3))
           : RefreshIndicator(
@@ -85,7 +92,6 @@ class _NavigasiKurirPageState extends State<NavigasiKurirPage> {
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
           slivers: [
-            // 🔥 HEADER SERAGAM: Menggunakan SliverAppBar melengkung premium
             SliverAppBar(
               expandedHeight: 140,
               pinned: true,
@@ -134,7 +140,6 @@ class _NavigasiKurirPageState extends State<NavigasiKurirPage> {
               ),
             ),
 
-            // Efek lengkungan pemisah header dengan konten di bawahnya
             SliverToBoxAdapter(
               child: Container(
                 height: 20,
@@ -145,7 +150,6 @@ class _NavigasiKurirPageState extends State<NavigasiKurirPage> {
               ),
             ),
 
-            // AREA DAFTAR KARTU RUTE JALAN
             _daftarRute.isEmpty
                 ? SliverFillRemaining(child: _buildStateKosong())
                 : SliverPadding(
@@ -154,22 +158,23 @@ class _NavigasiKurirPageState extends State<NavigasiKurirPage> {
                 delegate: SliverChildBuilderDelegate(
                       (context, index) {
                     final item = _daftarRute[index];
-                    final nasabahObj = item['user'] ?? item['nasabah'];
+                    final nasabahObj = item['nasabah'] ?? item['user'];
 
                     String idJadwal = item['id']?.toString() ?? "0";
-                    int nasabahId = int.tryParse(item['nasabah_id'].toString()) ?? 0;
+                    int nasabahId = int.tryParse(item['nasabah_id']?.toString() ?? nasabahObj?['id']?.toString() ?? '0') ?? 0;
                     String nama = nasabahObj?['name'] ?? "Nasabah ASRI";
                     String alamat = item['alamat'] ?? "Alamat tidak diisi";
                     String catatan = item['catatan'] ?? "Ambil sampah berkala";
                     String status = (item['status'] ?? 'terjadwal').toString().toLowerCase();
 
-                    bool isSelesai = status == 'selesai';
+                    bool isSelesai = status == 'selesai' || status == 'completed';
 
-                    // Mencari baris antrean aktif pertama yang belum selesai
                     bool isUrutanPertamaAktif = false;
                     if (!isSelesai) {
-                      int indexAktifPertama = _daftarRute.indexWhere((element) =>
-                      (element['status'] ?? '').toString().toLowerCase() != 'selesai');
+                      int indexAktifPertama = _daftarRute.indexWhere((element) {
+                        String s = (element['status'] ?? '').toString().toLowerCase();
+                        return s != 'selesai' && s != 'completed';
+                      });
                       isUrutanPertamaAktif = (index == indexAktifPertama);
                     }
 
@@ -189,7 +194,6 @@ class _NavigasiKurirPageState extends State<NavigasiKurirPage> {
               ),
             ),
 
-            // Ruang spasi bawah agar tombol tidak tertutup navigasi sistem Android
             const SliverToBoxAdapter(child: SizedBox(height: 40)),
           ],
         ),
@@ -224,8 +228,6 @@ class _NavigasiKurirPageState extends State<NavigasiKurirPage> {
     required bool isSelesai,
     required bool isAktif,
   }) {
-    Color statusCardColor = isSelesai ? Colors.grey.shade100 : Colors.white;
-
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
       padding: const EdgeInsets.all(16),
@@ -268,54 +270,21 @@ class _NavigasiKurirPageState extends State<NavigasiKurirPage> {
 
           if (isAktif) ...[
             const SizedBox(height: 20),
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () => _bukaGoogleMaps(alamat),
-                    icon: const Icon(Icons.map_rounded, size: 18),
-                    label: const Text("PETA MAPS", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue.shade800,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      elevation: 0,
-                    ),
-                  ),
+            // Tombol diubah menjadi full width (double.infinity) karena hanya tersisa Peta Maps
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () => _bukaGoogleMaps(alamat),
+                icon: const Icon(Icons.map_rounded, size: 18),
+                label: const Text("PETA MAPS", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue.shade800,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: 0,
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () async {
-                      final hasilSetor = await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => SetorSampahPage(
-                            nasabahId: nasabahId,
-                            namaNasabah: nama,
-                            alamat: alamat,
-                            barcode: "BRC-${nasabahId}99",
-                            jadwalId: idJadwal,
-                          ),
-                        ),
-                      );
-                      if (hasilSetor == true) {
-                        _loadSemuaRuteHariIni();
-                      }
-                    },
-                    icon: const Icon(Icons.scale_rounded, size: 18),
-                    label: const Text("TIMBANG", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: primaryColor,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      elevation: 0,
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
           ]
         ],
@@ -364,7 +333,6 @@ class _NavigasiKurirPageState extends State<NavigasiKurirPage> {
   }
 }
 
-// Global System Card Decoration yang diadaptasi khusus untuk indikator aktif
 BoxDecoration cardDecoration(bool isAktif) {
   return BoxDecoration(
     color: Colors.white,
