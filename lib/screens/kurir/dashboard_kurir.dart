@@ -483,7 +483,7 @@ class _ActiveMissionCard extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Row(
-            mainAxisAlignment: MainAxisAlignment.center, // Diubah ke center agar posisinya tepat di tengah card
+            mainAxisAlignment: MainAxisAlignment.end, // Diubah menjadi end agar tombol merapat ke kanan dengan rapi
             children: [
               _startButton(context),
             ],
