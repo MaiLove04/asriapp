@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart'; // 🔥 Import modul peta
+import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/jadwal_service.dart';
 import '../../config.dart';
-import '../kurir/SetorSampahPage.dart';
 
 // 🎨 PALET WARNA KONSISTEN PREMIUM ASRI
 const primaryColor = Color(0xFF1B4D1B);
@@ -23,6 +24,11 @@ class NavigasiKurirPage extends StatefulWidget {
 class _NavigasiKurirPageState extends State<NavigasiKurirPage> {
   bool _isLoading = true;
   List<dynamic> _daftarRute = [];
+  final MapController _mapController = MapController();
+
+  // Titik default pusat peta (Bangka Belitung / Menyesuaikan lokasi pangkalan bank sampah)
+  LatLng _pusatPeta = const LatLng(-2.1299, 106.1128);
+  List<Marker> _markersPeta = [];
 
   @override
   void initState() {
@@ -51,12 +57,68 @@ class _NavigasiKurirPageState extends State<NavigasiKurirPage> {
       final result = await JadwalService.getJadwalKurir(userId);
 
       if (!mounted) return;
+
+      List<dynamic> dataRute = result ?? [];
+      List<Marker> temporaryMarkers = [];
+
+      // Loop data dari backend untuk membuat titik penanda lokasi di peta
+      for (int i = 0; i < dataRute.length; i++) {
+        final item = dataRute[i];
+
+        // Membaca koordinat latitude & longitude dari API backend jika tersedia
+        double lat = double.tryParse(item['latitude']?.toString() ?? '') ?? (-2.1299 + (i * 0.005));
+        double lng = double.tryParse(item['longitude']?.toString() ?? '') ?? (106.1128 + (i * 0.005));
+
+        String status = (item['status'] ?? 'terjadwal').toString().toLowerCase();
+        bool isSelesai = status == 'selesai' || status == 'completed';
+
+        temporaryMarkers.add(
+          Marker(
+            point: LatLng(lat, lng),
+            width: 40,
+            height: 40,
+            child: GestureDetector(
+              onTap: () {
+                _mapController.move(LatLng(lat, lng), 16.0);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text("Titik ${i + 1}: ${item['nasabah']?['name'] ?? 'Nasabah'}"),
+                    duration: const Duration(seconds: 1),
+                  ),
+                );
+              },
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Icon(
+                      Icons.location_on_rounded,
+                      size: 40,
+                      color: isSelesai ? Colors.grey : (i == 0 ? Colors.blue.shade800 : primaryColor)
+                  ),
+                  Positioned(
+                    top: 5,
+                    child: Text(
+                      "${i + 1}",
+                      style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                    ),
+                  )
+                ],
+              ),
+            ),
+          ),
+        );
+      }
+
       setState(() {
-        _daftarRute = result ?? [];
+        _daftarRute = dataRute;
+        _markersPeta = temporaryMarkers;
+        if (_markersPeta.isNotEmpty) {
+          _pusatPeta = _markersPeta.first.point; // Fokuskan peta ke tujuan pertama
+        }
         _isLoading = false;
       });
     } catch (e) {
-      debugPrint("Gagal sinkronisasi data rute berantai: $e");
+      debugPrint("Gagal memuat rute dan koordinat peta: $e");
       if (mounted) setState(() { _isLoading = false; });
     }
   }
@@ -84,136 +146,144 @@ class _NavigasiKurirPageState extends State<NavigasiKurirPage> {
 
     return Scaffold(
       backgroundColor: backgroundColor,
+      appBar: AppBar(
+        backgroundColor: primaryColor,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          "Rute: $tugasSelesai / $totalTugas Lokasi Selesai",
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh_rounded, color: Colors.white),
+            onPressed: _loadSemuaRuteHariIni,
+          )
+        ],
+      ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator(color: primaryColor, strokeWidth: 3))
-          : RefreshIndicator(
-        color: primaryColor,
-        onRefresh: _loadSemuaRuteHariIni,
-        child: CustomScrollView(
-          physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
-          slivers: [
-            SliverAppBar(
-              expandedHeight: 140,
-              pinned: true,
-              elevation: 0,
-              backgroundColor: primaryColor,
-              leading: IconButton(
-                icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
-                onPressed: () => Navigator.pop(context),
-              ),
-              centerTitle: true,
-              title: const Text(
-                "Rute Penjemputan",
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
-              ),
-              flexibleSpace: FlexibleSpaceBar(
-                background: Container(
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [primaryColor, Color(0xFF143A14)],
-                    ),
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 24, left: 20, right: 20),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text(
-                                "Daftar Urutan Jalan",
-                                style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500)
-                            ),
-                            Text(
-                                "$tugasSelesai / $totalTugas Lokasi Selesai",
-                                style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+          : Stack(
+        children: [
+          // ================= LAYER 1: TAMPILAN PETA DIGITAL =================
+          FlutterMap(
+            mapController: _mapController,
+            options: MapOptions(
+              initialCenter: _pusatPeta,
+              initialZoom: 14.0,
+              interactionOptions: const InteractionOptions(flags: InteractiveFlag.all),
             ),
+            children: [
+              TileLayer(
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                userAgentPackageName: 'com.asri.app',
+              ),
+              MarkerLayer(markers: _markersPeta),
+            ],
+          ),
 
-            SliverToBoxAdapter(
-              child: Container(
-                height: 20,
+          // ================= LAYER 2: PANEL LIST JALAN (BOTTOM SHEET DRAGGABLE) =================
+          _daftarRute.isEmpty
+              ? _buildStateKosong()
+              : DraggableScrollableSheet(
+            initialChildSize: 0.35, // Tinggi awal daftar tugas saat pertama dibuka
+            minChildSize: 0.15,     // Tinggi minimum saat panel diciutkan
+            maxChildSize: 0.85,     // Tinggi maksimum saat ditarik ke atas
+            builder: (context, scrollController) {
+              return Container(
                 decoration: const BoxDecoration(
                   color: backgroundColor,
                   borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                  boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 10, offset: Offset(0, -2))],
                 ),
-              ),
-            ),
+                child: Column(
+                  children: [
+                    // Handle penarik panel
+                    Container(
+                      margin: const EdgeInsets.only(top: 12, bottom: 8),
+                      width: 50,
+                      height: 5,
+                      decoration: BoxDecoration(color: Colors.grey.shade400, borderRadius: BorderRadius.circular(10)),
+                    ),
+                    const Text(
+                      "Geser Ke Atas Untuk Detail Urutan Jalan",
+                      style: TextStyle(fontSize: 12, color: greyTextColor, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    Expanded(
+                      child: ListView.builder(
+                        controller: scrollController,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        itemCount: _daftarRute.length,
+                        itemBuilder: (context, index) {
+                          final item = _daftarRute[index];
+                          final nasabahObj = item['nasabah'] ?? item['user'];
 
-            _daftarRute.isEmpty
-                ? SliverFillRemaining(child: _buildStateKosong())
-                : SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              sliver: SliverList(
-                delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                    final item = _daftarRute[index];
-                    final nasabahObj = item['nasabah'] ?? item['user'];
+                          String idJadwal = item['id']?.toString() ?? "0";
+                          int nasabahId = int.tryParse(item['nasabah_id']?.toString() ?? nasabahObj?['id']?.toString() ?? '0') ?? 0;
+                          String nama = nasabahObj?['name'] ?? "Nasabah ASRI";
+                          String alamat = item['alamat'] ?? "Alamat tidak diisi";
+                          String catatan = item['catatan'] ?? "Ambil sampah berkala";
+                          String status = (item['status'] ?? 'terjadwal').toString().toLowerCase();
 
-                    String idJadwal = item['id']?.toString() ?? "0";
-                    int nasabahId = int.tryParse(item['nasabah_id']?.toString() ?? nasabahObj?['id']?.toString() ?? '0') ?? 0;
-                    String nama = nasabahObj?['name'] ?? "Nasabah ASRI";
-                    String alamat = item['alamat'] ?? "Alamat tidak diisi";
-                    String catatan = item['catatan'] ?? "Ambil sampah berkala";
-                    String status = (item['status'] ?? 'terjadwal').toString().toLowerCase();
+                          bool isSelesai = status == 'selesai' || status == 'completed';
 
-                    bool isSelesai = status == 'selesai' || status == 'completed';
+                          bool isUrutanPertamaAktif = false;
+                          if (!isSelesai) {
+                            int indexAktifPertama = _daftarRute.indexWhere((element) {
+                              String s = (element['status'] ?? '').toString().toLowerCase();
+                              return s != 'selesai' && s != 'completed';
+                            });
+                            isUrutanPertamaAktif = (index == indexAktifPertama);
+                          }
 
-                    bool isUrutanPertamaAktif = false;
-                    if (!isSelesai) {
-                      int indexAktifPertama = _daftarRute.indexWhere((element) {
-                        String s = (element['status'] ?? '').toString().toLowerCase();
-                        return s != 'selesai' && s != 'completed';
-                      });
-                      isUrutanPertamaAktif = (index == indexAktifPertama);
-                    }
-
-                    return _buildRuteItemCard(
-                      index: index + 1,
-                      idJadwal: idJadwal,
-                      nasabahId: nasabahId,
-                      nama: nama,
-                      alamat: alamat,
-                      catatan: catatan,
-                      isSelesai: isSelesai,
-                      isAktif: isUrutanPertamaAktif,
-                    );
-                  },
-                  childCount: _daftarRute.length,
+                          return _buildRuteItemCard(
+                            index: index + 1,
+                            idJadwal: idJadwal,
+                            nasabahId: nasabahId,
+                            nama: nama,
+                            alamat: alamat,
+                            catatan: catatan,
+                            isSelesai: isSelesai,
+                            isAktif: isUrutanPertamaAktif,
+                            lat: double.tryParse(item['latitude']?.toString() ?? '') ?? _pusatPeta.latitude,
+                            lng: double.tryParse(item['longitude']?.toString() ?? '') ?? _pusatPeta.longitude,
+                          );
+                        },
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ),
-
-            const SliverToBoxAdapter(child: SizedBox(height: 40)),
-          ],
-        ),
+              );
+            },
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildStateKosong() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.directions_bike_rounded, size: 64, color: Colors.grey.shade400),
-          const SizedBox(height: 16),
-          const Text(
-            "Tidak Ada Jadwal Rute Jalan\nUntuk Hari Ini",
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 16, color: greyTextColor, fontWeight: FontWeight.bold, height: 1.4),
-          ),
-        ],
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: Container(
+        height: 150,
+        width: double.infinity,
+        decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.directions_bike_rounded, size: 44, color: Colors.grey.shade400),
+            const SizedBox(height: 8),
+            const Text(
+              "Tidak Ada Jadwal Rute Jalan Hari Ini",
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 14, color: greyTextColor, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -227,6 +297,8 @@ class _NavigasiKurirPageState extends State<NavigasiKurirPage> {
     required String catatan,
     required bool isSelesai,
     required bool isAktif,
+    required double lat,
+    required double lng,
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
@@ -249,13 +321,19 @@ class _NavigasiKurirPageState extends State<NavigasiKurirPage> {
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: Text(
-                  nama,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: isSelesai ? greyTextColor : darkTextColor,
-                    decoration: isSelesai ? TextDecoration.lineThrough : null,
+                child: InkWell(
+                  onTap: () {
+                    // Ketika baris nama ditekan, peta akan bergeser fokus ke titik koordinat nasabah tersebut
+                    _mapController.move(LatLng(lat, lng), 16.0);
+                  },
+                  child: Text(
+                    nama,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: isSelesai ? greyTextColor : darkTextColor,
+                      decoration: isSelesai ? TextDecoration.lineThrough : null,
+                    ),
                   ),
                 ),
               ),
@@ -270,7 +348,6 @@ class _NavigasiKurirPageState extends State<NavigasiKurirPage> {
 
           if (isAktif) ...[
             const SizedBox(height: 20),
-            // Tombol diubah menjadi full width (double.infinity) karena hanya tersisa Peta Maps
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
@@ -318,12 +395,7 @@ class _NavigasiKurirPageState extends State<NavigasiKurirPage> {
               const SizedBox(height: 3),
               Text(
                 value,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: isSelesai ? Colors.grey : darkTextColor,
-                  fontWeight: FontWeight.w500,
-                  height: 1.4,
-                ),
+                style: TextStyle(fontSize: 14, color: isSelesai ? Colors.grey : darkTextColor, fontWeight: FontWeight.w500, height: 1.4),
               ),
             ],
           ),

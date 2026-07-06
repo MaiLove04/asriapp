@@ -271,7 +271,7 @@ class _JadwalJemputScreenState extends State<JadwalJemputScreen> {
                       id: item['id'].toString(),
                       nama: item['nasabah']?['name'] ?? 'Tanpa Nama',
                       alamat: item['alamat'] ?? 'Alamat tidak tersedia',
-                      catatan: item['catatan'] ?? 'Tidak ada catatan tambahan', // 🔥 Ambil data catatan nasabah
+                      catatan: item['catatan'] ?? 'Tidak ada catatan tambahan',
                       jam: jamFormatted,
                       status: displayStatus,
                       onLihatLokasi: () {
@@ -298,65 +298,42 @@ class _JadwalJemputScreenState extends State<JadwalJemputScreen> {
         ],
       ),
 
-      // ================= FLOATING ACTION SCANNER =================
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      floatingActionButton: Container(
-        height: 72,
-        width: 72,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          boxShadow: [BoxShadow(color: primaryColor.withOpacity(0.4), blurRadius: 16, offset: const Offset(0, 6))],
-        ),
-        child: FloatingActionButton(
-          elevation: 0,
-          backgroundColor: primaryColor,
-          shape: const CircleBorder(),
-          onPressed: () async {
-            String idJadwalTerpilih = jadwalList.isNotEmpty ? jadwalList[0]['jadwalId']?.toString() ?? '' : '';
-            final result = await Navigator.push(context, MaterialPageRoute(builder: (_) => ScanBarcodePage(jadwalId: idJadwalTerpilih)));
-            if (result == true) getJadwal();
-          },
-          child: const Icon(Icons.qr_code_scanner_rounded, color: Colors.white, size: 32),
-        ),
-      ),
+      // 🔥 MENGUBAH LOKASI FAB AGAR BERADA PAS DI TENGAH LAYAR BAWAH
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
 
-      // ================= BOTTOM NAV BAR =================
-      bottomNavigationBar: BottomAppBar(
-        shape: const CircularNotchedRectangle(),
-        notchMargin: 10,
-        elevation: 24,
-        color: Colors.white,
-        shadowColor: primaryColor.withOpacity(0.4),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _navItem(icon: Icons.home_rounded, label: "Beranda", active: true, onTap: () => Navigator.pop(context, true)),
-            _navItem(icon: Icons.assignment_turned_in_rounded, label: "Riwayat", onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const RiwayatKurirScreen()));
-            }),
-            const SizedBox(width: 48),
-            _navItem(icon: Icons.notifications_rounded, label: "Notifikasi", onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const NotifikasiKurirScreen()));
-            }),
-            _navItem(icon: Icons.account_circle_rounded, label: "Akun Saya", onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfilKurirScreen()));
-            }),
-          ],
+      // ================= FLOATING ACTION SCANNER (CENTER FLOAT) =================
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 30.0), // Jarak ngambang ke atas dari bawah layar
+        child: Container(
+          height: 72,
+          width: 72,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: primaryColor.withOpacity(0.4),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: FloatingActionButton(
+            elevation: 0,
+            backgroundColor: primaryColor,
+            shape: const CircleBorder(),
+            onPressed: () async {
+              String idJadwalTerpilih = jadwalList.isNotEmpty ? jadwalList[0]['jadwalId']?.toString() ?? '' : '';
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ScanBarcodePage(jadwalId: idJadwalTerpilih),
+                ),
+              );
+              if (result == true) getJadwal();
+            },
+            child: const Icon(Icons.qr_code_scanner_rounded, color: Colors.white, size: 32),
+          ),
         ),
-      ),
-    );
-  }
-
-  Widget _navItem({required IconData icon, required String label, bool active = false, required VoidCallback onTap}) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 26, color: active ? primaryColor : Colors.grey.shade600),
-          const SizedBox(height: 4),
-          Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: active ? primaryColor : Colors.grey.shade600)),
-        ],
       ),
     );
   }
@@ -366,7 +343,7 @@ class JadwalCard extends StatelessWidget {
   final String id;
   final String nama;
   final String alamat;
-  final String catatan; // 🔥 Properti catatan ditambahkan
+  final String catatan;
   final String jam;
   final String status;
   final VoidCallback onLihatLokasi;
@@ -377,7 +354,7 @@ class JadwalCard extends StatelessWidget {
     required this.id,
     required this.nama,
     required this.alamat,
-    required this.catatan, // 🔥 Tambah ke constructor
+    required this.catatan,
     required this.jam,
     required this.status,
     required this.onLihatLokasi,
@@ -421,7 +398,6 @@ class JadwalCard extends StatelessWidget {
                   children: [
                     Text(nama, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: darkTextColor, letterSpacing: -0.3)),
                     const SizedBox(height: 8),
-                    // BARIS ALAMAT
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -431,7 +407,6 @@ class JadwalCard extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 6),
-                    // 🔥 BARIS CATATAN NASABAH
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
