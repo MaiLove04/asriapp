@@ -5,7 +5,7 @@ import '../services/client_helper.dart';
 
 import '../../config.dart';
 import '../services/jadwal_service.dart';
-import '../services/dashboard_kurir_service.dart'; // 🔥 Import dashboard service untuk ambil data setor sampah
+import '../services/dashboard_kurir_service.dart';
 import 'NotifikasiKurirScreen.dart';
 import 'RiwayatKurirScreen.dart';
 import 'ProfilKurirScreen.dart';
@@ -29,9 +29,7 @@ class JadwalJemputScreen extends StatefulWidget {
 
 class _JadwalJemputScreenState extends State<JadwalJemputScreen> {
   List<dynamic> jadwalList = [];
-  List<dynamic> riwayatSetorList = []; // 🔥 Menyimpan data dari tabel setor sampah
   bool isLoading = true;
-  String selectedFilter = "Semua";
 
   final TextEditingController searchController = TextEditingController();
   String searchQuery = "";
@@ -63,16 +61,11 @@ class _JadwalJemputScreenState extends State<JadwalJemputScreen> {
         return;
       }
 
-      // 1. Ambil data Jadwal Penjemputan
       final resultJadwal = await JadwalService.getJadwalKurir(userId);
-
-      // 2. Ambil data Setor Sampah dari Dashboard Service (aktivitas_terbaru)
-      final resultDashboard = await DashboardKurirService.getDashboard(userId);
 
       if (!mounted) return;
       setState(() {
         jadwalList = resultJadwal;
-        riwayatSetorList = resultDashboard?['aktivitas_terbaru'] ?? []; // 🔥 Mengambil riwayat dari tabel setor_sampahs
         isLoading = false;
       });
     } catch (e) {
@@ -143,38 +136,14 @@ class _JadwalJemputScreenState extends State<JadwalJemputScreen> {
       );
     }
 
-    // =========================================================================
-    // 🛠️ LOGIKA FILTER BARU: JIKA "SELESAI" AMBIL DATA DARI RIWAYAT SETOR SAMPAH
-    // =========================================================================
-    List<dynamic> filteredList = [];
+    // 🔥 MENAMPILKAN SEMUA DATA JADWAL (Hanya disaring berdasarkan kolom pencarian)
+    List<dynamic> filteredList = jadwalList.where((jadwal) {
+      String namaNasabah = (jadwal['nasabah']?['name'] ?? '').toString().toLowerCase();
+      String alamatTugas = (jadwal['alamat'] ?? '').toString().toLowerCase();
 
-    if (selectedFilter == "Selesai") {
-      // Mengambil dari tabel/list setor sampahs yang sudah sukses dilakukan
-      filteredList = riwayatSetorList.where((setor) {
-        String namaJenis = (setor['jenis_sampah']?['nama'] ?? '').toString().toLowerCase();
-        return namaJenis.contains(searchQuery.toLowerCase());
-      }).toList();
-    } else {
-      // Mengambil dari list jadwal penjemputan aktif
-      filteredList = jadwalList.where((jadwal) {
-        String status = (jadwal['status'] ?? 'terjadwal').toString().toLowerCase();
-        bool matchFilter = true;
-
-        if (selectedFilter == "Hari Ini") {
-          matchFilter = (status == 'terjadwal' || status == 'pending' || status == 'proses' || status == 'on_progress');
-        } else if (selectedFilter == "Proses") {
-          matchFilter = (status == 'proses' || status == 'on_progress');
-        }
-
-        String namaNasabah = (jadwal['nasabah']?['name'] ?? '').toString().toLowerCase();
-        String alamatTugas = (jadwal['alamat'] ?? '').toString().toLowerCase();
-
-        bool matchSearch = namaNasabah.contains(searchQuery.toLowerCase()) ||
-            alamatTugas.contains(searchQuery.toLowerCase());
-
-        return matchFilter && matchSearch;
-      }).toList();
-    }
+      return namaNasabah.contains(searchQuery.toLowerCase()) ||
+          alamatTugas.contains(searchQuery.toLowerCase());
+    }).toList();
 
     return Scaffold(
       backgroundColor: backgroundColor,
@@ -220,9 +189,7 @@ class _JadwalJemputScreenState extends State<JadwalJemputScreen> {
                   const SizedBox(height: 12),
                   Center(
                     child: Text(
-                      selectedFilter == "Selesai"
-                          ? "Ada ${filteredList.length} catatan setoran selesai"
-                          : "Ada ${filteredList.length} tugas penjemputan aktif",
+                      "Ada ${filteredList.length} total tugas penjemputan",
                       style: const TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.bold),
                     ),
                   ),
@@ -233,13 +200,13 @@ class _JadwalJemputScreenState extends State<JadwalJemputScreen> {
 
           // ================= SEARCH BAR =================
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 12), // Padding disesuaikan karena filter di bawahnya hilang
             child: TextField(
               controller: searchController,
               onChanged: (value) => setState(() => searchQuery = value),
               style: const TextStyle(color: darkTextColor, fontWeight: FontWeight.bold),
               decoration: InputDecoration(
-                hintText: selectedFilter == "Selesai" ? "Cari jenis sampah..." : "Cari nama nasabah atau alamat...",
+                hintText: "Cari nama nasabah atau alamat...",
                 hintStyle: const TextStyle(color: greyTextColor),
                 prefixIcon: const Icon(Icons.search_rounded, color: primaryColor),
                 suffixIcon: searchQuery.isNotEmpty
@@ -261,22 +228,7 @@ class _JadwalJemputScreenState extends State<JadwalJemputScreen> {
             ),
           ),
 
-          // ================= FILTER CHIPS =================
-          SizedBox(
-            height: 45,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              children: [
-                _buildFilterChip("Semua"),
-                _buildFilterChip("Hari Ini"),
-                _buildFilterChip("Proses"),
-                _buildFilterChip("Selesai"),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 12),
+          // ⚠️ Catatan: Baris Filter Chips (Semua, Hari Ini, Proses, Selesai) telah dihilangkan dari antarmuka tampilan.
 
           // ================= CARDS LIST =================
           Expanded(
@@ -288,7 +240,7 @@ class _JadwalJemputScreenState extends State<JadwalJemputScreen> {
                   Icon(Icons.assignment_late_rounded, size: 64, color: Colors.grey.shade400),
                   const SizedBox(height: 12),
                   Text(
-                    selectedFilter == "Selesai" ? "Belum ada catatan setoran selesai" : "Tidak ada jadwal penjemputan",
+                    "Tidak ada jadwal penjemputan",
                     style: TextStyle(fontSize: 16, color: Colors.grey.shade600, fontWeight: FontWeight.bold),
                   ),
                 ],
@@ -303,12 +255,6 @@ class _JadwalJemputScreenState extends State<JadwalJemputScreen> {
                 itemBuilder: (context, index) {
                   final item = filteredList[index];
 
-                  // 🔥 JIKA FILTER SELESAI, TAMPILKAN KARTU NOTA SETOR SAMPAH
-                  if (selectedFilter == "Selesai") {
-                    return _ActivitySelesaiCard(data: item);
-                  }
-
-                  // TAMPILKAN JADWAL SEPERTI BIASA UNTUK FILTER LAINNYA
                   String jamFormatted = "--:--";
                   if (item['created_at'] != null && item['created_at'].toString().length >= 16) {
                     try {
@@ -403,27 +349,6 @@ class _JadwalJemputScreenState extends State<JadwalJemputScreen> {
     );
   }
 
-  Widget _buildFilterChip(String title) {
-    bool isSelected = (selectedFilter == title);
-    return GestureDetector(
-      onTap: () => setState(() => selectedFilter = title),
-      child: Container(
-        margin: const EdgeInsets.only(right: 10),
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        decoration: BoxDecoration(
-          color: isSelected ? primaryColor : Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: isSelected ? primaryColor : Colors.grey.shade300, width: 1),
-        ),
-        alignment: Alignment.center,
-        child: Text(
-          title,
-          style: TextStyle(color: isSelected ? Colors.white : darkTextColor, fontWeight: FontWeight.w900, fontSize: 13),
-        ),
-      ),
-    );
-  }
-
   Widget _navItem({required IconData icon, required String label, bool active = false, required VoidCallback onTap}) {
     return GestureDetector(
       onTap: onTap,
@@ -433,61 +358,6 @@ class _JadwalJemputScreenState extends State<JadwalJemputScreen> {
           Icon(icon, size: 26, color: active ? primaryColor : Colors.grey.shade600),
           const SizedBox(height: 4),
           Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: active ? primaryColor : Colors.grey.shade600)),
-        ],
-      ),
-    );
-  }
-}
-
-// 🔥 WIDGET KARTU BARU KHUSUS UNTUK DATA RIWAYAT SETORAN SELESAI (`setor_sampahs`)
-class _ActivitySelesaiCard extends StatelessWidget {
-  final Map<String, dynamic> data;
-  const _ActivitySelesaiCard({required this.data});
-
-  @override
-  Widget build(BuildContext context) {
-    String namaJenis = data['jenis_sampah']?['nama'] ?? 'Sampah';
-    String tanggal = data['created_at_formatted'] ?? data['created_at'] ?? '-';
-    String totalHarga = "Rp ${data['total']?.toString() ?? '0'}";
-    String beratSampah = "${data['berat']?.toString() ?? '0'} Kg";
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: primaryColor.withOpacity(0.12), width: 1.5),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 8, offset: const Offset(0, 4))],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: const BoxDecoration(color: softGreenColor, shape: BoxShape.circle),
-            child: const Icon(Icons.check_circle_rounded, color: primaryColor, size: 24),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(namaJenis, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: darkTextColor)),
-                const SizedBox(height: 4),
-                Text(tanggal, style: const TextStyle(fontSize: 12, color: greyTextColor, fontWeight: FontWeight.w500)),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(totalHarga, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: primaryColor)),
-              const SizedBox(height: 4),
-              Text(beratSampah, style: const TextStyle(fontSize: 13, color: darkTextColor, fontWeight: FontWeight.bold)),
-            ],
-          ),
         ],
       ),
     );
@@ -516,9 +386,16 @@ class JadwalCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Color statusColor = status.toLowerCase() == 'proses' || status.toLowerCase() == 'on_progress'
-        ? Colors.blue.shade800
-        : Colors.orange.shade800;
+    Color statusColor;
+    String displayStatus = status.toLowerCase();
+
+    if (displayStatus == 'selesai' || displayStatus == 'completed') {
+      statusColor = Colors.green.shade800;
+    } else if (displayStatus == 'proses' || displayStatus == 'on_progress') {
+      statusColor = Colors.blue.shade800;
+    } else {
+      statusColor = Colors.orange.shade800;
+    }
 
     return Container(
       padding: const EdgeInsets.all(18),
