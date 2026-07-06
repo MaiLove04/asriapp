@@ -42,13 +42,20 @@ class JadwalService {
   // ================= GET JADWAL AKTIF NASABAH =================
   static Future<Map<String, dynamic>?> getJadwalNasabah(int id) async {
     try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token') ?? '';
+
       final url = Uri.parse('${AppConfig.baseUrl}/nasabah/jadwal/$id');
       print("DEBUG JADWAL - FETCHING FOR USER: $id");
       print("DEBUG JADWAL - URL: $url");
       
-      final response = await _client.get(url, headers: {
-        "Accept": "application/json",
-      });
+      final response = await _client.get(
+        url,
+        headers: {
+          "Accept": "application/json",
+          if (token.isNotEmpty) "Authorization": "Bearer $token",
+        },
+      );
       
       print("DEBUG JADWAL - STATUS: ${response.statusCode}");
       print("DEBUG JADWAL - BODY: ${response.body}");

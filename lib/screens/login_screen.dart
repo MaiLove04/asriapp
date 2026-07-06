@@ -4,17 +4,16 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
-// import halaman kamu
 import 'package:asriapp/screens/register_screen.dart';
 import 'package:asriapp/screens/kurir/dashboard_kurir.dart';
 import 'package:asriapp/screens/user/dashboard_screen.dart';
 import 'package:asriapp/screens/forgot_password_screen.dart';
 
-// Konsistensi palet warna alam/eco sesuai branding ASRI kamu
+// Konsistensi palet warna alam/eco sesuai branding ASRI
 const primaryColor = Color(0xFF2F6B2F);
 const secondaryColor = Color(0xFF58C063);
-const backgroundColor = Color(0xFFF4F7F5); // Lebih soft abu-kehijauan ringan
-const darkTextColor = Color(0xFF1A301A);   // Hijau gelap pekat untuk teks formal
+const backgroundColor = Color(0xFFF4F7F5);
+const darkTextColor = Color(0xFF1A301A);
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -30,10 +29,8 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController passwordController = TextEditingController();
 
   bool isLoading = false;
-  bool rememberMe = false;
   bool _obscurePassword = true;
 
-  // 🔥 FUNCTION LOGIN (Fungsi asli milik Mai, 100% dipertahankan)
   Future<void> login() async {
     setState(() {
       isLoading = true;
@@ -68,18 +65,13 @@ class _LoginScreenState extends State<LoginScreen> {
         if (role == 'kurir') {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(
-              builder: (_) => const DashboardKurir(),
-            ),
+            MaterialPageRoute(builder: (_) => const DashboardKurir()),
           );
         } else {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (_) => DashboardScreen(
-                name: name,
-                foto: foto,
-              ),
+              builder: (_) => DashboardScreen(name: name, foto: foto),
             ),
           );
         }
@@ -89,7 +81,9 @@ class _LoginScreenState extends State<LoginScreen> {
           SnackBar(
             backgroundColor: Colors.redAccent,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
             content: Text(data['message'] ?? "Login gagal"),
           ),
         );
@@ -100,7 +94,9 @@ class _LoginScreenState extends State<LoginScreen> {
         SnackBar(
           backgroundColor: Colors.redAccent,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           content: Text('Error: $e'),
         ),
       );
@@ -118,94 +114,91 @@ class _LoginScreenState extends State<LoginScreen> {
       backgroundColor: backgroundColor,
       body: Stack(
         children: [
-          // 🎨 ELEMEN DEKORASI BACKGROUND BIAR GREGET (Top Right Blur Circle)
+          // ELEMEN DEKORASI BACKGROUND (Diperhalus agar tidak mendominasi konten utama)
           Positioned(
-            top: -60,
-            right: -60,
+            top: -50,
+            right: -50,
             child: Container(
-              width: 200,
-              height: 200,
+              width: 180,
+              height: 180,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: secondaryColor.withOpacity(0.15),
+                color: secondaryColor.withOpacity(0.1),
               ),
             ),
           ),
-          // 🎨 ELEMEN DEKORASI BACKGROUND (Bottom Left Blur Circle)
           Positioned(
-            bottom: -80,
-            left: -80,
+            bottom: -60,
+            left: -60,
             child: Container(
-              width: 240,
-              height: 240,
+              width: 220,
+              height: 220,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: primaryColor.withOpacity(0.08),
+                color: primaryColor.withOpacity(0.05),
               ),
             ),
           ),
 
-          // UTAMA
+          // KONTEN UTAMA
           SafeArea(
             child: Center(
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 20,
+                ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // 🔥 LOGO ASRI MAI
+                    // LOGO ASRI
                     Hero(
                       tag: 'logo_asri',
                       child: Image.asset(
                         "assets/images/logo_asri.png",
-                        width: 150,
-                        height: 150,
+                        width: 110,
+                        height: 110,
                         fit: BoxFit.contain,
                       ),
                     ),
-                    const SizedBox(height: 1),
+                    const SizedBox(height: 12),
 
-                    // 🔥 TULISAN BRANDING BESAR "ASRI"
+                    // TULISAN BRANDING BESAR "ASRI"
                     Text(
                       "ASRI",
                       style: TextStyle(
-                        fontSize: 40,
-                        // GANTI MENJADI INI:
-                        fontWeight: FontWeight.w900, //  Ini alternatif paling tebal (setara Black) // Super tebal biar kokoh dan mantap
+                        fontSize: 34,
+                        fontWeight: FontWeight.w800,
                         color: darkTextColor,
-                        letterSpacing: 1.5,
+                        letterSpacing: 0.5,
                       ),
                     ),
+                    const SizedBox(height: 6),
 
-                    // 🔥 SUB-HEADING ADMIN
+                    // SUB-HEADING (Lebih kontras dan mudah dibaca oleh lansia)
                     Text(
                       "Kelola Sampahmu, Asri Lingkunganmu",
+                      textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: Colors.grey.shade600,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.2,
+                        color: Colors.grey.shade700,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 28),
 
-                    // 🔥 ELEGAN GLASSMORPHISM CARD FORM
+                    // CARD FORM LOGIN
                     Container(
-                      padding: const EdgeInsets.all(24),
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(28), // Lebih membulat estetik
+                        borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.04),
-                            blurRadius: 24,
-                            offset: const Offset(0, 10),
-                          ),
-                          BoxShadow(
-                            color: primaryColor.withOpacity(0.02),
-                            blurRadius: 10,
-                            offset: const Offset(0, -2),
+                            color: Colors.black.withOpacity(0.03),
+                            blurRadius: 16,
+                            offset: const Offset(0, 8),
                           ),
                         ],
                       ),
@@ -214,44 +207,73 @@ class _LoginScreenState extends State<LoginScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // TEKS INSTRUKSI DI DALAM CARD
                             Text(
-                              "Silakan masuk untuk mengelola bank sampah",
+                              "Silakan masuk ke akun Anda",
                               style: TextStyle(
-                                color: Colors.grey.shade600,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
+                                color: darkTextColor.withOpacity(0.85),
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 20),
 
                             // NO HP FIELD
                             TextFormField(
                               controller: phoneController,
                               keyboardType: TextInputType.phone,
-                              style: const TextStyle(color: Colors.black87, fontSize: 15),
+                              style: const TextStyle(
+                                color: Colors.black87,
+                                fontSize: 16,
+                              ),
                               decoration: InputDecoration(
-                                hintText: "Nomor HP",
-                                hintStyle: TextStyle(color: Colors.grey.shade400),
-                                prefixIcon: const Icon(Icons.phone_android_rounded, color: primaryColor, size: 22),
+                                labelText: "Nomor HP",
+                                labelStyle: TextStyle(
+                                  color: Colors.grey.shade600,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                hintText: "Contoh: 08123456789",
+                                hintStyle: TextStyle(
+                                  color: Colors.grey.shade400,
+                                  fontSize: 14,
+                                ),
+                                prefixIcon: const Icon(
+                                  Icons.phone_android_rounded,
+                                  color: primaryColor,
+                                  size: 20,
+                                ),
                                 filled: true,
-                                fillColor: backgroundColor.withOpacity(0.5), // Efek kontras halus
-                                contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
+                                fillColor: backgroundColor.withOpacity(0.4),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                  horizontal: 16,
+                                ),
                                 enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                  borderSide: BorderSide(color: Colors.grey.withOpacity(0.08)),
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(
+                                    color: Colors.grey.shade300,
+                                    width: 1,
+                                  ),
                                 ),
                                 focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                  borderSide: const BorderSide(color: primaryColor, width: 1.5),
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: const BorderSide(
+                                    color: primaryColor,
+                                    width: 1.8,
+                                  ),
                                 ),
                                 errorBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                  borderSide: const BorderSide(color: Colors.redAccent, width: 1),
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: const BorderSide(
+                                    color: Colors.redAccent,
+                                    width: 1,
+                                  ),
                                 ),
                                 focusedErrorBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                  borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: const BorderSide(
+                                    color: Colors.redAccent,
+                                    width: 1.8,
+                                  ),
                                 ),
                               ),
                               validator: (value) {
@@ -259,27 +281,44 @@ class _LoginScreenState extends State<LoginScreen> {
                                   return "Nomor HP tidak boleh kosong";
                                 }
                                 if (value.length < 10) {
-                                  return "Nomor HP tidak valid";
+                                  return "Nomor HP minimal 10 digit";
                                 }
                                 return null;
                               },
                             ),
                             const SizedBox(height: 16),
 
-                            // PASSWORD FIELD WITH SHOW/HIDE TOGGLE
+                            // PASSWORD FIELD
                             TextFormField(
                               controller: passwordController,
                               obscureText: _obscurePassword,
-                              style: const TextStyle(color: Colors.black87, fontSize: 15),
+                              style: const TextStyle(
+                                color: Colors.black87,
+                                fontSize: 16,
+                              ),
                               decoration: InputDecoration(
-                                hintText: "Password",
-                                hintStyle: TextStyle(color: Colors.grey.shade400),
-                                prefixIcon: const Icon(Icons.lock_outline_rounded, color: primaryColor, size: 22),
+                                labelText: "Password",
+                                labelStyle: TextStyle(
+                                  color: Colors.grey.shade600,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                hintText: "Masukkan password",
+                                hintStyle: TextStyle(
+                                  color: Colors.grey.shade400,
+                                  fontSize: 14,
+                                ),
+                                prefixIcon: const Icon(
+                                  Icons.lock_outline_rounded,
+                                  color: primaryColor,
+                                  size: 20,
+                                ),
                                 suffixIcon: IconButton(
                                   icon: Icon(
-                                    _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                                    color: Colors.grey.shade500,
-                                    size: 22,
+                                    _obscurePassword
+                                        ? Icons.visibility_off_outlined
+                                        : Icons.visibility_outlined,
+                                    color: Colors.grey.shade600,
+                                    size: 20,
                                   ),
                                   onPressed: () {
                                     setState(() {
@@ -288,23 +327,38 @@ class _LoginScreenState extends State<LoginScreen> {
                                   },
                                 ),
                                 filled: true,
-                                fillColor: backgroundColor.withOpacity(0.5),
-                                contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
+                                fillColor: backgroundColor.withOpacity(0.4),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                  horizontal: 16,
+                                ),
                                 enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                  borderSide: BorderSide(color: Colors.grey.withOpacity(0.08)),
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(
+                                    color: Colors.grey.shade300,
+                                    width: 1,
+                                  ),
                                 ),
                                 focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                  borderSide: const BorderSide(color: primaryColor, width: 1.5),
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: const BorderSide(
+                                    color: primaryColor,
+                                    width: 1.8,
+                                  ),
                                 ),
                                 errorBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                  borderSide: const BorderSide(color: Colors.redAccent, width: 1),
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: const BorderSide(
+                                    color: Colors.redAccent,
+                                    width: 1,
+                                  ),
                                 ),
                                 focusedErrorBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                  borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: const BorderSide(
+                                    color: Colors.redAccent,
+                                    width: 1.8,
+                                  ),
                                 ),
                               ),
                               validator: (value) {
@@ -317,73 +371,14 @@ class _LoginScreenState extends State<LoginScreen> {
                                 return null;
                               },
                             ),
-                            const SizedBox(height: 14),
-
-                            // REMEMBER ME & FORGOT PASSWORD ROW
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Row(
-                                  children: [
-                                    SizedBox(
-                                      width: 22,
-                                      height: 22,
-                                      child: Checkbox(
-                                        value: rememberMe,
-                                        activeColor: primaryColor,
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
-                                        side: BorderSide(color: Colors.grey.shade400, width: 1.5),
-                                        onChanged: (value) {
-                                          setState(() {
-                                            rememberMe = value!;
-                                          });
-                                        },
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    GestureDetector(
-                                      onTap: () {
-                                        setState(() {
-                                          rememberMe = !rememberMe;
-                                        });
-                                      },
-                                      child: Text(
-                                        "Remember Me",
-                                        style: TextStyle(color: Colors.grey.shade700, fontSize: 13, fontWeight: FontWeight.w500),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                TextButton(
-                                  onPressed: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                          builder: (_) =>
-                                              const ForgotPasswordScreen()),
-                                    );
-                                  },
-                                  style: TextButton.styleFrom(
-                                      padding: EdgeInsets.zero,
-                                      minimumSize: Size.zero),
-                                  child: const Text(
-                                    "Forgot Password?",
-                                    style: TextStyle(
-                                        color: primaryColor,
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.bold),
-                                  ),
-                                )
-                              ],
-                            ),
                             const SizedBox(height: 24),
 
-                            // BUTTON LOGIN (MODERN GRADIENT DESIGN)
+                            // BUTTON LOGIN
                             Container(
                               width: double.infinity,
-                              height: 56,
+                              height: 52,
                               decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(16),
+                                borderRadius: BorderRadius.circular(12),
                                 gradient: const LinearGradient(
                                   colors: [primaryColor, secondaryColor],
                                   begin: Alignment.topLeft,
@@ -391,9 +386,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: primaryColor.withOpacity(0.3),
-                                    blurRadius: 16,
-                                    offset: const Offset(0, 6),
+                                    color: primaryColor.withOpacity(0.2),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 4),
                                   ),
                                 ],
                               ),
@@ -402,7 +397,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   backgroundColor: Colors.transparent,
                                   shadowColor: Colors.transparent,
                                   shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(16),
+                                    borderRadius: BorderRadius.circular(12),
                                   ),
                                 ),
                                 onPressed: isLoading
@@ -414,20 +409,20 @@ class _LoginScreenState extends State<LoginScreen> {
                                 },
                                 child: isLoading
                                     ? const SizedBox(
-                                  width: 24,
-                                  height: 24,
+                                  width: 22,
+                                  height: 22,
                                   child: CircularProgressIndicator(
                                     color: Colors.white,
                                     strokeWidth: 2.5,
                                   ),
                                 )
                                     : const Text(
-                                  "Masuk Sekarang",
+                                  "Masuk",
                                   style: TextStyle(
                                     fontSize: 16,
                                     color: Colors.white,
                                     fontWeight: FontWeight.bold,
-                                    letterSpacing: .5,
+                                    letterSpacing: 0.5,
                                   ),
                                 ),
                               ),
@@ -436,9 +431,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 28),
+                    const SizedBox(height: 20),
 
-                    // REGISTER NAVIGATION TEXT (DI LUAR BOX CARD AGAR SEPERTI GAMBAR)
+                    // TEKS NAVIGASI DAFTAR
                     TextButton(
                       onPressed: () {
                         Navigator.push(
@@ -449,16 +444,26 @@ class _LoginScreenState extends State<LoginScreen> {
                         );
                       },
                       style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10)
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
                       ),
                       child: RichText(
-                        text: const TextSpan(
+                        text: TextSpan(
                           text: "Belum punya akun? ",
-                          style: TextStyle(color: Colors.grey, fontSize: 14),
-                          children: [
+                          style: TextStyle(
+                            color: Colors.grey.shade700,
+                            fontSize: 14,
+                          ),
+                          children: const [
                             TextSpan(
-                              text: "Daftar",
-                              style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold),
+                              text: "Daftar sekarang",
+                              style: TextStyle(
+                                color: primaryColor,
+                                fontWeight: FontWeight.bold,
+                                decoration: TextDecoration.underline,
+                              ),
                             ),
                           ],
                         ),

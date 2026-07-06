@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/dashboard_kurir_service.dart';
 import '../../config.dart';
-import '../login_screen.dart';
 import '../kurir/JadwalJemputScreen.dart';
 import 'ProfilKurirScreen.dart';
 import 'RiwayatKurirScreen.dart';
@@ -29,18 +28,6 @@ class DashboardKurir extends StatefulWidget {
 class _DashboardKurirState extends State<DashboardKurir> {
   Map<String, dynamic>? dashboardData;
   bool isLoading = true;
-
-  Future<void> logout() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
-    if (!mounted) return;
-
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
-          (route) => false,
-    );
-  }
 
   Future<void> getDashboard() async {
     try {
@@ -123,7 +110,7 @@ class _DashboardKurirState extends State<DashboardKurir> {
             physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
             child: Column(
               children: [
-                _HeaderSection(onLogout: logout),
+                const _HeaderSection(),
                 Transform.translate(
                   offset: const Offset(0, -30),
                   child: Padding(
@@ -143,7 +130,7 @@ class _DashboardKurirState extends State<DashboardKurir> {
 
                       _sectionTitle("Menu Akses Cepat"),
                       const SizedBox(height: 8),
-                      const _QuickActionsGrid(), // Menggunakan Grid 2x2 yang lebih ramah lansia
+                      const _QuickActionsGrid(),
                       const SizedBox(height: 28),
 
                       _sectionTitle("Catatan Performa"),
@@ -169,7 +156,7 @@ class _DashboardKurirState extends State<DashboardKurir> {
                           : Column(
                         children: aktivitasTerbaru.map((item) => _ActivityCard(data: item)).toList(),
                       ),
-                      const SizedBox(height: 140),
+                      const SizedBox(height: 40),
                     ],
                   ),
                 ),
@@ -177,9 +164,7 @@ class _DashboardKurirState extends State<DashboardKurir> {
             ),
           ),
         ),
-        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
         floatingActionButton: _ScanFab(jadwalId: idJadwalAktif),
-        bottomNavigationBar: _PremiumBottomNav(onRefresh: getDashboard),
       ),
     );
   }
@@ -197,7 +182,6 @@ class _DashboardKurirState extends State<DashboardKurir> {
   }
 }
 
-// 🔥 PEMBARUAN: Menu Akses Cepat menggunakan Grid 2x2 (Target Sentuh Jauh Lebih Besar & Bebas Overflow)
 class _QuickActionsGrid extends StatelessWidget {
   const _QuickActionsGrid();
 
@@ -359,8 +343,7 @@ class _SummaryCard extends StatelessWidget {
 }
 
 class _HeaderSection extends StatelessWidget {
-  final VoidCallback onLogout;
-  const _HeaderSection({required this.onLogout});
+  const _HeaderSection();
 
   @override
   Widget build(BuildContext context) {
@@ -393,31 +376,6 @@ class _HeaderSection extends StatelessWidget {
               const Expanded(
                 child: Text("ASRI", style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
               ),
-              IconButton(
-                icon: const Icon(Icons.power_settings_new_rounded, color: Colors.white, size: 26),
-                tooltip: "Keluar Akun",
-                onPressed: () {
-                  showDialog(
-                    context: context,
-                    builder: (_) => AlertDialog(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                      title: const Text("Keluar Akun", style: TextStyle(fontWeight: FontWeight.bold)),
-                      content: const Text("Apakah Anda ingin keluar dari akun Anda saat ini?"),
-                      actions: [
-                        TextButton(onPressed: () => Navigator.pop(context), child: const Text("Batal", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16))),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(backgroundColor: Colors.red.shade800, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-                          onPressed: () {
-                            Navigator.pop(context);
-                            onLogout();
-                          },
-                          child: const Text("Keluar", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
             ],
           ),
         ),
@@ -438,7 +396,6 @@ class _ActiveMissionCard extends StatelessWidget {
     int totalTugas = dashboardData?['total_pesanan'] ?? 0;
     int tugasSelesai = dashboardData?['total_pesanan_selesai'] ?? 0;
     double progressValue = totalTugas > 0 ? (tugasSelesai / totalTugas) : 0.0;
-    int progressPercent = (progressValue * 100).toInt();
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -447,26 +404,38 @@ class _ActiveMissionCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              fotoPath != null && fotoPath.isNotEmpty
-                  ? Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: primaryColor.withOpacity(0.3), width: 2),
-                ),
-                child: ClipOval(
-                  child: Image.network(
-                    "$cleanBaseUrl/$fotoPath",
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => const Icon(Icons.person, size: 32, color: greyTextColor),
+              InkWell(
+                onTap: () async {
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const ProfilKurirScreen()),
+                  );
+                  if (context.mounted) {
+                    context.findAncestorStateOfType<_DashboardKurirState>()?.getDashboard();
+                  }
+                },
+                borderRadius: BorderRadius.circular(28),
+                child: fotoPath != null && fotoPath.isNotEmpty
+                    ? Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: primaryColor.withOpacity(0.3), width: 2),
                   ),
+                  child: ClipOval(
+                    child: Image.network(
+                      "$cleanBaseUrl/$fotoPath",
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => const Icon(Icons.person, size: 32, color: greyTextColor),
+                    ),
+                  ),
+                )
+                    : const CircleAvatar(
+                  radius: 28,
+                  backgroundColor: softGreenColor,
+                  child: Icon(Icons.person_rounded, size: 32, color: primaryColor),
                 ),
-              )
-                  : CircleAvatar(
-                radius: 28,
-                backgroundColor: softGreenColor,
-                child: const Icon(Icons.person_rounded, size: 32, color: primaryColor),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -514,9 +483,8 @@ class _ActiveMissionCard extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisAlignment: MainAxisAlignment.center, // Diubah ke center agar posisinya tepat di tengah card
             children: [
-              Text("$progressPercent% Selesai", style: const TextStyle(fontWeight: FontWeight.bold, color: darkTextColor, fontSize: 14)),
               _startButton(context),
             ],
           ),
@@ -642,59 +610,6 @@ class _ActivityCard extends StatelessWidget {
   }
 }
 
-class _PremiumBottomNav extends StatelessWidget {
-  final VoidCallback onRefresh;
-  const _PremiumBottomNav({required this.onRefresh});
-
-  @override
-  Widget build(BuildContext context) {
-    return BottomAppBar(
-      height: 74,
-      shape: const CircularNotchedRectangle(),
-      notchMargin: 8,
-      elevation: 16,
-      color: Colors.white,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _navItem(icon: Icons.home_rounded, label: "Beranda", active: true, onTap: () {}),
-          _navItem(
-              icon: Icons.history_rounded,
-              label: "Riwayat",
-              onTap: () {
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const RiwayatKurirScreen()));
-              }
-          ),
-          const SizedBox(width: 44),
-          _navItem(icon: Icons.notifications_rounded, label: "Notifikasi", onTap: () {}),
-          _navItem(
-            icon: Icons.account_circle_rounded,
-            label: "Profil",
-            onTap: () async {
-              await Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfilKurirScreen()));
-              onRefresh();
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _navItem({required IconData icon, required String label, bool active = false, required VoidCallback onTap}) {
-    return InkWell(
-      onTap: onTap,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 24, color: active ? primaryColor : Colors.grey.shade500),
-          const SizedBox(height: 4),
-          Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: active ? primaryColor : Colors.grey.shade600)),
-        ],
-      ),
-    );
-  }
-}
-
 class _ScanFab extends StatelessWidget {
   final String? jadwalId;
   const _ScanFab({required this.jadwalId});
@@ -705,9 +620,9 @@ class _ScanFab extends StatelessWidget {
     return Container(
       height: 68,
       width: 68,
-      margin: const EdgeInsets.only(bottom: 4),
+      margin: const EdgeInsets.only(bottom: 8),
       child: FloatingActionButton(
-        elevation: 4,
+        elevation: 6,
         backgroundColor: adaJadwal ? primaryColor : Colors.orange.shade800,
         shape: const CircleBorder(),
         onPressed: () async {
@@ -725,13 +640,12 @@ class _ScanFab extends StatelessWidget {
   }
 }
 
-// 🔥 PEMBARUAN: Desain Kartu dengan Border Halus untuk Meningkatkan Kontras Visual bagi Lansia
 BoxDecoration cardDecoration() {
   return BoxDecoration(
     color: Colors.white,
     borderRadius: BorderRadius.circular(20),
     border: Border.all(
-      color: primaryColor.withOpacity(0.12), // Border tipis untuk memisahkan kartu dengan background
+      color: primaryColor.withOpacity(0.12),
       width: 1.5,
     ),
     boxShadow: [
