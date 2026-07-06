@@ -139,6 +139,7 @@ class SetorSampahService {
   }
 
   // ================= 5. SUBMIT SETOR SAMPAH (FIXED UUID VALIDATION) =================
+// ================= 5. SUBMIT SETOR SAMPAH (FIXED POST/PATCH & 301) =================
   static Future<http.Response> submitSetoran({
     required int userId,
     required int kurirId,
@@ -152,20 +153,25 @@ class SetorSampahService {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token') ?? '';
 
-    var urlString = '${AppConfig.baseUrl}/setor-sampah';
-    
-    // 🛡️ Filter ID agar tidak mengirim "0" atau "null" ke server (Mencegah Error UUID)
-    bool isJadwalValid = jadwalId != null && 
-                        jadwalId.isNotEmpty && 
-                        jadwalId != "0" && 
-                        jadwalId != "null";
+    // 1. Tentukan base path awal
+    String urlString = '${AppConfig.baseUrl}/setor-sampah';
+    bool isByJadwal = false;
 
-    if (setor_sampah_id.isNotEmpty && setor_sampah_id != "0") {
-      urlString += '/request-nasabah/$setor_sampah_id';
+    bool isJadwalValid = jadwalId != null &&
+        jadwalId.isNotEmpty &&
+        jadwalId != "0" &&
+        jadwalId != "null";
+
+    // 2. Tentukan kelanjutan URL secara bersih (mencegah penumpukan penyebab 301)
+    if (setor_sampah_id.isNotEmpty && setor_sampah_id != "0" && setor_sampah_id != "null") {
+      urlString = '$urlString/request-nasabah/$setor_sampah_id';
+      isByJadwal = false;
     } else if (isJadwalValid) {
-      urlString += '/jadwal-admin/$jadwalId';
+      urlString = '$urlString/jadwal-admin/$jadwalId';
+      isByJadwal = true; // Tandai bahwa ini transaksi jadwal admin
     }
 
+    // 3. Parse URI dipindahkan ke sini setelah string URL benar-benar final terbentuk
     var uri = Uri.parse(urlString);
 
     final Map<String, dynamic> body = {
@@ -177,24 +183,39 @@ class SetorSampahService {
       "sampah_list": jsonEncode(sampahList),
     };
 
-    // Hanya kirim jadwal_id jika isinya valid (bukan "0")
     if (isJadwalValid) {
       body['jadwal_id'] = jadwalId;
     }
 
-    print("--- DEBUG SUBMIT SETORAN ---");
-    print("URL: $urlString");
-    print("BODY: $body");
+    print("--- DEBUG SUBMIT SETORAN (FIX 301 & METHOD) ---");
+    print("FINAL URL: $urlString");
+    print("USING METHOD: ${isByJadwal ? 'POST' : 'PATCH'}");
+    print("BODY DATA: $body");
 
-    return await _client.patch(
-      uri,
-      headers: {
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-        if (token.isNotEmpty) "Authorization": "Bearer $token",
-      },
-      body: jsonEncode(body),
-    );
+    // 4. Kirim method secara dinamis sesuai dengan route di Laravel api.php
+    if (isByJadwal) {
+      // Jika fitur jadwal, gunakan POST sesuai perubahan api.php terbaru kamu
+      return await _client.post(
+        uri,
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          if (token.isNotEmpty) "Authorization": "Bearer $token",
+        },
+        body: jsonEncode(body),
+      );
+    } else {
+      // Jika fitur request nasabah, tetap gunakan PATCH sesuai api.php
+      return await _client.patch(
+        uri,
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          if (token.isNotEmpty) "Authorization": "Bearer $token",
+        },
+        body: jsonEncode(body),
+      );
+    }
   }
 
   // ================= 6. SETUP PIN NASABAH =================
