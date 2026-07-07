@@ -286,15 +286,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 ],
               ),
-              IconButton(
-                icon: const Icon(Icons.power_settings_new_rounded, color: Colors.white70, size: 24),
-                onPressed: () async {
-                  bool keluar = await _showExitDialog(context);
-                  if (keluar && context.mounted) {
-                    Navigator.pushReplacementNamed(context, '/login');
-                  }
-                },
-              )
+              // IconButton(
+              //   icon: const Icon(Icons.power_settings_new_rounded, color: Colors.white70, size: 24),
+              //   onPressed: () async {
+              //     bool keluar = await _showExitDialog(context);
+              //     if (keluar && context.mounted) {
+              //       Navigator.pushReplacementNamed(context, '/login');
+              //     }
+              //   },
+              // )
             ],
           ),
 

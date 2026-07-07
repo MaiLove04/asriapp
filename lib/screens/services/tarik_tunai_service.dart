@@ -16,12 +16,12 @@ class TarikTunaiService {
   }
 
   // Tambahkan fungsi ini di dalam class TarikTunaiService kamu
-  Future<int> getSaldoNasabah() async {
+  // UBAH: Dari Future<int> menjadi Future<Map<String, int>>
+  Future<Map<String, int>> getSaldoNasabah() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('token') ?? '';
-      
-      // 🔥 Ambil userId dari prefs seperti di dashboard
+
       int userId = 0;
       if (prefs.containsKey('user_id')) {
         final rawId = prefs.get('user_id');
@@ -32,9 +32,9 @@ class TarikTunaiService {
         }
       }
 
-      if (userId == 0) return 0;
+      if (userId == 0) return {'saldo_aktif': 0, 'saldo_pending': 0};
 
-      final url = Uri.parse('$baseUrl/dashboard-nasabah/$userId'); 
+      final url = Uri.parse('$baseUrl/dashboard-nasabah/$userId');
       final client = _getClient();
 
       final response = await client.get(
@@ -52,13 +52,20 @@ class TarikTunaiService {
         final data = jsonDecode(response.body);
         if (data['success'] == true) {
           var nasabahObj = data['nasabah'] ?? data['user'] ?? data;
-          return int.tryParse(nasabahObj['saldo'].toString()) ?? 0;
+
+          // UBAH: Ambil key saldo_aktif dan saldo_pending dari response API backend.
+          // Sesuaikan string key ('saldo_aktif' / 'saldo_pending') dengan nama properti yang dikirim dari API Laravel kamu.
+          return {
+            'saldo_aktif': int.tryParse(nasabahObj['saldo_aktif'].toString()) ??
+                int.tryParse(nasabahObj['saldo'].toString()) ?? 0,
+            'saldo_pending': int.tryParse(nasabahObj['saldo_pending'].toString()) ?? 0,
+          };
         }
       }
-      return 0;
+      return {'saldo_aktif': 0, 'saldo_pending': 0};
     } catch (e) {
       print("ERROR FETCH SALDO: $e");
-      return 0;
+      return {'saldo_aktif': 0, 'saldo_pending': 0};
     }
   }
 
@@ -67,8 +74,19 @@ class TarikTunaiService {
     final url = Uri.parse('$baseUrl/tarik-tunai');
     final client = _getClient();
     final token = await _getToken();
+    final prefs = await SharedPreferences.getInstance();
 
     try {
+      int userId = 0;
+      if (prefs.containsKey('user_id')) {
+        final rawId = prefs.get('user_id');
+        if (rawId is int) {
+          userId = rawId;
+        } else if (rawId is String) {
+          userId = int.tryParse(rawId) ?? 0;
+        }
+      }
+
       final response = await client.post(
         url,
         headers: {
@@ -77,12 +95,18 @@ class TarikTunaiService {
           'Authorization': 'Bearer $token',
         },
         body: jsonEncode({
-          'jumlah_nominal': jumlahNominal,
+          'user_id': userId,
+          'nominal': jumlahNominal,
+          'metode': 'Manual/Cash',
+          'nomor_hp': prefs.getString('nomor_hp') ?? '08123456789',
+          // 🔥 BARIS 'pin' DI SINI SUDAH DIHAPUS BERSIH
         }),
       );
 
+      print("RESPONS TARIK TUNAI: ${response.body}");
+
       return {
-        'success': response.statusCode == 201,
+        'success': response.statusCode == 200 || response.statusCode == 201,
         'message': jsonDecode(response.body)['message'] ?? 'Terjadi kesalahan',
       };
     } catch (e) {
@@ -91,8 +115,6 @@ class TarikTunaiService {
       client.close();
     }
   }
-
-  // 2. Admin/Nasabah: Mengambil Daftar Request
   // Bisa difilter status=pending
   Future<List<TarikTunaiModel>> getRequests({String? status}) async {
     String urlString = '$baseUrl/tarik-tunai';
