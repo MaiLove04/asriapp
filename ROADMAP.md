@@ -8,7 +8,7 @@ Gunakan file ini sebagai panduan pengujian dan pengerjaan aplikasi. Kamu bisa me
 *Tujuan: Memastikan pondasi sistem online sudah kokoh.*
 
 - [ ] **Upload Backend**: Mengunggah `UserController.php`, `AduanController.php`, `User.php`, `api.php`, dan `web.php` ke hosting.
-- [ ] **Update Database Online**: Mengakses `https://pht.my.id/up-db` di browser hingga muncul pesan sukses.
+- [ ] **Update Database Online**: Mengakses `https://simpasda.one-babel.my.id/up-db` di browser hingga muncul pesan sukses.
 - [ ] **Sinkronisasi IP/URL**: Memastikan `lib/config.dart` sudah mengarah ke URL hosting yang benar.
 - [ ] **Tes Login**: Login Kurir & Nasabah lancar tanpa error tipe data (String vs Int).
 

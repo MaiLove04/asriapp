@@ -7,7 +7,7 @@ import 'client_helper.dart';
 
 class AuthService {
   // 🔥 1. Buat satu Client Aman yang bisa dipakai bareng-bareng oleh semua fungsi di class ini
-  static http.Client get _client => getSafeClient(trustedHost: 'pht.my.id');
+  static http.Client get _client => getSafeClient(trustedHost: 'simpasda.one-babel.my.id');
 
   // ================= FUNGSI LOGIN =================
   static Future<Map<String, dynamic>> login({

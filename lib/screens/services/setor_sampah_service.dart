@@ -6,7 +6,7 @@ import 'client_helper.dart';
 
 class SetorSampahService {
   // 🔥 1. CLIENT AMAN UNTUK HOSTING (Bebas SSL Error)
-  static http.Client get _client => getSafeClient(trustedHost: 'pht.my.id');
+  static http.Client get _client => getSafeClient(trustedHost: 'simpasda.one-babel.my.id');
 
   // ================= 1. CREATE REQUEST PENJEMPUTAN (NASABAH) =================
   static Future<Map<String, dynamic>> store({

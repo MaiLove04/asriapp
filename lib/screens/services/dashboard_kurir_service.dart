@@ -6,7 +6,7 @@ import 'client_helper.dart';
 
 class DashboardKurirService {
   // 🔥 Gunakan Client Aman agar tidak error SSL di HP
-  static http.Client get _client => getSafeClient(trustedHost: 'pht.my.id');
+  static http.Client get _client => getSafeClient(trustedHost: 'simpasda.one-babel.my.id');
 
   static Future<Map<String, dynamic>> getDashboard(int id) async {
     try {

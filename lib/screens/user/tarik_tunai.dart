@@ -31,7 +31,7 @@ class _TarikTunaiPageState extends State<TarikTunaiPage> {
   void initState() {
     super.initState();
     _fetchSaldo();
-    // 🔥 UBAH: Nominal default ketikan awal disesuaikan ke minimal baru (5.000)
+    // 🔥 SINKRON: Nominal default awal disetel Rp 5.000 agar langsung bulat kelipatan 500
     _nominalController.text = formatAngka(5000);
     _nominalController.addListener(_onNominalChanged);
   }
@@ -88,9 +88,6 @@ class _TarikTunaiPageState extends State<TarikTunaiPage> {
     });
 
     if (result['success'] == true) {
-      // 🔥 BERSIH: Tidak ada pemotongan saldo buatan di memori HP.
-      // Kita murni mengandalkan reload dashboard via data server agar sinkron.
-
       if (!mounted) return;
       Navigator.pushReplacement(
         context,
@@ -110,11 +107,8 @@ class _TarikTunaiPageState extends State<TarikTunaiPage> {
   Widget build(BuildContext context) {
     bool isSaldoKurang = currentNominal > saldoAktif;
     bool isKurangDariMinimal = currentNominal < _minimalPenarikan && currentNominal > 0;
-
-    // 🔥 TAMBAHAN: Cek kelipatan pecahan 500 menggunakan modulus (%)
     bool isKelipatanSalah = currentNominal % 500 != 0 && currentNominal > 0;
 
-    // 🔥 UBAH: Tombol aktif hanya jika memenuhi semua syarat (+ aturan kelipatan wajib benar)
     bool isInputValid = currentNominal >= _minimalPenarikan && !isSaldoKurang && !isKelipatanSalah;
 
     return Scaffold(
@@ -134,7 +128,7 @@ class _TarikTunaiPageState extends State<TarikTunaiPage> {
           : SingleChildScrollView(
         child: Column(
           children: [
-            // ================= KARTU SALDO DENGAN PENDING INDIKATOR =================
+            // Kartu Saldo Utama
             Container(
               width: double.infinity,
               decoration: const BoxDecoration(
@@ -161,7 +155,7 @@ class _TarikTunaiPageState extends State<TarikTunaiPage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Text(
-                              "Saldo Aktif Anda",
+                              "Saldo Active Anda",
                               style: TextStyle(color: Color(0xFFC8E6C9), fontSize: 13, fontWeight: FontWeight.w500),
                             ),
                             const SizedBox(height: 6),
@@ -207,7 +201,6 @@ class _TarikTunaiPageState extends State<TarikTunaiPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // ================= INPUT NOMINAL BESAR =================
                   const Text(
                     "Masukkan Nominal Penarikan",
                     style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: darkTextColor),
@@ -219,7 +212,6 @@ class _TarikTunaiPageState extends State<TarikTunaiPage> {
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        // 🔥 UBAH: Box ikutan berubah warna merah kalau kelipatan tidak bulat 500
                         color: isSaldoKurang || isKurangDariMinimal || isKelipatanSalah ? Colors.red : Colors.transparent,
                         width: isSaldoKurang || isKurangDariMinimal || isKelipatanSalah ? 1.5 : 0,
                       ),
@@ -262,7 +254,7 @@ class _TarikTunaiPageState extends State<TarikTunaiPage> {
                     ),
                   ),
 
-                  // ================= TEKS VALIDASI DINAMIS =================
+                  // Teks Validasi Dinamis Kelipatan
                   Padding(
                     padding: const EdgeInsets.only(top: 8, left: 4),
                     child: Builder(
@@ -273,7 +265,7 @@ class _TarikTunaiPageState extends State<TarikTunaiPage> {
                               Icon(Icons.error_outline_rounded, color: Colors.red, size: 16),
                               SizedBox(width: 4),
                               Text(
-                                "Saldo Anda tidak mencukupi untuk penarikan ini",
+                                "Saldo Anda tidak mencukupi",
                                 style: TextStyle(fontSize: 13, color: Colors.red, fontWeight: FontWeight.w600),
                               ),
                             ],
@@ -290,13 +282,12 @@ class _TarikTunaiPageState extends State<TarikTunaiPage> {
                             ],
                           );
                         } else if (isKelipatanSalah) {
-                          // 🔥 TAMBAHAN: Peringatan visual jika mengetik pecahan acak
                           return const Row(
                             children: [
                               Icon(Icons.warning_amber_rounded, color: Colors.red, size: 16),
                               SizedBox(width: 4),
                               Text(
-                                "Nominal harus kelipatan Rp 500 (Contoh: 5.500, 6.000)",
+                                "Nominal harus kelipatan Rp 500 (Contoh: 5.500)",
                                 style: TextStyle(fontSize: 13, color: Colors.red, fontWeight: FontWeight.w600),
                               ),
                             ],
@@ -313,12 +304,12 @@ class _TarikTunaiPageState extends State<TarikTunaiPage> {
 
                   const SizedBox(height: 20),
 
-                  // ================= TOMBOL INSTAN =================
+                  // 🔥 SINKRON: Mengubah tombol instan agar semua opsinya kelipatan Rp 500 bulat yang manis
                   SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     physics: const BouncingScrollPhysics(),
                     child: Row(
-                      children: [5000, 10000, 20000, 50000, 100000].map((val) {
+                      children: [5000, 10000, 25000, 50000, 100000].map((val) {
                         return Padding(
                           padding: const EdgeInsets.only(right: 10),
                           child: _buildChipButton(val),
@@ -329,7 +320,7 @@ class _TarikTunaiPageState extends State<TarikTunaiPage> {
 
                   const SizedBox(height: 32),
 
-                  // ================= RINGKASAN DATA =================
+                  // Ringkasan Rincian
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
@@ -340,8 +331,7 @@ class _TarikTunaiPageState extends State<TarikTunaiPage> {
                       ],
                     ),
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
+                      crossAxisAlignment: CrossAxisAlignment.start,                      children: [
                         _rowRincian("Biaya Admin", "Gratis", isFree: true),
                         const Padding(
                           padding: EdgeInsets.symmetric(vertical: 14),
@@ -367,7 +357,7 @@ class _TarikTunaiPageState extends State<TarikTunaiPage> {
 
                   const SizedBox(height: 40),
 
-                  // ================= TOMBOL UTAMA =================
+                  // Tombol Konfirmasi Utama
                   SizedBox(
                     width: double.infinity,
                     height: 56,
@@ -451,7 +441,7 @@ class _TarikTunaiPageState extends State<TarikTunaiPage> {
       return;
     }
     if (nominalTarik > saldoAktif) {
-      _showSnackbar("Saldo aktif Anda tidak mencukupi untuk penarikan ini", Colors.red[700]!);
+      _showSnackbar("Saldo aktif Anda tidak mencukupi", Colors.red[700]!);
       return;
     }
 

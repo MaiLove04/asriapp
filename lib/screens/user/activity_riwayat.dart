@@ -307,16 +307,27 @@ class _RiwayatPageState extends State<RiwayatPage> {
                 itemBuilder: (context, index) {
                   final item = riwayatDiFilter[index];
 
-                  // Mapping data dari database ke UI
                   String judulKartu = (item['nama_kurir'] ?? 'Setoran Sampah').toString();
-
-                  // Jika tarik tunai, ganti judulnya
                   String jenisTx = (item['jenis_transaksi'] ?? 'masuk').toString().toLowerCase();
                   bool adalahTarikTunai = jenisTx.contains('keluar') || jenisTx.contains('tarik');
+
+                  // 🔥 AMBIL DATA STATUS DARI BACKEND LARAVEL
+                  String statusSistem = (item['status_transaksi'] ?? item['status'] ?? 'pending').toString().toLowerCase();
 
                   String subjudul = isSetor
                       ? "Kategori: ${item['judul_dinamis'] ?? '-'}"
                       : "Penarikan Saldo";
+
+                  // 🔥 DINAMISKAN SUBJUDUL APABILA PENDING / REJECTED UNTUK TARIK TUNAI
+                  if (adalahTarikTunai) {
+                    if (statusSistem == 'pending' || statusSistem == '0') {
+                      subjudul = "Menunggu Persetujuan";
+                    } else if (statusSistem == 'rejected' || statusSistem == '2') {
+                      subjudul = "Penarikan Ditolak Admin";
+                    } else {
+                      subjudul = "Penarikan Berhasil";
+                    }
+                  }
 
                   String hargaDuit = (item['nominal'] ?? '0').toString();
                   String tanggalFormatted = (item['tanggal_formatted'] ?? '-').toString();
@@ -327,6 +338,7 @@ class _RiwayatPageState extends State<RiwayatPage> {
                     price: formatDuitRupiah(hargaDuit),
                     date: tanggalFormatted,
                     isPenarikan: adalahTarikTunai,
+                    statusString: statusSistem, // 🔥 Kirim data status ke kartu widget
                     onTap: () {
                       Navigator.push(
                         context,
@@ -411,6 +423,7 @@ class TransactionCard extends StatelessWidget {
   final String price;
   final String date;
   final bool isPenarikan;
+  final String statusString; // 🔥 Properti penampung status sistem baru
   final VoidCallback onTap;
 
   const TransactionCard(
@@ -420,11 +433,35 @@ class TransactionCard extends StatelessWidget {
         required this.price,
         required this.date,
         this.isPenarikan = false,
+        required this.statusString,
         required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    Color statusColor = isPenarikan ? Colors.red.shade800 : primaryColor;
+    // 🔥 PENGKONDISIAN WARNA YANG PROFESIONAL SESUAI STATUS API
+    Color statusColor;
+    IconData iconKartu;
+    Color bgIconColor;
+
+    if (isPenarikan) {
+      if (statusString == 'pending' || statusString == '0') {
+        statusColor = const Color(0xFFE65100); // Oranye Pending
+        iconKartu = Icons.hourglass_empty_rounded;
+        bgIconColor = const Color(0xFFFFF3E0);
+      } else if (statusString == 'rejected' || statusString == '2') {
+        statusColor = const Color(0xFFC62828); // Merah Ditolak
+        iconKartu = Icons.cancel_outlined;
+        bgIconColor = const Color(0xFFFFEBEE);
+      } else {
+        statusColor = const Color(0xFF2E7D32); // Hijau Sukses Tarik
+        iconKartu = Icons.payments_rounded;
+        bgIconColor = const Color(0xFFE8F5E9);
+      }
+    } else {
+      statusColor = primaryColor; // Default Hijau untuk Setor Sampah Sukses
+      iconKartu = Icons.check_circle_rounded;
+      bgIconColor = softGreenColor;
+    }
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -449,13 +486,11 @@ class TransactionCard extends StatelessWidget {
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    color: isPenarikan ? Colors.red.shade50 : softGreenColor,
+                    color: bgIconColor, // Menggunakan background warna status dinamis
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
-                      isPenarikan
-                          ? Icons.payments_rounded
-                          : Icons.check_circle_rounded,
+                      iconKartu, // Ikon berubah otomatis mengikuti status transaksi
                       color: statusColor,
                       size: 24)),
               const SizedBox(width: 14),
@@ -474,8 +509,8 @@ class TransactionCard extends StatelessWidget {
                                   color: darkTextColor)),
                           const SizedBox(height: 4),
                           Text(subtitle,
-                              style: const TextStyle(
-                                  color: primaryColor,
+                              style: TextStyle(
+                                  color: statusColor, // Subjudul mengikuti warna status agar rapi
                                   fontSize: 14,
                                   fontWeight: FontWeight.w700)),
                           const SizedBox(height: 4),
@@ -490,7 +525,7 @@ class TransactionCard extends StatelessWidget {
                     const SizedBox(width: 8),
                     Text(price,
                         style: TextStyle(
-                          color: statusColor,
+                          color: statusColor, // Nominal uang berubah warna serasi dengan status
                           fontWeight: FontWeight.w900,
                           fontSize: 18,
                         )),

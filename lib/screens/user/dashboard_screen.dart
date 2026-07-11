@@ -1,3 +1,4 @@
+import 'package:asriapp/screens/user/riwayat_tarik_tunai.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
@@ -188,7 +189,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ),
                           if (mutasiList.isNotEmpty)
                             GestureDetector(
-                              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const RiwayatPage())),
+                              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const RiwayatTarikTunaiPage())),
                               child: const Text(
                                   "Lihat Semua",
                                   style: TextStyle(color: secondaryColor, fontWeight: FontWeight.bold, fontSize: 13)

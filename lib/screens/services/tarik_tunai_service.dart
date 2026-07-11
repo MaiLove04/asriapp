@@ -116,11 +116,9 @@ class TarikTunaiService {
     }
   }
   // Bisa difilter status=pending
-  Future<List<TarikTunaiModel>> getRequests({String? status}) async {
-    String urlString = '$baseUrl/tarik-tunai';
-    if (status != null) urlString += '?status=$status';
-
-    final url = Uri.parse(urlString);
+  Future<List<TarikTunaiModel>> getRequests() async {
+    // 🔥 SINKRONISASI: Pastikan URL mengarah ke endpoint yang mengembalikan semua status
+    final url = Uri.parse('$baseUrl/tarik-tunai/riwayat-lengkap');
     final client = _getClient();
     final token = await _getToken();
 
@@ -128,17 +126,33 @@ class TarikTunaiService {
       final response = await client.get(
         url,
         headers: {
+          'Content-Type': 'application/json',
           'Accept': 'application/json',
           'Authorization': 'Bearer $token',
         },
       );
 
       if (response.statusCode == 200) {
-        List<dynamic> body = jsonDecode(response.body);
-        return body.map((item) => TarikTunaiModel.fromJson(item)).toList();
+        final decodedData = jsonDecode(response.body);
+
+        List<dynamic> rawList = [];
+        if (decodedData is List) {
+          rawList = decodedData;
+        } else if (decodedData is Map<String, dynamic>) {
+          // Cek berbagai kemungkinan key yang sering digunakan di Laravel
+          rawList = decodedData['data'] ?? 
+                    decodedData['riwayat'] ?? 
+                    decodedData['requests'] ?? 
+                    decodedData['tarik_tunai'] ?? 
+                    decodedData['data_tarik'] ?? [];
+        }
+
+        return rawList.map((json) => TarikTunaiModel.fromJson(json)).toList();
+      } else {
+        throw Exception('Gagal memuat data riwayat');
       }
-      return [];
     } catch (e) {
+      print("Error ambil riwayat: $e");
       return [];
     } finally {
       client.close();
