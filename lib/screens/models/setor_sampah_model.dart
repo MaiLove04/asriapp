@@ -16,6 +16,7 @@ class SetorSampahModel {
   final String totalHarga;
   final String createdAt;
   final String catatan;
+  final String namaKurir; // 🔥 Tambahkan field ini
   final List<DetailSetor> details;
 
   SetorSampahModel({
@@ -26,13 +27,22 @@ class SetorSampahModel {
     required this.totalHarga,
     required this.createdAt,
     required this.catatan,
+    required this.namaKurir, // 🔥 Tambahkan ke constructor
     required this.details,
   });
 
   factory SetorSampahModel.fromJson(Map<String, dynamic> json) {
     String namaJenis = "-";
     List<DetailSetor> detailItems = [];
-    double totalBeratMultiItem = 0.0; // 🔥 Penampung total berat untuk format baru
+    double totalBeratMultiItem = 0.0; 
+
+    // 🔥 Ambil Nama Kurir secara cerdas (mendukung relasi 'kurir' atau field 'nama_kurir')
+    String kurirName = "-";
+    if (json['kurir'] != null) {
+      kurirName = json['kurir']['name'] ?? "-";
+    } else if (json['nama_kurir'] != null) {
+      kurirName = json['nama_kurir'].toString();
+    }
 
     // 1. Format Data Baru (Multi-Item)
     if (json['details'] != null && (json['details'] as List).isNotEmpty) {
@@ -81,10 +91,12 @@ class SetorSampahModel {
       id: json['id']?.toString() ?? "",
       jenisSampah: namaJenis,
       status: json['status'] ?? "-",
+      
       beratKg: tampilkanBerat, // 🔥 Sudah sinkron dengan akumulasi detail item
       totalHarga: json['total'] != null ? "Rp ${json['total']}" : "Rp 0",
       createdAt: json['created_at'] ?? "-",
       catatan: json['catatan'] ?? "Tidak ada catatan",
+      namaKurir: kurirName, // 🔥 Map field kurir
       details: detailItems,
     );
   }
