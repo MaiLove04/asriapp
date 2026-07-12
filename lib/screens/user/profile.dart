@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:http/http.dart' as http;
+import 'package:gal/gal.dart';
 
 import '../../config.dart';
 import '../services/setor_sampah_service.dart';
@@ -63,6 +65,7 @@ class _profile_pageState extends State<profile_page> {
           setState(() {
             var nasabahData = data['nasabah'];
             namaNasabah = nasabahData['name'] ?? 'Nasabah Basayan';
+            idNasabah = nasabahData['kode_nasabah'] ?? '-';
             saldoNasabah = int.tryParse(nasabahData['saldo'].toString()) ?? 0;
             _hasPin = nasabahData['has_pin'] ?? false;
             
@@ -192,6 +195,180 @@ class _profile_pageState extends State<profile_page> {
     }
   }
 
+  Future<void> _showQrCodeDialog() async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return FutureBuilder<Map<String, dynamic>?>(
+              future: _fetchQrCodeData(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return AlertDialog(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                    content: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        CircularProgressIndicator(color: primaryColor),
+                        SizedBox(height: 16),
+                        Text("Memuat QR Code...", style: TextStyle(fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                  );
+                }
+
+                if (snapshot.hasError || snapshot.data == null || snapshot.data!['success'] == false) {
+                  return AlertDialog(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                    title: const Text("Gagal", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red)),
+                    content: const Text("Gagal mengambil data QR Code dari server."),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text("Tutup"),
+                      ),
+                    ],
+                  );
+                }
+
+                final base64Image = snapshot.data!['barcode'] as String;
+                final imageBytes = base64Decode(base64Image);
+
+                return AlertDialog(
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                  title: const Text(
+                    "QR Code Nasabah",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontWeight: FontWeight.bold, color: darkTextColor),
+                  ),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        "Tunjukkan QR Code ini kepada petugas/kurir saat penimbangan sampah.",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                      ),
+                      const SizedBox(height: 20),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.grey.shade200, width: 2),
+                        ),
+                        child: Image.memory(
+                          imageBytes,
+                          width: 200,
+                          height: 200,
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        idNasabah,
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: primaryColor),
+                      ),
+                    ],
+                  ),
+                  actionsAlignment: MainAxisAlignment.center,
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text(
+                        "Batal",
+                        style: TextStyle(color: greyTextColor, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: primaryColor,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      ),
+                      onPressed: () async {
+                        try {
+                          final hasAccess = await Gal.hasAccess();
+                          if (!hasAccess) {
+                            await Gal.requestAccess();
+                          }
+                          await Gal.putImageBytes(imageBytes);
+                          if (context.mounted) {
+                            Navigator.pop(context);
+                            ScaffoldMessenger.of(this.context).showSnackBar(
+                              const SnackBar(
+                                content: Text("✅ QR Code Berhasil Simpan ke Galeri!"),
+                                backgroundColor: secondaryColor,
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(this.context).showSnackBar(
+                              SnackBar(
+                                content: Text("❌ Gagal menyimpan QR Code: $e"),
+                                backgroundColor: Colors.red.shade800,
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          }
+                        }
+                      },
+                      icon: const Icon(Icons.download_rounded, color: Colors.white, size: 18),
+                      label: const Text(
+                        "Unduh QR",
+                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<Map<String, dynamic>?> _fetchQrCodeData() async {
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      int userId = 0;
+      if (prefs.containsKey('user_id')) {
+        final rawId = prefs.get('user_id');
+        if (rawId is int) {
+          userId = rawId;
+        } else if (rawId is String) {
+          userId = int.tryParse(rawId) ?? 0;
+        }
+      }
+
+      final token = prefs.getString('token') ?? '';
+      
+      final response = await http.get(
+        Uri.parse('${AppConfig.baseUrl}/barcode/nasabah/$userId'),
+        headers: {
+          "Accept": "application/json",
+          if (token.isNotEmpty) "Authorization": "Bearer $token",
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return {
+          'success': true,
+          'barcode': data['barcode'],
+        };
+      }
+      return {'success': false};
+    } catch (e) {
+      return {'success': false};
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -306,6 +483,12 @@ class _profile_pageState extends State<profile_page> {
                               _hasPin ? Icons.security_rounded : Icons.lock_open_rounded,
                               _hasPin ? "Ubah PIN Transaksi Dompet" : "Setel PIN Transaksi Dompet",
                               onTap: _showSetupPinDialog
+                          ),
+                          _dividerLine(),
+                          _menuItem(
+                            Icons.qr_code_2_rounded,
+                            "QR Code Saya",
+                            onTap: _showQrCodeDialog,
                           ),
                           _dividerLine(),
                           // 🔥 PERBAIKAN: Diarahkan ke halaman BantuanPage()
