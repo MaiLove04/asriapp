@@ -62,7 +62,9 @@ class JadwalService {
       
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body);
-        return body['data'];
+        if (body is Map<String, dynamic>) {
+          return body['data'] is Map<String, dynamic> ? body['data'] : body;
+        }
       }
       return null;
     } catch (e) {

@@ -13,6 +13,9 @@ import 'aduan_page.dart';
 import 'status_penjemputan.dart';
 import 'edukasi_page.dart';
 import 'bantuan_page.dart';
+import 'NotifikasiNasabahScreen.dart';
+import '../services/jadwal_service.dart';
+import '../services/notifikasi_service.dart';
 
 // 🎨 PALET WARNA EXECUTIVE PREMIUM (ASRI MODERN)
 const primaryColor = Color(0xFF164716);
@@ -41,6 +44,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   List<dynamic> mutasiList = [];
   bool isLoading = true;
   double totalBeratBulanIni = 0.0;
+  Map<String, dynamic>? activeJadwal;
+  int unreadNotificationCount = 0;
 
   @override
   void initState() {
@@ -72,6 +77,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
         Uri.parse('${AppConfig.baseUrl}/dashboard-nasabah/$userId'),
       );
 
+      final scheduleRes = await JadwalService.getJadwalNasabah(userId);
+
+      int unreadCount = 0;
+      try {
+        final notifRes = await NotifikasiService.getNotifikasiNasabah(userId);
+        for (var item in notifRes) {
+          bool isRead = (item['is_read'] == 1 || item['is_read'] == true || item['status'] == 'read');
+          if (!isRead) {
+            unreadCount++;
+          }
+        }
+      } catch (e) {
+        print("ERROR FETCH UNREAD COUNT: $e");
+      }
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
 
@@ -81,6 +101,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
             saldoNasabah = int.tryParse(nasabahObj['saldo'].toString()) ?? 0;
             mutasiList = data['riwayat_mutasi'] ?? [];
             totalBeratBulanIni = double.tryParse(nasabahObj['total_berat_kg'].toString()) ?? 0.0;
+
+            if (scheduleRes != null) {
+              final List mendatangs = scheduleRes['jadwal_mendatang'] ?? [];
+              final List pendings = scheduleRes['request_pending'] ?? [];
+              if (mendatangs.isNotEmpty) {
+                activeJadwal = Map<String, dynamic>.from(mendatangs.first);
+              } else if (pendings.isNotEmpty) {
+                activeJadwal = Map<String, dynamic>.from(pendings.first);
+              } else {
+                activeJadwal = null;
+              }
+            } else {
+              activeJadwal = null;
+            }
+
+            unreadNotificationCount = unreadCount;
             isLoading = false;
           });
         }
@@ -154,6 +190,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 // ================= 1. THE MAIN EXECUTIVE HEADER =================
                 _buildExecutiveHeader(context),
 
+                // ================= 🔥 JADWAL PENJEMPUTAN TERDEKAT =================
+                _buildJadwalAktifCard(context),
+
                 const SizedBox(height: 24),
 
                 // ================= 2. MENU LAYANAN SECTION =================
@@ -207,6 +246,133 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildJadwalAktifCard(BuildContext context) {
+    if (activeJadwal == null) return const SizedBox.shrink();
+
+    String tanggal = activeJadwal!['tanggal_formatted'] ?? activeJadwal!['tanggal'] ?? '-';
+    String status = (activeJadwal!['status'] ?? 'terjadwal').toString().toUpperCase();
+    String tipe = activeJadwal!['tipe'] ?? 'jadwal'; // 'jadwal' or 'request'
+    
+    // Status colors
+    Color statusColor;
+    if (status == 'PROSES') {
+      statusColor = Colors.blue.shade800;
+    } else if (status == 'PENDING') {
+      statusColor = Colors.orange.shade800;
+    } else {
+      statusColor = secondaryColor;
+    }
+
+    String courierName = activeJadwal!['kurir']?['nama'] ?? 'Menunggu Petugas';
+
+    return Container(
+      margin: const EdgeInsets.only(left: 20, right: 20, top: 20),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: primaryColor.withOpacity(0.15), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: primaryColor.withOpacity(0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          )
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: softGreenColor,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.local_shipping_rounded, color: primaryColor, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      "Jadwal Penjemputan Sampah",
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: darkTextColor),
+                    ),
+                    Text(
+                      tipe == 'request' ? 'Request Mandiri' : 'Jadwal Rutin Petugas',
+                      style: const TextStyle(fontSize: 11, color: greyTextColor, fontWeight: FontWeight.w500),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: statusColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  status,
+                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: statusColor),
+                ),
+              ),
+            ],
+          ),
+          const Divider(height: 24, thickness: 1),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text("Waktu Penjemputan:", style: TextStyle(fontSize: 10, color: greyTextColor, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 3),
+                    Text(tanggal, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: darkTextColor)),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text("Petugas Kurir:", style: TextStyle(fontSize: 10, color: greyTextColor, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 3),
+                    Text(courierName, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: darkTextColor)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const StatusPenjemputanPage()),
+                );
+              },
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: primaryColor, width: 1.5),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+              child: const Text(
+                "Lacak Status Penjemputan",
+                style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold, fontSize: 13),
+              ),
+            ),
+          )
+        ],
       ),
     );
   }
@@ -489,16 +655,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
             Navigator.push(context, MaterialPageRoute(builder: (context) => const RiwayatPage()));
           } else if (index == 2) {
             Navigator.push(context, MaterialPageRoute(builder: (context) => const SetorSampahScreen()));
+          } else if (index == 3) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const NotifikasiNasabahScreen()),
+            ).then((_) => fetchDashboardData());
           } else if (index == 4) {
             Navigator.push(context, MaterialPageRoute(builder: (context) => profile_page(foto: widget.foto)));
           }
         },
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home_rounded, size: 22), label: "Beranda"),
-          BottomNavigationBarItem(icon: Icon(Icons.history_rounded, size: 22), label: "Riwayat"),
-          BottomNavigationBarItem(icon: Icon(Icons.add_circle_rounded, size: 24), label: "Mulai Setor"),
-          BottomNavigationBarItem(icon: Icon(Icons.notifications_rounded, size: 22), label: "Notifikasi"),
-          BottomNavigationBarItem(icon: Icon(Icons.person_rounded, size: 22), label: "Profil"),
+        items: [
+          const BottomNavigationBarItem(icon: Icon(Icons.home_rounded, size: 22), label: "Beranda"),
+          const BottomNavigationBarItem(icon: Icon(Icons.history_rounded, size: 22), label: "Riwayat"),
+          const BottomNavigationBarItem(icon: Icon(Icons.add_circle_rounded, size: 24), label: "Mulai Setor"),
+          BottomNavigationBarItem(
+            icon: unreadNotificationCount > 0
+                ? Badge(
+                    label: Text('$unreadNotificationCount'),
+                    backgroundColor: Colors.red,
+                    child: const Icon(Icons.notifications_rounded, size: 22),
+                  )
+                : const Icon(Icons.notifications_rounded, size: 22),
+            label: "Notifikasi",
+          ),
+          const BottomNavigationBarItem(icon: Icon(Icons.person_rounded, size: 22), label: "Profil"),
         ],
       ),
     );
