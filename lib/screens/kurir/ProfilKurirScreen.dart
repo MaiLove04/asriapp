@@ -5,7 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:asriapp/config.dart'; // Jalur config milik Mai
 import '../login_screen.dart';
 import 'ScanBarcode.dart';
-import 'RiwayatKurirScreen.dart';
+import 'package:asriapp/screens/kurir/RiwayatKurirScreen.dart';
 import 'NotifikasiKurirScreen.dart';
 import 'JadwalJemputScreen.dart';
 
