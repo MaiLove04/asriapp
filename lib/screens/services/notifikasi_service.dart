@@ -34,6 +34,34 @@ class NotifikasiService {
     }
   }
 
+  static Future<List<dynamic>> getNotifikasiNasabah(int userId) async {
+    try {
+      final url = Uri.parse('${AppConfig.baseUrl}/notifikasi-nasabah/$userId');
+      final response = await _client.get(
+        url,
+        headers: {
+          "Accept": "application/json",
+        },
+      );
+
+      print("DEBUG NOTIFIKASI NASABAH - STATUS: ${response.statusCode}");
+      print("DEBUG NOTIFIKASI NASABAH - BODY: ${response.body}");
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data is List) {
+          return data;
+        } else if (data is Map) {
+          return data['data'] ?? data['notifikasi'] ?? [];
+        }
+      }
+      return [];
+    } catch (e) {
+      print("ERROR FETCH NOTIFIKASI NASABAH: $e");
+      return [];
+    }
+  }
+
   static Future<bool> markAsRead(int notificationId) async {
     try {
       final url = Uri.parse('${AppConfig.baseUrl}/notifikasi/$notificationId/read');

@@ -9,6 +9,7 @@ import 'ScanBarcode.dart';
 import 'navigasi_kurir_page.dart';
 import 'pencapaian_kurir_page.dart';
 import 'edukasi_kurir_page.dart';
+import 'NotifikasiKurirScreen.dart';
 
 // Palet warna premium dengan kontras tinggi (Senior-Friendly & Professional)
 const primaryColor = Color(0xFF1B4D1B);     // Lebih dalam, kontras tinggi, sangat profesional
@@ -375,6 +376,15 @@ class _HeaderSection extends StatelessWidget {
               const SizedBox(width: 12),
               const Expanded(
                 child: Text("ASRI", style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+              ),
+              IconButton(
+                icon: const Icon(Icons.notifications_rounded, color: Colors.white, size: 26),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const NotifikasiKurirScreen()),
+                  );
+                },
               ),
             ],
           ),

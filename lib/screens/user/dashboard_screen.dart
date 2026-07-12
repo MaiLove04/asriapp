@@ -13,6 +13,7 @@ import 'aduan_page.dart';
 import 'status_penjemputan.dart';
 import 'edukasi_page.dart';
 import 'bantuan_page.dart';
+import 'NotifikasiNasabahScreen.dart';
 
 // 🎨 PALET WARNA EXECUTIVE PREMIUM (ASRI MODERN)
 const primaryColor = Color(0xFF164716);
@@ -489,6 +490,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
             Navigator.push(context, MaterialPageRoute(builder: (context) => const RiwayatPage()));
           } else if (index == 2) {
             Navigator.push(context, MaterialPageRoute(builder: (context) => const SetorSampahScreen()));
+          } else if (index == 3) {
+            Navigator.push(context, MaterialPageRoute(builder: (context) => const NotifikasiNasabahScreen()));
           } else if (index == 4) {
             Navigator.push(context, MaterialPageRoute(builder: (context) => profile_page(foto: widget.foto)));
           }
