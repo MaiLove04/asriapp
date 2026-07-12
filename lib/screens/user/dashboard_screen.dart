@@ -15,6 +15,7 @@ import 'edukasi_page.dart';
 import 'bantuan_page.dart';
 import 'NotifikasiNasabahScreen.dart';
 import '../services/jadwal_service.dart';
+import '../services/notifikasi_service.dart';
 
 // 🎨 PALET WARNA EXECUTIVE PREMIUM (ASRI MODERN)
 const primaryColor = Color(0xFF164716);
@@ -44,6 +45,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool isLoading = true;
   double totalBeratBulanIni = 0.0;
   Map<String, dynamic>? activeJadwal;
+  int unreadNotificationCount = 0;
 
   @override
   void initState() {
@@ -77,6 +79,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
       final scheduleRes = await JadwalService.getJadwalNasabah(userId);
 
+      int unreadCount = 0;
+      try {
+        final notifRes = await NotifikasiService.getNotifikasiNasabah(userId);
+        for (var item in notifRes) {
+          bool isRead = (item['is_read'] == 1 || item['is_read'] == true || item['status'] == 'read');
+          if (!isRead) {
+            unreadCount++;
+          }
+        }
+      } catch (e) {
+        print("ERROR FETCH UNREAD COUNT: $e");
+      }
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
 
@@ -101,6 +116,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               activeJadwal = null;
             }
 
+            unreadNotificationCount = unreadCount;
             isLoading = false;
           });
         }
@@ -640,17 +656,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
           } else if (index == 2) {
             Navigator.push(context, MaterialPageRoute(builder: (context) => const SetorSampahScreen()));
           } else if (index == 3) {
-            Navigator.push(context, MaterialPageRoute(builder: (context) => const NotifikasiNasabahScreen()));
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const NotifikasiNasabahScreen()),
+            ).then((_) => fetchDashboardData());
           } else if (index == 4) {
             Navigator.push(context, MaterialPageRoute(builder: (context) => profile_page(foto: widget.foto)));
           }
         },
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home_rounded, size: 22), label: "Beranda"),
-          BottomNavigationBarItem(icon: Icon(Icons.history_rounded, size: 22), label: "Riwayat"),
-          BottomNavigationBarItem(icon: Icon(Icons.add_circle_rounded, size: 24), label: "Mulai Setor"),
-          BottomNavigationBarItem(icon: Icon(Icons.notifications_rounded, size: 22), label: "Notifikasi"),
-          BottomNavigationBarItem(icon: Icon(Icons.person_rounded, size: 22), label: "Profil"),
+        items: [
+          const BottomNavigationBarItem(icon: Icon(Icons.home_rounded, size: 22), label: "Beranda"),
+          const BottomNavigationBarItem(icon: Icon(Icons.history_rounded, size: 22), label: "Riwayat"),
+          const BottomNavigationBarItem(icon: Icon(Icons.add_circle_rounded, size: 24), label: "Mulai Setor"),
+          BottomNavigationBarItem(
+            icon: unreadNotificationCount > 0
+                ? Badge(
+                    label: Text('$unreadNotificationCount'),
+                    backgroundColor: Colors.red,
+                    child: const Icon(Icons.notifications_rounded, size: 22),
+                  )
+                : const Icon(Icons.notifications_rounded, size: 22),
+            label: "Notifikasi",
+          ),
+          const BottomNavigationBarItem(icon: Icon(Icons.person_rounded, size: 22), label: "Profil"),
         ],
       ),
     );

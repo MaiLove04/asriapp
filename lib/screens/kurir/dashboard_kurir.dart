@@ -10,6 +10,7 @@ import 'navigasi_kurir_page.dart';
 import 'pencapaian_kurir_page.dart';
 import 'edukasi_kurir_page.dart';
 import 'NotifikasiKurirScreen.dart';
+import '../services/notifikasi_service.dart';
 
 // Palet warna premium dengan kontras tinggi (Senior-Friendly & Professional)
 const primaryColor = Color(0xFF1B4D1B);     // Lebih dalam, kontras tinggi, sangat profesional
@@ -29,6 +30,7 @@ class DashboardKurir extends StatefulWidget {
 class _DashboardKurirState extends State<DashboardKurir> {
   Map<String, dynamic>? dashboardData;
   bool isLoading = true;
+  int unreadNotificationCount = 0;
 
   Future<void> getDashboard() async {
     try {
@@ -42,8 +44,22 @@ class _DashboardKurirState extends State<DashboardKurir> {
 
       final result = await DashboardKurirService.getDashboard(userId);
 
+      int unreadCount = 0;
+      try {
+        final notifRes = await NotifikasiService.getNotifikasi(userId);
+        for (var item in notifRes) {
+          bool isRead = (item['is_read'] == 1 || item['is_read'] == true || item['status'] == 'read');
+          if (!isRead) {
+            unreadCount++;
+          }
+        }
+      } catch (e) {
+        print("ERROR FETCH UNREAD COUNT: $e");
+      }
+
       setState(() {
         dashboardData = result;
+        unreadNotificationCount = unreadCount;
         isLoading = false;
       });
     } catch (e) {
@@ -111,7 +127,7 @@ class _DashboardKurirState extends State<DashboardKurir> {
             physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
             child: Column(
               children: [
-                const _HeaderSection(),
+                _HeaderSection(unreadCount: unreadNotificationCount, onRefresh: getDashboard),
                 Transform.translate(
                   offset: const Offset(0, -30),
                   child: Padding(
@@ -344,7 +360,9 @@ class _SummaryCard extends StatelessWidget {
 }
 
 class _HeaderSection extends StatelessWidget {
-  const _HeaderSection();
+  final int unreadCount;
+  final VoidCallback onRefresh;
+  const _HeaderSection({required this.unreadCount, required this.onRefresh});
 
   @override
   Widget build(BuildContext context) {
@@ -378,12 +396,20 @@ class _HeaderSection extends StatelessWidget {
                 child: Text("ASRI", style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
               ),
               IconButton(
-                icon: const Icon(Icons.notifications_rounded, color: Colors.white, size: 26),
-                onPressed: () {
-                  Navigator.push(
+                icon: unreadCount > 0
+                    ? Badge(
+                        label: Text('$unreadCount'),
+                        backgroundColor: Colors.red,
+                        textColor: Colors.white,
+                        child: const Icon(Icons.notifications_rounded, color: Colors.white, size: 26),
+                      )
+                    : const Icon(Icons.notifications_rounded, color: Colors.white, size: 26),
+                onPressed: () async {
+                  await Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => const NotifikasiKurirScreen()),
                   );
+                  onRefresh();
                 },
               ),
             ],
