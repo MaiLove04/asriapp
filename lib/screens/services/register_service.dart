@@ -37,6 +37,7 @@ class RegisterService {
   }
   static Future<Map<String, dynamic>> register({
     required String name,
+    required String email,
     required String password,
     required String confirmPassword,
     required String phone,
@@ -47,9 +48,12 @@ class RegisterService {
     try {
       final uri = Uri.parse("${AppConfig.baseUrl}/register");
       final request = http.MultipartRequest("POST", uri);
+      
+      request.headers['Accept'] = 'application/json';
 
       request.fields.addAll({
         "name": name,
+        "email": email,
         "password": password,
         "password_confirmation": confirmPassword,
         "no_hp": phone,
