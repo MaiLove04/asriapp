@@ -1,16 +1,18 @@
-import 'package:asriapp/screens/user/riwayat_tarik_tunai.dart';
+import 'package:asriapp/screens/user/aduan_page.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // Wajib untuk SystemNavigator.pop
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
-import 'package:http/http.dart' as http;
 
 import '../../config.dart';
 import 'activity_riwayat.dart';
 import 'profile.dart';
 import 'setor_sampah.dart';
 import 'tarik_tunai.dart';
-import 'aduan_page.dart';
+import 'riwayat_tarik_tunai.dart';
 import 'status_penjemputan.dart';
+import 'package:asriapp/screens/login_screen.dart';
 import 'edukasi_page.dart';
 import 'bantuan_page.dart';
 import 'NotifikasiNasabahScreen.dart';
@@ -47,9 +49,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Map<String, dynamic>? activeJadwal;
   int unreadNotificationCount = 0;
 
+  // 🔥 1. Buat state lokal untuk menampung data profil
+  String _userName = '';
+  String? _userPhotoUrl;
+
   @override
   void initState() {
     super.initState();
+    // 🔥 2. Inisialisasi state dengan data awal dari halaman login
+    _userName = widget.name;
+    _userPhotoUrl = widget.foto;
     fetchDashboardData();
   }
 
@@ -73,8 +82,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
         return;
       }
 
+      String token = prefs.getString('token') ?? '';
+      
       final response = await http.get(
-        Uri.parse('${AppConfig.baseUrl}/dashboard-nasabah/$userId'),
+        Uri.parse('${AppConfig.baseUrl}/dashboard-nasabah'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
       );
 
       final scheduleRes = await JadwalService.getJadwalNasabah(userId);
@@ -98,6 +114,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
         if (data['success'] == true) {
           setState(() {
             var nasabahObj = data['nasabah'] ?? data['user'] ?? data;
+
+            // 🔥 3. Update state dengan data terbaru dari API dashboard
+            _userName = nasabahObj['name']?.toString() ?? _userName;
+            _userPhotoUrl = nasabahObj['foto']?.toString();
+
             saldoNasabah = int.tryParse(nasabahObj['saldo'].toString()) ?? 0;
             mutasiList = data['riwayat_mutasi'] ?? [];
             totalBeratBulanIni = double.tryParse(nasabahObj['total_berat_kg'].toString()) ?? 0.0;
@@ -426,7 +447,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => profile_page(foto: widget.foto), // 🔥 Kirim data URL foto ke sini
+                          builder: (context) => profile_page(foto: _userPhotoUrl),
                         ),
                       );
                     },
@@ -438,8 +459,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       child: CircleAvatar(
                         radius: 22,
                         backgroundColor: Colors.white12,
-                        backgroundImage: widget.foto != null ? NetworkImage(widget.foto!) : null,
-                        child: widget.foto == null ? const Icon(Icons.person_rounded, size: 24, color: Colors.white) : null,
+                        backgroundImage: _userPhotoUrl != null ? NetworkImage(_userPhotoUrl!) : null,
+                        child: _userPhotoUrl == null ? const Icon(Icons.person_rounded, size: 24, color: Colors.white) : null,
                       ),
                     ),
                   ),
@@ -447,7 +468,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text("Halo, ${widget.name}", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: -0.2)),
+                      Text("Halo, $_userName", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: -0.2)),
                       const Text("Nasabah Basayan Bestari", style: TextStyle(fontSize: 12, color: Colors.white60, fontWeight: FontWeight.w400)),
                     ],
                   ),
@@ -660,8 +681,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
               context,
               MaterialPageRoute(builder: (context) => const NotifikasiNasabahScreen()),
             ).then((_) => fetchDashboardData());
-          } else if (index == 4) {
-            Navigator.push(context, MaterialPageRoute(builder: (context) => profile_page(foto: widget.foto)));
+          } else if (index == 4) { // 🔥 4. Gunakan state yang sudah diupdate
+            Navigator.push(context, MaterialPageRoute(builder: (context) => profile_page(foto: _userPhotoUrl)));
           }
         },
         items: [

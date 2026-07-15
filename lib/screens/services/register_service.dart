@@ -9,32 +9,28 @@ import 'client_helper.dart';
 class RegisterService {
   static http.Client get _client => getSafeClient();
 
+  // Mendapatkan daftar bank sampah
   static Future<List<BankSampahModel>> getBankSampah() async {
     try {
-      // Menggunakan AppConfig.baseUrl dan _client agar aman dari error SSL
       final url = Uri.parse('${AppConfig.baseUrl}/bank-sampah');
       final response = await _client.get(url).timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         final decoded = jsonDecode(response.body);
-        List data = [];
-        
-        // Menangani jika response adalah List langsung atau terbungkus dalam field 'data'
-        if (decoded is List) {
-          data = decoded;
-        } else if (decoded is Map && decoded['data'] != null) {
-          data = decoded['data'];
-        }
-
+        final List data = (decoded is Map && decoded['data'] != null) 
+            ? decoded['data'] 
+            : (decoded is List ? decoded : []);
+            
         return data.map((e) => BankSampahModel.fromJson(e)).toList();
-      } else {
-        throw Exception('Gagal memuat data dari server (${response.statusCode})');
       }
+      return [];
     } catch (e) {
-      print('Error Get Bank Sampah: $e');
-      return []; // Mengembalikan list kosong alih-alih rethrow agar aplikasi tidak crash
+      debugPrint('Error Get Bank Sampah: $e');
+      return [];
     }
   }
+
+  // Melakukan registrasi user baru
   static Future<Map<String, dynamic>> register({
     required String name,
     required String email,
@@ -50,7 +46,6 @@ class RegisterService {
       final request = http.MultipartRequest("POST", uri);
       
       request.headers['Accept'] = 'application/json';
-
       request.fields.addAll({
         "name": name,
         "email": email,
@@ -61,70 +56,44 @@ class RegisterService {
         "bank_sampah_id": bankSampahId.toString(),
       });
 
-
-      if (
-
-      foto != null
-
-      ) {
-
-        request.files.add(
-
-          await http
-              .MultipartFile
-              .fromPath(
-
-            "foto",
-
-            foto.path,
-          ),
-        );
+      if (foto != null) {
+        request.files.add(await http.MultipartFile.fromPath("foto", foto.path));
       }
 
-
-      final response = await _client.send(request);
-
-      final body = await response.stream.bytesToString();
-
-
-      final data =
-
-      jsonDecode(
-        body,
-      );
-
+      final streamedResponse = await _client.send(request);
+      final response = await http.Response.fromStream(streamedResponse);
+      
+      print('REGISTER RESPONSE BODY: ${response.body}');
+      
+      Map<String, dynamic> data;
+      try {
+        data = jsonDecode(response.body);
+      } catch (e) {
+        return {
+          "status": response.statusCode,
+          "data": {"message": "Server error (Not JSON). Status: ${response.statusCode}"},
+        };
+      }
 
       return {
-
-        "status":
-
-        response
-            .statusCode,
-
-        "data":
-        data,
+        "status": response.statusCode,
+        "data": data,
       };
-
     } catch (e) {
-
       return {
         "status": 500,
-        "data": {
-          "message": e.toString(),
-        },
+        "data": {"message": e.toString()},
       };
     }
   }
 
-  // ================= 3. UPDATE STATUS NASABAH (FIXED PATCH) =================
+  // Update status nasabah (PATCH)
   static Future<Map<String, dynamic>> updateNasabahStatus({
     required int id,
     required String status,
   }) async {
     try {
       final url = Uri.parse('${AppConfig.baseUrl}/admin/nasabah/$id/status');
-
-      // 🔥 Gunakan .patch agar sesuai dengan Laravel (Error 405 Fix)
       final response = await _client.patch(
         url,
         headers: {
@@ -134,18 +103,20 @@ class RegisterService {
         body: jsonEncode({'status': status}),
       );
 
-      print("UPDATE STATUS DEBUG: ${response.statusCode} - ${response.body}");
-
       return {
         "status": response.statusCode,
         "data": jsonDecode(response.body),
       };
     } catch (e) {
-      print("UPDATE STATUS ERROR: $e");
       return {
         "status": 500,
         "data": {"message": "Gagal terhubung ke server: $e"},
       };
     }
   }
+}
+
+// Tambahan helper jika belum ada di file ini
+void debugPrint(String message) {
+  print(message);
 }

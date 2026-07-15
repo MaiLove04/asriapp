@@ -34,7 +34,7 @@ class TarikTunaiService {
 
       if (userId == 0) return {'saldo_aktif': 0, 'saldo_pending': 0};
 
-      final url = Uri.parse('$baseUrl/dashboard-nasabah/$userId');
+      final url = Uri.parse('$baseUrl/dashboard-nasabah');
       final client = _getClient();
 
       final response = await client.get(

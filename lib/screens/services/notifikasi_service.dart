@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:asriapp/config.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'client_helper.dart';
 
 class NotifikasiService {
@@ -8,11 +9,15 @@ class NotifikasiService {
 
   static Future<List<dynamic>> getNotifikasi(int userId) async {
     try {
-      final url = Uri.parse('${AppConfig.baseUrl}/notifikasi-kurir/$userId');
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token') ?? '';
+
+      final url = Uri.parse('${AppConfig.baseUrl}/notifikasi-kurir');
       final response = await _client.get(
         url,
         headers: {
           "Accept": "application/json",
+          if (token.isNotEmpty) "Authorization": "Bearer $token",
         },
       );
 
@@ -36,11 +41,15 @@ class NotifikasiService {
 
   static Future<List<dynamic>> getNotifikasiNasabah(int userId) async {
     try {
-      final url = Uri.parse('${AppConfig.baseUrl}/notifikasi-nasabah/$userId');
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token') ?? '';
+
+      final url = Uri.parse('${AppConfig.baseUrl}/notifikasi-nasabah');
       final response = await _client.get(
         url,
         headers: {
           "Accept": "application/json",
+          if (token.isNotEmpty) "Authorization": "Bearer $token",
         },
       );
 

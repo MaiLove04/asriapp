@@ -40,34 +40,29 @@ class _RiwayatPageState extends State<RiwayatPage> {
       setState(() {
         isLoading = true;
       });
-      SharedPreferences prefs = await SharedPreferences.getInstance();
 
-      int userId = 0;
-      if (prefs.containsKey('user_id')) {
-        final rawId = prefs.get('user_id');
-        if (rawId is int) {
-          userId = rawId;
-        } else if (rawId is String) {
-          userId = int.tryParse(rawId) ?? 0;
-        }
-      }
+      // 🔥 PERBAIKAN: Memanggil service baru getDashboardData()
+      final dashboardData = await SetorSampahService.getDashboardData();
 
-      if (userId != 0) {
-        final result = await SetorSampahService.getRiwayat(userId: userId);
+      if (mounted &&
+          dashboardData != null &&
+          dashboardData['riwayat_mutasi'] is List) {
         setState(() {
-          riwayatRaw = result;
+          // Ambil hanya bagian 'riwayat_mutasi' dari respons Map
+          riwayatRaw = dashboardData['riwayat_mutasi'] as List<dynamic>;
           isLoading = false;
         });
       } else {
-        setState(() {
-          isLoading = false;
-        });
+        if (mounted) {
+          setState(() {
+            riwayatRaw = []; // Pastikan list kosong jika gagal
+            isLoading = false;
+          });
+        }
       }
     } catch (e) {
       debugPrint("Error load riwayat data: $e");
-      setState(() {
-        isLoading = false;
-      });
+      if (mounted) setState(() => isLoading = false);
     }
   }
 
@@ -81,9 +76,10 @@ class _RiwayatPageState extends State<RiwayatPage> {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: const ColorScheme.light(
-                primary: primaryColor,
-                onPrimary: Colors.white,
-                onSurface: darkTextColor),
+              primary: primaryColor,
+              onPrimary: Colors.white,
+              onSurface: darkTextColor,
+            ),
           ),
           child: child!,
         );
@@ -98,8 +94,9 @@ class _RiwayatPageState extends State<RiwayatPage> {
 
   String formatDuitRupiah(dynamic nominalRaw) {
     try {
-      int angka =
-      int.parse(nominalRaw.toString().replaceAll(RegExp(r'[^0-9]'), ''));
+      int angka = int.parse(
+        nominalRaw.toString().replaceAll(RegExp(r'[^0-9]'), ''),
+      );
       return "Rp " + NumberFormat.decimalPattern('id').format(angka);
     } catch (e) {
       return "Rp $nominalRaw";
@@ -113,8 +110,9 @@ class _RiwayatPageState extends State<RiwayatPage> {
         : "Pilih Tanggal";
 
     List<dynamic> riwayatDiFilter = riwayatRaw.where((item) {
-      String jenisTx =
-      (item['jenis_transaksi'] ?? 'masuk').toString().toLowerCase();
+      String jenisTx = (item['jenis_transaksi'] ?? 'masuk')
+          .toString()
+          .toLowerCase();
       bool adalahTarikTunai =
           jenisTx.contains('keluar') || jenisTx.contains('tarik');
 
@@ -134,8 +132,9 @@ class _RiwayatPageState extends State<RiwayatPage> {
       }
 
       if (isSetor && selectedJenis != "Semua") {
-        String judulDinamis =
-        (item['judul_dinamis'] ?? '').toString().toLowerCase();
+        String judulDinamis = (item['judul_dinamis'] ?? '')
+            .toString()
+            .toLowerCase();
         String kueriFilter = selectedJenis.toLowerCase();
         if (!judulDinamis.contains(kueriFilter)) {
           return false;
@@ -150,16 +149,22 @@ class _RiwayatPageState extends State<RiwayatPage> {
       appBar: AppBar(
         elevation: 0,
         backgroundColor: primaryColor,
-        title: const Text("Catatan Riwayat",
-            style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 20)),
+        title: const Text(
+          "Catatan Riwayat",
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+          ),
+        ),
         centerTitle: true,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
-          icon: const Icon(Icons.arrow_back_ios_new_rounded,
-              color: Colors.white, size: 22),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: Colors.white,
+            size: 22,
+          ),
         ),
       ),
       body: Column(
@@ -176,9 +181,10 @@ class _RiwayatPageState extends State<RiwayatPage> {
                   "Total berhasil menangani ${riwayatDiFilter.length} transaksi ${isSetor ? 'setoran' : 'tarik tunai'}",
                   textAlign: TextAlign.center,
                   style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500),
+                    color: Colors.white70,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
                 const SizedBox(height: 20),
                 Row(
@@ -215,22 +221,29 @@ class _RiwayatPageState extends State<RiwayatPage> {
                         onTap: pickDate,
                         child: Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 14, vertical: 12),
+                            horizontal: 14,
+                            vertical: 12,
+                          ),
                           decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.15),
-                              borderRadius: BorderRadius.circular(16)),
+                            color: Colors.white.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
                           child: Row(
                             children: [
-                              const Icon(Icons.calendar_month_rounded,
-                                  color: Colors.white, size: 18),
+                              const Icon(
+                                Icons.calendar_month_rounded,
+                                color: Colors.white,
+                                size: 18,
+                              ),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
                                   textTombolTanggal,
                                   style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 12),
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                  ),
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
@@ -241,9 +254,7 @@ class _RiwayatPageState extends State<RiwayatPage> {
                     ),
                     if (isSetor) ...[
                       const SizedBox(width: 12),
-                      Expanded(
-                        child: _filterJenisContainer(),
-                      ),
+                      Expanded(child: _filterJenisContainer()),
                     ],
                   ],
                 ),
@@ -254,115 +265,145 @@ class _RiwayatPageState extends State<RiwayatPage> {
           Expanded(
             child: isLoading
                 ? const Center(
-                child: CircularProgressIndicator(
-                    color: primaryColor, strokeWidth: 4))
-                : RefreshIndicator(
-              color: primaryColor,
-              onRefresh: loadRiwayat,
-              child: riwayatDiFilter.isEmpty
-                  ? ListView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                children: [
-                  SizedBox(
-                      height:
-                      MediaQuery.of(context).size.height * 0.2),
-                  Center(
-                    child: Column(
-                      children: [
-                        Icon(Icons.event_busy_rounded,
-                            size: 54,
-                            color: greyTextColor.withOpacity(0.5)),
-                        const SizedBox(height: 12),
-                        const Text(
-                          "Tidak ada transaksi ditemukan.",
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: greyTextColor,
-                              height: 1.4),
-                        ),
-                        if (selectedDate != null ||
-                            selectedJenis != "Semua")
-                          TextButton(
-                            onPressed: () {
-                              setState(() {
-                                selectedDate = null;
-                                selectedJenis = "Semua";
-                              });
-                            },
-                            child: const Text("Reset Filter",
-                                style: TextStyle(
-                                    color: primaryColor)),
-                          )
-                      ],
+                    child: CircularProgressIndicator(
+                      color: primaryColor,
+                      strokeWidth: 4,
                     ),
+                  )
+                : RefreshIndicator(
+                    color: primaryColor,
+                    onRefresh: loadRiwayat,
+                    child: riwayatDiFilter.isEmpty
+                        ? ListView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            children: [
+                              SizedBox(
+                                height:
+                                    MediaQuery.of(context).size.height * 0.2,
+                              ),
+                              Center(
+                                child: Column(
+                                  children: [
+                                    Icon(
+                                      Icons.event_busy_rounded,
+                                      size: 54,
+                                      color: greyTextColor.withOpacity(0.5),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    const Text(
+                                      "Tidak ada transaksi ditemukan.",
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: greyTextColor,
+                                        height: 1.4,
+                                      ),
+                                    ),
+                                    if (selectedDate != null ||
+                                        selectedJenis != "Semua")
+                                      TextButton(
+                                        onPressed: () {
+                                          setState(() {
+                                            selectedDate = null;
+                                            selectedJenis = "Semua";
+                                          });
+                                        },
+                                        child: const Text(
+                                          "Reset Filter",
+                                          style: TextStyle(color: primaryColor),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          )
+                        : ListView.builder(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                            itemCount: riwayatDiFilter.length,
+                            itemBuilder: (context, index) {
+                              final item = riwayatDiFilter[index];
+
+                              String judulKartu =
+                                  (item['nama_kurir'] ?? 'Setoran Sampah')
+                                      .toString();
+                              String jenisTx =
+                                  (item['jenis_transaksi'] ?? 'masuk')
+                                      .toString()
+                                      .toLowerCase();
+                              bool adalahTarikTunai =
+                                  jenisTx.contains('keluar') ||
+                                  jenisTx.contains('tarik');
+
+                              // 🔥 AMBIL DATA STATUS DARI BACKEND LARAVEL
+                              String statusSistem =
+                                  (item['status_transaksi'] ??
+                                          item['status'] ??
+                                          'pending')
+                                      .toString()
+                                      .toLowerCase();
+
+                              String subjudul = isSetor
+                                  ? "Kategori: ${item['judul_dinamis'] ?? '-'}"
+                                  : "Penarikan Saldo";
+
+                              // 🔥 DINAMISKAN SUBJUDUL APABILA PENDING / REJECTED UNTUK TARIK TUNAI
+                              if (adalahTarikTunai) {
+                                if (statusSistem == 'pending' ||
+                                    statusSistem == '0') {
+                                  subjudul = "Menunggu Persetujuan";
+                                } else if (statusSistem == 'rejected' ||
+                                    statusSistem == '2') {
+                                  subjudul = "Penarikan Ditolak Admin";
+                                } else {
+                                  subjudul = "Penarikan Berhasil";
+                                }
+                              }
+
+                              String hargaDuit = (item['nominal'] ?? '0')
+                                  .toString();
+                              String tanggalFormatted =
+                                  (item['tanggal_formatted'] ?? '-').toString();
+
+                              return TransactionCard(
+                                title: adalahTarikTunai
+                                    ? 'Tarik Tunai Dana'
+                                    : judulKartu,
+                                subtitle: subjudul,
+                                price: formatDuitRupiah(hargaDuit),
+                                date: tanggalFormatted,
+                                isPenarikan: adalahTarikTunai,
+                                statusString:
+                                    statusSistem, // 🔥 Kirim data status ke kartu widget
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          DetailRiwayatPage(data: item),
+                                    ),
+                                  );
+                                },
+                              );
+                            },
+                          ),
                   ),
-                ],
-              )
-                  : ListView.builder(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 8),
-                itemCount: riwayatDiFilter.length,
-                itemBuilder: (context, index) {
-                  final item = riwayatDiFilter[index];
-
-                  String judulKartu = (item['nama_kurir'] ?? 'Setoran Sampah').toString();
-                  String jenisTx = (item['jenis_transaksi'] ?? 'masuk').toString().toLowerCase();
-                  bool adalahTarikTunai = jenisTx.contains('keluar') || jenisTx.contains('tarik');
-
-                  // 🔥 AMBIL DATA STATUS DARI BACKEND LARAVEL
-                  String statusSistem = (item['status_transaksi'] ?? item['status'] ?? 'pending').toString().toLowerCase();
-
-                  String subjudul = isSetor
-                      ? "Kategori: ${item['judul_dinamis'] ?? '-'}"
-                      : "Penarikan Saldo";
-
-                  // 🔥 DINAMISKAN SUBJUDUL APABILA PENDING / REJECTED UNTUK TARIK TUNAI
-                  if (adalahTarikTunai) {
-                    if (statusSistem == 'pending' || statusSistem == '0') {
-                      subjudul = "Menunggu Persetujuan";
-                    } else if (statusSistem == 'rejected' || statusSistem == '2') {
-                      subjudul = "Penarikan Ditolak Admin";
-                    } else {
-                      subjudul = "Penarikan Berhasil";
-                    }
-                  }
-
-                  String hargaDuit = (item['nominal'] ?? '0').toString();
-                  String tanggalFormatted = (item['tanggal_formatted'] ?? '-').toString();
-
-                  return TransactionCard(
-                    title: adalahTarikTunai ? 'Tarik Tunai Dana' : judulKartu,
-                    subtitle: subjudul,
-                    price: formatDuitRupiah(hargaDuit),
-                    date: tanggalFormatted,
-                    isPenarikan: adalahTarikTunai,
-                    statusString: statusSistem, // 🔥 Kirim data status ke kartu widget
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              DetailRiwayatPage(data: item),
-                        ),
-                      );
-                    },
-                  );
-                },
-              ),
-            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _tabButton(
-      {required String text,
-        required IconData icon,
-        required bool isActive,
-        required VoidCallback onTap}) {
+  Widget _tabButton({
+    required String text,
+    required IconData icon,
+    required bool isActive,
+    required VoidCallback onTap,
+  }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -376,11 +417,14 @@ class _RiwayatPageState extends State<RiwayatPage> {
           children: [
             Icon(icon, color: isActive ? primaryColor : Colors.white, size: 18),
             const SizedBox(width: 6),
-            Text(text,
-                style: TextStyle(
-                    color: isActive ? primaryColor : Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13)),
+            Text(
+              text,
+              style: TextStyle(
+                color: isActive ? primaryColor : Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+              ),
+            ),
           ],
         ),
       ),
@@ -391,20 +435,26 @@ class _RiwayatPageState extends State<RiwayatPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14),
       decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.15),
-          borderRadius: BorderRadius.circular(16)),
+        color: Colors.white.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(16),
+      ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: selectedJenis,
           dropdownColor: primaryColor,
           isExpanded: true,
-          icon: const Icon(Icons.filter_list_rounded,
-              color: Colors.white, size: 20),
+          icon: const Icon(
+            Icons.filter_list_rounded,
+            color: Colors.white,
+            size: 20,
+          ),
           style: const TextStyle(
-              color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 13,
+          ),
           items: jenisSampah
-              .map((item) =>
-              DropdownMenuItem(value: item, child: Text(item)))
+              .map((item) => DropdownMenuItem(value: item, child: Text(item)))
               .toList(),
           onChanged: (value) {
             setState(() {
@@ -426,15 +476,16 @@ class TransactionCard extends StatelessWidget {
   final String statusString; // 🔥 Properti penampung status sistem baru
   final VoidCallback onTap;
 
-  const TransactionCard(
-      {super.key,
-        required this.title,
-        required this.subtitle,
-        required this.price,
-        required this.date,
-        this.isPenarikan = false,
-        required this.statusString,
-        required this.onTap});
+  const TransactionCard({
+    super.key,
+    required this.title,
+    required this.subtitle,
+    required this.price,
+    required this.date,
+    this.isPenarikan = false,
+    required this.statusString,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -466,15 +517,16 @@ class TransactionCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.03),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            )
-          ]),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(20),
@@ -483,16 +535,19 @@ class TransactionCard extends StatelessWidget {
           child: Row(
             children: [
               Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: bgIconColor, // Menggunakan background warna status dinamis
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                      iconKartu, // Ikon berubah otomatis mengikuti status transaksi
-                      color: statusColor,
-                      size: 24)),
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color:
+                      bgIconColor, // Menggunakan background warna status dinamis
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  iconKartu, // Ikon berubah otomatis mengikuti status transaksi
+                  color: statusColor,
+                  size: 24,
+                ),
+              ),
               const SizedBox(width: 14),
               Expanded(
                 child: Row(
@@ -502,33 +557,46 @@ class TransactionCard extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(title,
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: darkTextColor)),
+                          Text(
+                            title,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              color: darkTextColor,
+                            ),
+                          ),
                           const SizedBox(height: 4),
-                          Text(subtitle,
-                              style: TextStyle(
-                                  color: statusColor, // Subjudul mengikuti warna status agar rapi
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w700)),
+                          Text(
+                            subtitle,
+                            style: TextStyle(
+                              color:
+                                  statusColor, // Subjudul mengikuti warna status agar rapi
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
                           const SizedBox(height: 4),
-                          Text(date,
-                              style: const TextStyle(
-                                  color: greyTextColor,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500)),
+                          Text(
+                            date,
+                            style: const TextStyle(
+                              color: greyTextColor,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
                         ],
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Text(price,
-                        style: TextStyle(
-                          color: statusColor, // Nominal uang berubah warna serasi dengan status
-                          fontWeight: FontWeight.w900,
-                          fontSize: 18,
-                        )),
+                    Text(
+                      price,
+                      style: TextStyle(
+                        color:
+                            statusColor, // Nominal uang berubah warna serasi dengan status
+                        fontWeight: FontWeight.w900,
+                        fontSize: 18,
+                      ),
+                    ),
                   ],
                 ),
               ),

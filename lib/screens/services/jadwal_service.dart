@@ -14,7 +14,7 @@ class JadwalService {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('token') ?? '';
 
-      final url = Uri.parse('${AppConfig.baseUrl}/kurir/jadwal/$id');
+      final url = Uri.parse('${AppConfig.baseUrl}/kurir/jadwal');
       final response = await _client.get(
         url,
         headers: {
@@ -45,7 +45,7 @@ class JadwalService {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('token') ?? '';
 
-      final url = Uri.parse('${AppConfig.baseUrl}/nasabah/jadwal/$id');
+      final url = Uri.parse('${AppConfig.baseUrl}/nasabah/jadwal');
       print("DEBUG JADWAL - FETCHING FOR USER: $id");
       print("DEBUG JADWAL - URL: $url");
       

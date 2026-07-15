@@ -6,7 +6,8 @@ import 'client_helper.dart';
 
 class SetorSampahService {
   // 🔥 1. CLIENT AMAN UNTUK HOSTING (Bebas SSL Error)
-  static http.Client get _client => getSafeClient(trustedHost: 'simpasdaa.one-babel.my.id');
+  static http.Client get _client =>
+      getSafeClient(trustedHost: 'simpasdaa.one-babel.my.id');
 
   // ================= 1. CREATE REQUEST PENJEMPUTAN (NASABAH) =================
   static Future<Map<String, dynamic>> store({
@@ -34,15 +35,17 @@ class SetorSampahService {
       print('URL: $url');
       print('BODY: ${jsonEncode(body)}');
 
-      final response = await _client.post(
-        url,
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json",
-          if (token.isNotEmpty) "Authorization": "Bearer $token",
-        },
-        body: jsonEncode(body),
-      ).timeout(const Duration(seconds: 15));
+      final response = await _client
+          .post(
+            url,
+            headers: {
+              "Content-Type": "application/json",
+              "Accept": "application/json",
+              if (token.isNotEmpty) "Authorization": "Bearer $token",
+            },
+            body: jsonEncode(body),
+          )
+          .timeout(const Duration(seconds: 15));
 
       print('RESPONSE STATUS: ${response.statusCode}');
       print('RESPONSE BODY: ${response.body}');
@@ -54,7 +57,9 @@ class SetorSampahService {
       } else {
         return {
           "success": false,
-          "message": decodedResponse['message'] ?? "Error server (${response.statusCode})"
+          "message":
+              decodedResponse['message'] ??
+              "Error server (${response.statusCode})",
         };
       }
     } catch (e) {
@@ -63,13 +68,13 @@ class SetorSampahService {
     }
   }
 
-  // ================= 2. READ RIWAYAT TRANSAKSI (NASABAH) =================
-  static Future<List<dynamic>> getRiwayat({required int userId}) async {
+  // ================= 2. READ DATA DASHBOARD LENGKAP (NASABAH) =================
+  static Future<Map<String, dynamic>?> getDashboardData() async {
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('token') ?? '';
 
-      final url = Uri.parse('${AppConfig.baseUrl}/dashboard-nasabah/$userId');
+      final url = Uri.parse('${AppConfig.baseUrl}/dashboard-nasabah');
       print('GET REQUEST RIWAYAT VIA: $url');
 
       final response = await _client.get(
@@ -85,14 +90,14 @@ class SetorSampahService {
 
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body);
-        if (body['success'] == true && body['riwayat_mutasi'] != null) {
-          return body['riwayat_mutasi'] as List<dynamic>;
+        if (body['success'] == true) {
+          return body; // 🎨 PERBAIKAN: Kembalikan semua data, bukan hanya riwayat
         }
       }
-      return [];
+      return null;
     } catch (e) {
       print('GET ERROR RIWAYAT : $e');
-      return [];
+      return null;
     }
   }
 
@@ -139,7 +144,7 @@ class SetorSampahService {
   }
 
   // ================= 5. SUBMIT SETOR SAMPAH (FIXED UUID VALIDATION) =================
-// ================= 5. SUBMIT SETOR SAMPAH (FIXED POST/PATCH & 301) =================
+  // ================= 5. SUBMIT SETOR SAMPAH (FIXED POST/PATCH & 301) =================
   static Future<http.Response> submitSetoran({
     required int userId,
     required int kurirId,
@@ -157,13 +162,16 @@ class SetorSampahService {
     String urlString = '${AppConfig.baseUrl}/setor-sampah';
     bool isByJadwal = false;
 
-    bool isJadwalValid = jadwalId != null &&
+    bool isJadwalValid =
+        jadwalId != null &&
         jadwalId.isNotEmpty &&
         jadwalId != "0" &&
         jadwalId != "null";
 
     // 2. Tentukan kelanjutan URL secara bersih (mencegah penumpukan penyebab 301)
-    if (setor_sampah_id.isNotEmpty && setor_sampah_id != "0" && setor_sampah_id != "null") {
+    if (setor_sampah_id.isNotEmpty &&
+        setor_sampah_id != "0" &&
+        setor_sampah_id != "null") {
       urlString = '$urlString/request-nasabah/$setor_sampah_id';
       isByJadwal = false;
     } else if (isJadwalValid) {

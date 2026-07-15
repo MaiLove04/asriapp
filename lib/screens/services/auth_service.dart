@@ -33,7 +33,20 @@ class AuthService {
     stopwatch.stop();
     print('LOGIN TIME: ${stopwatch.elapsedMilliseconds} ms');
 
-    final body = jsonDecode(response.body);
+    stopwatch.stop();
+    print('LOGIN TIME: ${stopwatch.elapsedMilliseconds} ms');
+    print('RESPONSE BODY: ${response.body}'); // Tambahkan print untuk melihat isi aslinya
+
+    Map<String, dynamic> body;
+    try {
+      body = jsonDecode(response.body);
+    } catch (e) {
+      // Jika error 'Unexpected character', kembalikan pesan error yang jelas
+      return {
+        "status": response.statusCode,
+        "data": {"message": "Server error (Not JSON). Status: ${response.statusCode}"},
+      };
+    }
 
     if (response.statusCode == 200) {
       SharedPreferences prefs = await SharedPreferences.getInstance();

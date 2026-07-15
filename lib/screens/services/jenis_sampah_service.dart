@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:asriapp/config.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/jenis_sampah.dart';
 
@@ -15,16 +16,22 @@ class JenisSampahService {
         '${AppConfig.baseUrl}/jenis-sampah',
       );
 
-      print(
-        'REQUEST : $url',
+      print('REQUEST : $url');
+
+      // Ambil token dari SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token') ?? '';
+
+      final response = await http.get(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
       );
 
-      final response =
-      await http.get(url);
-
-      print(
-        'STATUS : ${response.statusCode}',
-      );
+      print('STATUS : ${response.statusCode}');
 
       print(
         'BODY : ${response.body}',
