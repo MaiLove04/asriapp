@@ -314,8 +314,25 @@ class _RiwayatPageState extends State<RiwayatPage> {
                   // 🔥 AMBIL DATA STATUS DARI BACKEND LARAVEL
                   String statusSistem = (item['status_transaksi'] ?? item['status'] ?? 'pending').toString().toLowerCase();
 
+                  // 🛠️ LOGIKA BARU KATEGORI MULTI-ITEM: SAMPAH PERTAMA + LAINNYA
+                  List<dynamic> details = item['details'] ?? [];
+                  String namaJenisTampil = "Sampah Umum";
+
+                  if (details.isNotEmpty) {
+                    String sampahPertama = details[0]['jenis_sampah']?['nama'] ?? 'Sampah';
+                    if (details.length > 1) {
+                      namaJenisTampil = "$sampahPertama + ${details.length - 1} lainnya";
+                    } else {
+                      namaJenisTampil = sampahPertama;
+                    }
+                  } else if (item['jenis_sampah'] != null) {
+                    namaJenisTampil = item['jenis_sampah']['nama'] ?? 'Sampah';
+                  } else {
+                    namaJenisTampil = item['judul_dinamis'] ?? 'Sampah Umum';
+                  }
+
                   String subjudul = isSetor
-                      ? "Kategori: ${item['judul_dinamis'] ?? '-'}"
+                      ? "Kategori: $namaJenisTampil"
                       : "Penarikan Saldo";
 
                   // 🔥 DINAMISKAN SUBJUDUL APABILA PENDING / REJECTED UNTUK TARIK TUNAI
