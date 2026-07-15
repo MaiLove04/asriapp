@@ -73,11 +73,15 @@ class NotifikasiService {
 
   static Future<bool> markAsRead(int notificationId) async {
     try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token') ?? '';
+
       final url = Uri.parse('${AppConfig.baseUrl}/notifikasi/$notificationId/read');
       final response = await _client.post(
         url,
         headers: {
           "Accept": "application/json",
+          if (token.isNotEmpty) "Authorization": "Bearer $token",
         },
       );
       return response.statusCode == 200;
