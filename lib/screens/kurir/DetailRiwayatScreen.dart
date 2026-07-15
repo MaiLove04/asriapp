@@ -96,6 +96,13 @@ class _DetailRiwayatScreenState extends State<DetailRiwayatScreen> {
         RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.'
     );
 
+    String namaKurir = "Kurir ASRI";
+    if (widget.data['kurir'] != null && widget.data['kurir']['name'] != null) {
+      namaKurir = widget.data['kurir']['name'].toString();
+    } else if (widget.data['nama_kurir'] != null) {
+      namaKurir = widget.data['nama_kurir'].toString();
+    }
+
     String catatan = widget.data['catatan'] ?? 'Disetor lewat aplikasi kurir';
     String nomorTransaksi = "TRX-${widget.data['id'] ?? '000'}";
 
@@ -187,6 +194,7 @@ class _DetailRiwayatScreenState extends State<DetailRiwayatScreen> {
                           // Metadata Transaksi Utama
                           _rowStruk(label: "Nama Nasabah", value: namaNasabah),
                           _rowStruk(label: "Waktu Setor", value: tanggal),
+                          _rowStruk(label: "Nama Kurir", value: namaKurir),
 
                           const SizedBox(height: 8),
                           const Divider(thickness: 1.5, color: Color(0xFFEEEEEE)),

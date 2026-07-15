@@ -8,6 +8,7 @@ import 'package:gal/gal.dart';
 import '../../config.dart';
 import '../services/setor_sampah_service.dart';
 import 'bantuan_page.dart'; // 🔥 Memastikan import halaman bantuan aktif
+import 'NotifikasiNasabahScreen.dart';
 
 // 🎨 PALET WARNA EXECUTIVE PREMIUM (ASRI MODERN)
 const primaryColor = Color(0xFF164716);     // Hijau Botol Mewah
@@ -473,18 +474,18 @@ class _profile_pageState extends State<profile_page> {
                       decoration: cardDecoration(),
                       child: Column(
                         children: [
-                          _menuItem(Icons.lock_outline_rounded, "Ubah Kata Sandi", onTap: () {}),
-                          _dividerLine(),
-                          _menuItem(Icons.settings_outlined, "Pengaturan Akun", onTap: () {}),
-                          _dividerLine(),
-                          _menuItem(Icons.notifications_none_rounded, "Notifikasi Sistem", onTap: () {}),
-                          _dividerLine(),
-                          _menuItem(
-                              _hasPin ? Icons.security_rounded : Icons.lock_open_rounded,
-                              _hasPin ? "Ubah PIN Transaksi Dompet" : "Setel PIN Transaksi Dompet",
-                              onTap: _showSetupPinDialog
-                          ),
-                          _dividerLine(),
+                          // _menuItem(Icons.lock_outline_rounded, "Ubah Kata Sandi", onTap: () {}),
+                          // _dividerLine(),
+                          // _menuItem(Icons.settings_outlined, "Pengaturan Akun", onTap: () {}),
+                          // _dividerLine(),
+                          // _menuItem(Icons.notifications_none_rounded, "Notifikasi Sistem", onTap: () {}),
+                          // _dividerLine(),
+                          // _menuItem(
+                          //     _hasPin ? Icons.security_rounded : Icons.lock_open_rounded,
+                          //     _hasPin ? "Ubah PIN Transaksi Dompet" : "Setel PIN Transaksi Dompet",
+                          //     onTap: _showSetupPinDialog
+                          // ),
+                          // _dividerLine(),
                           _menuItem(
                             Icons.qr_code_2_rounded,
                             "QR Code Saya",
@@ -561,7 +562,12 @@ class _profile_pageState extends State<profile_page> {
             } else if (index == 1) {
               Navigator.pushReplacementNamed(context, '/riwayat');
             } else if (index == 2) {
-              Navigator.pushReplacementNamed(context, '/setor');
+              Navigator.pushReplacementNamed(context, '/setorsampah');
+            } else if (index == 3) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const NotifikasiNasabahScreen()),
+              );
             }
           },
           items: const [
