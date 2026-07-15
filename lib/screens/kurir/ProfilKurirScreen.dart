@@ -78,18 +78,19 @@ class _ProfilKurirScreenState extends State<ProfilKurirScreen> {
         isLoading = false;
       });
     }
-  }  Future<void> logout() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
+  }  
+  Future<void> logout() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  await prefs.clear();
 
-    if (!mounted) return;
+  if (!mounted) return;
 
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
-          (route) => false,
-    );
-  }
+  // Gunakan pemanggilan rute dasar tanpa animasi transisi bertumpuk yang corrupt
+  Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+    MaterialPageRoute(builder: (_) => const LoginScreen()),
+    (Route<dynamic> route) => false,
+  );
+}
 
   @override
   Widget build(BuildContext context) {

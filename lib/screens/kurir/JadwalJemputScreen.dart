@@ -279,7 +279,7 @@ class _JadwalJemputScreenState extends State<JadwalJemputScreen> {
                       },
                       onMulaiJemput: () async {
                         if (isTerjadwal) {
-                          mulaiJemputKurir(item['jadwal_id'].toString());
+                          mulaiJemputKurir(item['id'].toString());
                         } else if (isProses) {
                           final String idJadwal = item['id'].toString();
                           final refresh = await Navigator.push(
@@ -322,7 +322,7 @@ class _JadwalJemputScreenState extends State<JadwalJemputScreen> {
             backgroundColor: primaryColor,
             shape: const CircleBorder(),
             onPressed: () async {
-              String idJadwalTerpilih = jadwalList.isNotEmpty ? jadwalList[0]['jadwalId']?.toString() ?? '' : '';
+              String idJadwalTerpilih = jadwalList.isNotEmpty ? jadwalList[0]['id']?.toString() ?? '' : '';
               final result = await Navigator.push(
                 context,
                 MaterialPageRoute(

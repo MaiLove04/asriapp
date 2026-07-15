@@ -134,10 +134,36 @@ class _RiwayatPageState extends State<RiwayatPage> {
       }
 
       if (isSetor && selectedJenis != "Semua") {
-        String judulDinamis =
-        (item['judul_dinamis'] ?? '').toString().toLowerCase();
         String kueriFilter = selectedJenis.toLowerCase();
-        if (!judulDinamis.contains(kueriFilter)) {
+        bool ditemukan = false;
+
+        // Cek di rincian list detail item sampah
+        List<dynamic> details = item['details'] ?? [];
+        for (var detail in details) {
+          String namaDetail = (detail['jenis_sampah']?['nama'] ?? detail['nama'] ?? '').toString().toLowerCase();
+          if (namaDetail.contains(kueriFilter)) {
+            ditemukan = true;
+            break;
+          }
+        }
+
+        // Cek di jenis_sampah fallback penimbangan single-item
+        if (!ditemukan && item['jenis_sampah'] != null) {
+          String namaJenis = (item['jenis_sampah']['nama'] ?? '').toString().toLowerCase();
+          if (namaJenis.contains(kueriFilter)) {
+            ditemukan = true;
+          }
+        }
+
+        // Cek di judul_dinamis
+        if (!ditemukan) {
+          String judulDinamis = (item['judul_dinamis'] ?? '').toString().toLowerCase();
+          if (judulDinamis.contains(kueriFilter)) {
+            ditemukan = true;
+          }
+        }
+
+        if (!ditemukan) {
           return false;
         }
       }

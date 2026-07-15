@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:gal/gal.dart';
+import 'package:screenshot/screenshot.dart';
 
 import '../../config.dart';
 import '../services/setor_sampah_service.dart';
@@ -35,6 +36,7 @@ class _profile_pageState extends State<profile_page> {
   bool _hasPin = false;
   bool isLoading = true;
   bool _isSubmitting = false;
+  final ScreenshotController _qrScreenshotController = ScreenshotController();
 
   @override
   void initState() {
@@ -253,18 +255,21 @@ class _profile_pageState extends State<profile_page> {
                         style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                       ),
                       const SizedBox(height: 20),
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: Colors.grey.shade200, width: 2),
-                        ),
-                        child: Image.memory(
-                          imageBytes,
-                          width: 200,
-                          height: 200,
-                          fit: BoxFit.contain,
+                      Screenshot(
+                        controller: _qrScreenshotController,
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: Colors.grey.shade200, width: 2),
+                          ),
+                          child: Image.memory(
+                            imageBytes,
+                            width: 200,
+                            height: 200,
+                            fit: BoxFit.contain,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -295,7 +300,13 @@ class _profile_pageState extends State<profile_page> {
                           if (!hasAccess) {
                             await Gal.requestAccess();
                           }
-                          await Gal.putImageBytes(imageBytes);
+                          final Uint8List? capturedBytes = await _qrScreenshotController.capture(
+                            delay: const Duration(milliseconds: 50),
+                          );
+                          if (capturedBytes == null) {
+                            throw Exception("Gagal memproses gambar QR Code.");
+                          }
+                          await Gal.putImageBytes(capturedBytes);
                           if (context.mounted) {
                             Navigator.pop(context);
                             ScaffoldMessenger.of(this.context).showSnackBar(

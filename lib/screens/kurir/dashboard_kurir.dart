@@ -489,16 +489,16 @@ class _ActiveMissionCard extends StatelessWidget {
           const SizedBox(height: 20),
           InkWell(
             onTap: () async {
-              final result = await Navigator.push(context, MaterialPageRoute(builder: (_) => const NavigasiKurirPage()));
-              if (result == true) {
-                context.findAncestorStateOfType<_DashboardKurirState>()?.getDashboard();
-              }
+              // final result = await Navigator.push(context, MaterialPageRoute(builder: (_) => const NavigasiKurirPage()));
+              // if (result == true) {
+              //   context.findAncestorStateOfType<_DashboardKurirState>()?.getDashboard();
+              // }
             },
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: const [
                 Text("Jadwal Jalan Hari Ini", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: darkTextColor)),
-                Icon(Icons.arrow_forward_ios_rounded, size: 16, color: primaryColor),
+                // Icon(Icons.arrow_forward_ios_rounded, size: 16, color: primaryColor),
               ],
             ),
           ),
