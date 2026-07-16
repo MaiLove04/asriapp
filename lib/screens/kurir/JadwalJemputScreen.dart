@@ -11,7 +11,7 @@ import 'RiwayatKurirScreen.dart';
 import 'ProfilKurirScreen.dart';
 import 'ScanBarcode.dart';
 import 'SetorSampahPage.dart';
-import 'navigasi_kurir_page.dart';
+// import 'navigasi_kurir_page.dart';
 
 const primaryColor = Color(0xFF1E521E);
 const secondaryColor = Color(0xFF4CAF50);
@@ -275,7 +275,7 @@ class _JadwalJemputScreenState extends State<JadwalJemputScreen> {
                       jam: jamFormatted,
                       status: displayStatus,
                       onLihatLokasi: () {
-                        Navigator.push(context, MaterialPageRoute(builder: (_) => const NavigasiKurirPage()));
+                        // Navigator.push(context, MaterialPageRoute(builder: (_) => const NavigasiKurirPage()));
                       },
                       onMulaiJemput: () async {
                         if (isTerjadwal) {
@@ -431,20 +431,20 @@ class JadwalCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 18),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: onLihatLokasi,
-              style: OutlinedButton.styleFrom(
-                minimumSize: const Size(0, 50),
-                side: const BorderSide(color: primaryColor, width: 1.5),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-              ),
-              icon: const Icon(Icons.map_rounded, color: primaryColor, size: 18),
-              label: const Text("LIHAT LOKASI / NAVIGASI MAPS", style: TextStyle(color: primaryColor, fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 0.3)),
-            ),
-          ),
+          // const SizedBox(height: 18),
+          // SizedBox(
+          //   width: double.infinity,
+          //   child: OutlinedButton.icon(
+          //     onPressed: onLihatLokasi,
+          //     style: OutlinedButton.styleFrom(
+          //       minimumSize: const Size(0, 50),
+          //       side: const BorderSide(color: primaryColor, width: 1.5),
+          //       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          //     ),
+          //     icon: const Icon(Icons.map_rounded, color: primaryColor, size: 18),
+          //     label: const Text("LIHAT LOKASI / NAVIGASI MAPS", style: TextStyle(color: primaryColor, fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 0.3)),
+          //   ),
+          // ),
         ],
       ),
     );

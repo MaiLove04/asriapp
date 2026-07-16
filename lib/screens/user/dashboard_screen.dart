@@ -255,7 +255,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     String tanggal = activeJadwal!['tanggal_formatted'] ?? activeJadwal!['tanggal'] ?? '-';
     String status = (activeJadwal!['status'] ?? 'terjadwal').toString().toUpperCase();
-    String tipe = activeJadwal!['tipe'] ?? 'jadwal'; // 'jadwal' or 'request'
+    String tipe = status == 'PENDING' ? 'request' : 'jadwal'; // 'jadwal' or 'request'
     
     // Status colors
     Color statusColor;
