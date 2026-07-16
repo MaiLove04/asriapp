@@ -21,6 +21,7 @@ class RegisterScreen extends StatefulWidget {
 class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final nameController = TextEditingController();
+  final emailController = TextEditingController();
   final passwordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
   final phoneController = TextEditingController();
@@ -68,6 +69,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   void dispose() {
     nameController.dispose();
+    emailController.dispose();
     passwordController.dispose();
     confirmPasswordController.dispose();
     phoneController.dispose();
@@ -182,6 +184,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     try {
       final result = await RegisterService.register(
         name: nameController.text,
+        email: emailController.text,
         password: passwordController.text,
         confirmPassword: confirmPasswordController.text,
         phone: phoneController.text,
@@ -325,6 +328,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             controller: nameController,
                             hint: 'Nama Lengkap',
                             icon: Icons.person_outline_rounded,
+                          ),
+                          const SizedBox(height: 12),
+
+                          _buildInput(
+                            controller: emailController,
+                            hint: 'Email',
+                            icon: Icons.email_outlined,
+                            keyboardType: TextInputType.emailAddress,
                           ),
                           const SizedBox(height: 12),
 
